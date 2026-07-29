@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:esteticaybellezastrani/supabase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: '.env').catchError((_) {});
+
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? 'https://hhyjremkguvphmjuaazp.supabase.co';
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ??
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoeWpyZW1rZ3V2cGhtanVhYXpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTQwODIsImV4cCI6MjEwMDgzMDA4Mn0.vVMpT5OlT1aj9kqJIimQ3S1HoKYZ54pGCn8WNUd2sWo';
+
+  await Supabase.initialize(
+    url: supabaseUrl,
+    publishableKey: supabaseAnonKey,
+  );
+
   runApp(const EsteticaBellezaStraniApp());
 }
 
@@ -50,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
   static const _cMutedText = Color(0xFF6C757D);
 
   final List<Map<String, String>> _rolesList = const [
+    {'code': 'client', 'name': 'Cliente / Usuario'},
     {'code': 'admin', 'name': 'Administrador del Sistema'},
     {'code': 'office', 'name': 'Personal Administrativo'},
     {'code': 'leader', 'name': 'Líder de Estudio / Cuadrilla'},
@@ -69,19 +86,148 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleSignIn() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Bienvenido/a a Estética y Belleza Strani (${_rolesList.firstWhere((r) => r['code'] == _selectedRole)['name']})',
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      try {
+        bool isNewRegistration = false;
+        try {
+          // Intentar iniciar sesión con las credenciales ingresadas
+          await SupabaseService.signIn(
+            email: email,
+            password: password,
+          );
+        } on AuthException catch (authErr) {
+          // Si el usuario no existe aún en Supabase Auth, registrarlo automáticamente en Auth + Clients + Profiles
+          if (authErr.code == 'invalid_credentials' || authErr.message.contains('Invalid login credentials')) {
+            await SupabaseService.signUpClient(
+              email: email,
+              password: password,
+              fullName: email.split('@').first,
+            );
+            isNewRegistration = true;
+          } else if (authErr.message.contains('Email not confirmed') || authErr.code == 'email_not_confirmed') {
+            // Manejo cuando requiere confirmación de correo
+            if (mounted) {
+              setState(() => _isLoading = false);
+              _showEmailConfirmationDialog(email);
+              return;
+            }
+          } else {
+            rethrow;
+          }
+        }
+
+        if (mounted) {
+          setState(() => _isLoading = false);
+          if (isNewRegistration) {
+            _showEmailConfirmationDialog(email);
+          } else {
+            final roleObj = _rolesList.firstWhere(
+              (r) => r['code'] == _selectedRole,
+              orElse: () => {'name': _selectedRole},
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '¡Bienvenido/a a Estética y Belleza Strani! Sesión iniciada (${roleObj['name']}).',
+                ),
+                backgroundColor: _cDeepAccent,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          String message = e.toString();
+          if (e is AuthException) {
+            if (e.message.contains('Email not confirmed') || e.code == 'email_not_confirmed') {
+              _showEmailConfirmationDialog(email);
+              return;
+            }
+            message = e.message;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error de autenticación en Supabase: $message'),
+              backgroundColor: Colors.redAccent,
+              duration: const Duration(seconds: 4),
             ),
-            backgroundColor: _cDeepAccent,
-          ),
-        );
+          );
+        }
       }
     }
+  }
+
+  void _showEmailConfirmationDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.mark_email_read_outlined, color: _cDeepAccent, size: 28),
+            SizedBox(width: 10),
+            Text(
+              'Confirmación de Correo',
+              style: TextStyle(
+                color: _cDarkText,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Se ha registrado el usuario con el correo:',
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              email,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: _cDeepAccent,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _cPastelPurple,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'Nota: Por favor revisa tu bandeja de entrada para verificar tu correo. (Si la verificación de correo está desactivada en Supabase, ya puedes ingresar directamente).',
+                style: TextStyle(fontSize: 12, color: _cDarkText),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _cDeepAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showForgotPasswordDialog() {

@@ -74,7 +74,9 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Bienvenido/a a Estética y Belleza Strani (${_rolesList.firstWhere((r) => r['code'] == _selectedRole)['name']})'),
+            content: Text(
+              'Bienvenido/a a Estética y Belleza Strani (${_rolesList.firstWhere((r) => r['code'] == _selectedRole)['name']})',
+            ),
             backgroundColor: _cDeepAccent,
           ),
         );
@@ -92,10 +94,16 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text(
             'Recuperar Contraseña',
-            style: TextStyle(color: _cDarkText, fontWeight: FontWeight.bold, fontSize: 18),
+            style: TextStyle(
+              color: _cDarkText,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
           ),
           content: Form(
             key: formKey,
@@ -112,12 +120,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: 'Correo Electrónico',
-                    prefixIcon: const Icon(Icons.email_outlined, color: _cDeepAccent),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: _cDeepAccent,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     filled: true,
                     fillColor: Colors.grey.shade50,
                   ),
-                  validator: (v) => (v == null || !v.contains('@')) ? 'Correo inválido' : null,
+                  validator: (v) => (v == null || !v.contains('@'))
+                      ? 'Correo inválido'
+                      : null,
                 ),
               ],
             ),
@@ -125,7 +140,10 @@ class _LoginScreenState extends State<LoginScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar', style: TextStyle(color: _cMutedText)),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: _cMutedText),
+              ),
             ),
             ElevatedButton(
               onPressed: sending
@@ -138,7 +156,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Enlace enviado. Revisa tu bandeja de entrada.'),
+                            content: Text(
+                              'Enlace enviado. Revisa tu bandeja de entrada.',
+                            ),
                             backgroundColor: Colors.teal,
                           ),
                         );
@@ -147,10 +167,19 @@ class _LoginScreenState extends State<LoginScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _cDeepAccent,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: sending
-                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Enviar'),
             ),
           ],
@@ -199,7 +228,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: _cPastelPink,
                       child: const Center(
-                        child: Icon(Icons.face_retouching_natural, size: 96, color: _cDeepAccent),
+                        child: Icon(
+                          Icons.face_retouching_natural,
+                          size: 96,
+                          color: _cDeepAccent,
+                        ),
                       ),
                     ),
                   ),
@@ -210,8 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          _cPastelPink.withOpacity(0.25),
-                          _cPastelBlue.withOpacity(0.35),
+                          _cPastelPink.withValues(alpha: 0.25),
+                          _cPastelBlue.withValues(alpha: 0.35),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -227,14 +260,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.88),
+                      color: Colors.white.withValues(alpha: 0.88),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
+                          color: Colors.black.withValues(alpha: 0.08),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
-                        )
+                        ),
                       ],
                     ),
                     child: Column(
@@ -252,7 +285,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 6),
                         Text(
                           'Plataforma integral de gestión, estilo y control de servicios de belleza.',
-                          style: TextStyle(fontSize: 14, color: _cDarkText.withOpacity(0.8), height: 1.4),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _cDarkText.withValues(alpha: 0.8),
+                            height: 1.4,
+                          ),
                         ),
                       ],
                     ),
@@ -270,7 +307,10 @@ class _LoginScreenState extends State<LoginScreen> {
             color: Colors.white,
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 56,
+                  vertical: 40,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: _buildFormSection(),
@@ -309,16 +349,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.2),
-                  ),
+                  child: Container(color: Colors.black.withValues(alpha: 0.2)),
                 ),
                 const Positioned(
                   bottom: 24,
                   left: 24,
                   child: Text(
                     'Estética y Belleza Strani',
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -351,7 +393,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: _cPastelPink,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.spa_rounded, color: _cDeepAccent, size: 28),
+                child: const Icon(
+                  Icons.spa_rounded,
+                  color: _cDeepAccent,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -360,7 +406,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: const [
                     Text(
                       'Iniciar Sesión',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _cDarkText),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: _cDarkText,
+                      ),
                     ),
                     Text(
                       'Estética y Belleza Strani',
@@ -376,7 +426,11 @@ class _LoginScreenState extends State<LoginScreen> {
           // CAMPO 1: Validación / Toma de Usuario (Email)
           const Text(
             'Correo de Usuario',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _cDarkText),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _cDarkText,
+            ),
           ),
           const SizedBox(height: 6),
           TextFormField(
@@ -386,8 +440,11 @@ class _LoginScreenState extends State<LoginScreen> {
               hintText: 'usuario@esteticaybellezastrani.com',
               prefixIcon: const Icon(Icons.person_outline, color: _cDeepAccent),
               filled: true,
-              fillColor: _cPastelPurple.withOpacity(0.4),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              fillColor: _cPastelPurple.withValues(alpha: 0.4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -402,7 +459,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return 'Ingresa tu usuario o correo';
+              if (v == null || v.trim().isEmpty)
+                return 'Ingresa tu usuario o correo';
               if (!v.contains('@')) return 'Correo no válido';
               return null;
             },
@@ -412,16 +470,23 @@ class _LoginScreenState extends State<LoginScreen> {
           // CAMPO 2: Validación / Toma de Rol
           const Text(
             'Rol de Acceso',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _cDarkText),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _cDarkText,
+            ),
           ),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _selectedRole,
+            initialValue: _selectedRole,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.badge_outlined, color: _cDeepAccent),
               filled: true,
-              fillColor: _cPastelPurple.withOpacity(0.4),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              fillColor: _cPastelPurple.withValues(alpha: 0.4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -456,13 +521,21 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const Text(
                 'Contraseña',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _cDarkText),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _cDarkText,
+                ),
               ),
               GestureDetector(
                 onTap: _showForgotPasswordDialog,
                 child: const Text(
                   '¿Olvidaste tu contraseña?',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _cDeepAccent),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _cDeepAccent,
+                  ),
                 ),
               ),
             ],
@@ -476,14 +549,20 @@ class _LoginScreenState extends State<LoginScreen> {
               prefixIcon: const Icon(Icons.lock_outline, color: _cDeepAccent),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: _cMutedText,
                 ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
               filled: true,
-              fillColor: _cPastelPurple.withOpacity(0.4),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              fillColor: _cPastelPurple.withValues(alpha: 0.4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -497,7 +576,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderSide: const BorderSide(color: _cDeepAccent, width: 1.5),
               ),
             ),
-            validator: (v) => (v == null || v.isEmpty) ? 'Ingresa tu contraseña' : null,
+            validator: (v) =>
+                (v == null || v.isEmpty) ? 'Ingresa tu contraseña' : null,
           ),
           const SizedBox(height: 28),
 
@@ -511,17 +591,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 backgroundColor: _cDeepAccent,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _isLoading
                   ? const SizedBox(
                       height: 22,
                       width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text(
                       'Ingresar al Sistema',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),

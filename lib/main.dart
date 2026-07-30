@@ -49,90 +49,100 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
+enum AuthMode { dashboard, signIn, signUp }
+enum UserAccessType { client, specialist, admin }
+
 class _LoginScreenState extends State<LoginScreen> {
+  // Estado del flujo de UI en el panel derecho
+  AuthMode _currentAuthMode = AuthMode.dashboard;
+  UserAccessType _selectedType = UserAccessType.client;
+
+  // Controladores de formulario
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedRole = 'employee';
+  final _fullNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _isLoading = false;
+  User? _loggedUser;
 
   // Sistema de Colores Pastel - Estética y Belleza Strani
   static const _cPastelPink = Color(0xFFF7D6E0);
   static const _cPastelBlue = Color(0xFFBEE1E6);
   static const _cPastelPurple = Color(0xFFE2ECE9);
+  static const _cPastelGold = Color(0xFFFFF3CD);
   static const _cDeepAccent = Color(0xFF6B4F71);
   static const _cDarkText = Color(0xFF2B2D42);
   static const _cMutedText = Color(0xFF6C757D);
+  static const _cBrandGreen = Color(0xFF1D4A38);
+  static const _cGoldAccent = Color(0xFF856404);
 
-  final List<Map<String, String>> _rolesList = const [
-    {'code': 'client', 'name': 'Cliente / Usuario'},
-    {'code': 'admin', 'name': 'Administrador del Sistema'},
-    {'code': 'office', 'name': 'Personal Administrativo'},
-    {'code': 'leader', 'name': 'Líder de Estudio / Cuadrilla'},
-    {'code': 'employee', 'name': 'Empleado / Estilista'},
-    {'code': 'mechanic', 'name': 'Mantenimiento / Técnico'},
-    {'code': 'warehouse', 'name': 'Bodega / Inventario'},
-    {'code': 'finance', 'name': 'Finanzas / Contabilidad'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loggedUser = SupabaseService.currentUser;
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _fullNameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  void _handleSignIn() async {
+  String get _currentRoleName {
+    switch (_selectedType) {
+      case UserAccessType.client:
+        return 'Paciente';
+      case UserAccessType.specialist:
+        return 'Especialista';
+      case UserAccessType.admin:
+        return 'Administrador';
+    }
+  }
+
+  // Manejo de Iniciar Sesión (SignIn)
+  Future<void> _handleSignIn() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
       try {
-        bool isNewRegistration = false;
-        try {
-          // Intentar iniciar sesión con las credenciales ingresadas
-          await SupabaseService.signIn(
-            email: email,
-            password: password,
-          );
-        } on AuthException catch (authErr) {
-          // Si el usuario no existe aún en Supabase Auth, registrarlo automáticamente en Auth + Clients + Profiles
-          if (authErr.code == 'invalid_credentials' || authErr.message.contains('Invalid login credentials')) {
-            await SupabaseService.signUpClient(
-              email: email,
-              password: password,
-              fullName: email.split('@').first,
-            );
-            isNewRegistration = true;
-          } else if (authErr.message.contains('Email not confirmed') || authErr.code == 'email_not_confirmed') {
-            // Manejo cuando requiere confirmación de correo
-            if (mounted) {
-              setState(() => _isLoading = false);
-              _showEmailConfirmationDialog(email);
-              return;
-            }
-          } else {
-            rethrow;
-          }
-        }
+        final authResponse = await SupabaseService.signIn(
+          email: email,
+          password: password,
+        );
 
         if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _loggedUser = authResponse.user;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '¡Bienvenido/a! Sesión iniciada como $_currentRoleName ($email).',
+              ),
+              backgroundColor: _cBrandGreen,
+            ),
+          );
+        }
+      } on AuthException catch (authErr) {
+        if (mounted) {
           setState(() => _isLoading = false);
-          if (isNewRegistration) {
+          if (authErr.message.contains('Email not confirmed') ||
+              authErr.code == 'email_not_confirmed') {
             _showEmailConfirmationDialog(email);
           } else {
-            final roleObj = _rolesList.firstWhere(
-              (r) => r['code'] == _selectedRole,
-              orElse: () => {'name': _selectedRole},
-            );
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  '¡Bienvenido/a a Estética y Belleza Strani! Sesión iniciada (${roleObj['name']}).',
-                ),
-                backgroundColor: _cDeepAccent,
+                content: Text('Error de ingreso: ${authErr.message}'),
+                backgroundColor: Colors.redAccent,
               ),
             );
           }
@@ -140,23 +150,86 @@ class _LoginScreenState extends State<LoginScreen> {
       } catch (e) {
         if (mounted) {
           setState(() => _isLoading = false);
-          String message = e.toString();
-          if (e is AuthException) {
-            if (e.message.contains('Email not confirmed') || e.code == 'email_not_confirmed') {
-              _showEmailConfirmationDialog(email);
-              return;
-            }
-            message = e.message;
-          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error de autenticación en Supabase: $message'),
+              content: Text('Error inesperado: ${e.toString()}'),
               backgroundColor: Colors.redAccent,
-              duration: const Duration(seconds: 4),
             ),
           );
         }
       }
+    }
+  }
+
+  // Manejo de Registro (SignUp)
+  Future<void> _handleSignUp() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() => _isLoading = true);
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      final fullName = _fullNameController.text.trim();
+      final phone = _phoneController.text.trim();
+
+      try {
+        final authResponse = await SupabaseService.signUpUser(
+          email: email,
+          password: password,
+          fullName: fullName.isEmpty ? email.split('@').first : fullName,
+          role: _currentRoleName,
+          phone: phone,
+        );
+
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _loggedUser = authResponse.user;
+          });
+          _showEmailConfirmationDialog(email);
+        }
+      } on AuthException catch (authErr) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al registrarse: ${authErr.message}'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error inesperado: ${e.toString()}'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Manejo de Cerrar Sesión (SignOut)
+  Future<void> _handleSignOut() async {
+    setState(() => _isLoading = true);
+    await SupabaseService.signOut();
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _loggedUser = null;
+        _currentAuthMode = AuthMode.dashboard;
+        _emailController.clear();
+        _passwordController.clear();
+        _fullNameController.clear();
+        _phoneController.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Has cerrado sesión correctamente.'),
+          backgroundColor: _cDeepAccent,
+        ),
+      );
     }
   }
 
@@ -187,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Se ha registrado el usuario con el correo:',
+              'Se ha registrado la cuenta de $_currentRoleName con el correo:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
             ),
             const SizedBox(height: 6),
@@ -207,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Text(
-                'Nota: Por favor revisa tu bandeja de entrada para verificar tu correo. (Si la verificación de correo está desactivada en Supabase, ya puedes ingresar directamente).',
+                'Nota: Revisa tu correo si la confirmación está activa en Supabase. Si está desactivada para pruebas, ya puedes iniciar sesión.',
                 style: TextStyle(fontSize: 12, color: _cDarkText),
               ),
             ),
@@ -215,7 +288,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         actions: [
           ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() => _currentAuthMode = AuthMode.signIn);
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: _cDeepAccent,
               foregroundColor: Colors.white,
@@ -297,7 +373,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   : () async {
                       if (!formKey.currentState!.validate()) return;
                       setDialogState(() => sending = true);
-                      await Future.delayed(const Duration(milliseconds: 800));
+                      try {
+                        await SupabaseService.resetPassword(emailCtrl.text.trim());
+                      } catch (_) {}
                       if (ctx.mounted) Navigator.pop(ctx);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -348,12 +426,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // -------------------------------------------------------
-  // DESKTOP LAYOUT (50% Imagen Modelo Izquierda / 50% Formulario Izquierda de la toma de datos)
+  // DESKTOP LAYOUT (50% Izquierda Imagen Modelo + Logo Strani / 50% Derecha Dashboard & Auth)
   // -------------------------------------------------------
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Mitad Izquierda (50%): Imagen de la Modelo con gradiente pastel en estudio de belleza
+        // Mitad Izquierda (50%): Imagen de la Modelo con gradiente pastel + Logo de Strani
         Expanded(
           flex: 1,
           child: Container(
@@ -389,8 +467,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          _cPastelPink.withValues(alpha: 0.25),
-                          _cPastelBlue.withValues(alpha: 0.35),
+                          _cPastelPink.withValues(alpha: 0.2),
+                          _cPastelBlue.withValues(alpha: 0.3),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -446,7 +524,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
 
-        // Mitad Derecha (50%): Formulario para toma de datos (usuarios, roles, password)
+        // Mitad Derecha (50%): Dashboard de Selección / Formulario SignIn / Formulario SignUp / SignOut
         Expanded(
           flex: 1,
           child: Container(
@@ -454,12 +532,12 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 56,
-                  vertical: 40,
+                  horizontal: 48,
+                  vertical: 36,
                 ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 440),
-                  child: _buildFormSection(),
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: _buildRightPanelContent(),
                 ),
               ),
             ),
@@ -477,7 +555,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         children: [
           Container(
-            height: 260,
+            height: 240,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -495,7 +573,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 Positioned.fill(
-                  child: Container(color: Colors.black.withValues(alpha: 0.2)),
+                  child: Container(color: Colors.black.withValues(alpha: 0.25)),
                 ),
                 const Positioned(
                   bottom: 24,
@@ -514,7 +592,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: _buildFormSection(),
+            child: _buildRightPanelContent(),
           ),
         ],
       ),
@@ -522,54 +600,386 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // -------------------------------------------------------
-  // FORMULARIO DE TOMA DE DATOS (Usuario, Rol, Contraseña)
+  // CONTENIDO PANEL DERECHO (DASHBOARD O FORMULARIO AUTH)
   // -------------------------------------------------------
-  Widget _buildFormSection() {
-    return Form(
-      key: _formKey,
+  Widget _buildRightPanelContent() {
+    // 1. Si el usuario ya está autenticado, mostrar estado y botón de SignOut
+    if (_loggedUser != null) {
+      return _buildSignOutView();
+    }
+
+    // 2. Si se presionó Iniciar Sesión o Registrase, mostrar el formulario correspondiente
+    if (_currentAuthMode == AuthMode.signIn || _currentAuthMode == AuthMode.signUp) {
+      return _buildAuthFormView();
+    }
+
+    // 3. De lo contrario, mostrar el Dashboard de Selección
+    return _buildDashboardView();
+  }
+
+  // -------------------------------------------------------
+  // VISTA 1: DASHBOARD DE SELECCIÓN DE INGRESO
+  // -------------------------------------------------------
+  Widget _buildDashboardView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [_cPastelPink, _cPastelPurple],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _cDeepAccent.withValues(alpha: 0.12),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.spa_rounded,
+                size: 24,
+                color: _cDeepAccent,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Bienvenido/a a Strani',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: _cDarkText,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Selecciona tu perfil de ingreso para comenzar:',
+                    style: TextStyle(fontSize: 13, color: _cMutedText),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // TARJETA 1: INGRESO COMO CLIENTE (Rol: Paciente)
+        _buildDashboardCard(
+          icon: Icons.person_rounded,
+          title: 'Cliente / Paciente',
+          description: 'Registro y Explorar Servicios',
+          badgeColor: _cPastelPink,
+          iconColor: _cDeepAccent,
+          onSignIn: () {
+            setState(() {
+              _selectedType = UserAccessType.client;
+              _currentAuthMode = AuthMode.signIn;
+            });
+          },
+          onSignUp: () {
+            setState(() {
+              _selectedType = UserAccessType.client;
+              _currentAuthMode = AuthMode.signUp;
+            });
+          },
+        ),
+
+        const SizedBox(height: 12),
+
+        // TARJETA 2: INGRESO COMO ESPECIALISTA (Rol: Especialista)
+        _buildDashboardCard(
+          icon: Icons.medical_services_rounded,
+          title: 'Especialistas',
+          description: 'Registro como especialista o visualizar Clientes',
+          badgeColor: _cPastelBlue,
+          iconColor: _cBrandGreen,
+          onSignIn: () {
+            setState(() {
+              _selectedType = UserAccessType.specialist;
+              _currentAuthMode = AuthMode.signIn;
+            });
+          },
+          onSignUp: () {
+            setState(() {
+              _selectedType = UserAccessType.specialist;
+              _currentAuthMode = AuthMode.signUp;
+            });
+          },
+        ),
+
+        const SizedBox(height: 12),
+
+        // TARJETA 3: INGRESO COMO ADMINISTRADOR (Rol: Administrador)
+        _buildDashboardCard(
+          icon: Icons.admin_panel_settings_rounded,
+          title: 'Administradores',
+          description: 'Acceso a gestión general, reportes y control del sistema',
+          badgeColor: _cPastelGold,
+          iconColor: _cGoldAccent,
+          onSignIn: () {
+            setState(() {
+              _selectedType = UserAccessType.admin;
+              _currentAuthMode = AuthMode.signIn;
+            });
+          },
+          onSignUp: () {
+            setState(() {
+              _selectedType = UserAccessType.admin;
+              _currentAuthMode = AuthMode.signUp;
+            });
+          },
+        ),
+
+        const SizedBox(height: 18),
+        Center(
+          child: Text(
+            'Estética y Belleza Strani © 2026 - Todos los derechos reservados',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color badgeColor,
+    required Color iconColor,
+    required VoidCallback onSignIn,
+    required VoidCallback onSignUp,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo & Título
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _cPastelPink,
-                  borderRadius: BorderRadius.circular(14),
+                  color: badgeColor,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.spa_rounded,
-                  color: _cDeepAccent,
-                  size: 28,
-                ),
+                child: Icon(icon, color: iconColor, size: 26),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Iniciar Sesión',
-                      style: TextStyle(
-                        fontSize: 22,
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: _cDarkText,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      'Estética y Belleza Strani',
-                      style: TextStyle(fontSize: 13, color: _cMutedText),
+                      description,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: _cMutedText,
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onSignIn,
+                  icon: const Icon(Icons.login_rounded, size: 18),
+                  label: const Text('Iniciar Sesión'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _cDeepAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onSignUp,
+                  icon: const Icon(Icons.person_add_outlined, size: 18),
+                  label: const Text('Registrarse'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _cDeepAccent,
+                    side: const BorderSide(color: _cDeepAccent),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-          // CAMPO 1: Validación / Toma de Usuario (Email)
+  // -------------------------------------------------------
+  // VISTA 2: FORMULARIO SIGN IN / SIGN UP (CON ROL PACIENTE O ESPECIALISTA)
+  // -------------------------------------------------------
+  Widget _buildAuthFormView() {
+    final isSignIn = _currentAuthMode == AuthMode.signIn;
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Botón Regresar al Dashboard
+          TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _currentAuthMode = AuthMode.dashboard;
+              });
+            },
+            icon: const Icon(Icons.arrow_back_rounded, color: _cDeepAccent, size: 20),
+            label: const Text(
+              'Volver a selección',
+              style: TextStyle(
+                color: _cDeepAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Cabecera con Rol Asignado
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _selectedType == UserAccessType.client
+                      ? _cPastelPink
+                      : (_selectedType == UserAccessType.specialist
+                          ? _cPastelBlue
+                          : _cPastelGold),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  _selectedType == UserAccessType.client
+                      ? Icons.person_rounded
+                      : (_selectedType == UserAccessType.specialist
+                          ? Icons.medical_services_rounded
+                          : Icons.admin_panel_settings_rounded),
+                  color: _selectedType == UserAccessType.client
+                      ? _cDeepAccent
+                      : (_selectedType == UserAccessType.specialist
+                          ? _cBrandGreen
+                          : _cGoldAccent),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isSignIn ? 'Iniciar Sesión' : 'Crear Cuenta',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: _cDarkText,
+                      ),
+                    ),
+                    Text(
+                      'Perfil: $_currentRoleName',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _cDeepAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // SI ES REGISTRO: Campo Nombre Completo
+          if (!isSignIn) ...[
+            const Text(
+              'Nombre Completo',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _cDarkText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _fullNameController,
+              decoration: InputDecoration(
+                hintText: 'Ej: Ana María Strani',
+                prefixIcon: const Icon(Icons.badge_outlined, color: _cDeepAccent),
+                filled: true,
+                fillColor: _cPastelPurple.withValues(alpha: 0.4),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _cDeepAccent, width: 1.5),
+                ),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Ingresa tu nombre completo'
+                  : null,
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // CAMPO: Correo Electrónico
           const Text(
             'Correo de Usuario',
             style: TextStyle(
@@ -584,13 +994,10 @@ class _LoginScreenState extends State<LoginScreen> {
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: 'usuario@esteticaybellezastrani.com',
-              prefixIcon: const Icon(Icons.person_outline, color: _cDeepAccent),
+              prefixIcon: const Icon(Icons.email_outlined, color: _cDeepAccent),
               filled: true,
               fillColor: _cPastelPurple.withValues(alpha: 0.4),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -605,63 +1012,14 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: (v) {
-              if (v == null || v.trim().isEmpty)
-                return 'Ingresa tu usuario o correo';
+              if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
               if (!v.contains('@')) return 'Correo no válido';
               return null;
             },
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
-          // CAMPO 2: Validación / Toma de Rol
-          const Text(
-            'Rol de Acceso',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: _cDarkText,
-            ),
-          ),
-          const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedRole,
-            decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.badge_outlined, color: _cDeepAccent),
-              filled: true,
-              fillColor: _cPastelPurple.withValues(alpha: 0.4),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade200),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _cDeepAccent, width: 1.5),
-              ),
-            ),
-            items: _rolesList.map((role) {
-              return DropdownMenuItem<String>(
-                value: role['code'],
-                child: Text(
-                  role['name']!,
-                  style: const TextStyle(fontSize: 14, color: _cDarkText),
-                ),
-              );
-            }).toList(),
-            onChanged: (val) {
-              if (val != null) setState(() => _selectedRole = val);
-            },
-          ),
-          const SizedBox(height: 18),
-
-          // CAMPO 3: Validación / Toma de Contraseña (Password)
+          // CAMPO: Contraseña (Password)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -673,17 +1031,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: _cDarkText,
                 ),
               ),
-              GestureDetector(
-                onTap: _showForgotPasswordDialog,
-                child: const Text(
-                  '¿Olvidaste tu contraseña?',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _cDeepAccent,
+              if (isSignIn)
+                GestureDetector(
+                  onTap: _showForgotPasswordDialog,
+                  child: const Text(
+                    '¿Olvidaste tu contraseña?',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _cDeepAccent,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -705,10 +1064,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               filled: true,
               fillColor: _cPastelPurple.withValues(alpha: 0.4),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -722,17 +1078,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderSide: const BorderSide(color: _cDeepAccent, width: 1.5),
               ),
             ),
-            validator: (v) =>
-                (v == null || v.isEmpty) ? 'Ingresa tu contraseña' : null,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Ingresa tu contraseña';
+              if (!isSignIn && v.length < 6) return 'Mínimo 6 caracteres';
+              return null;
+            },
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
-          // BOTÓN: Iniciar Sesión
+          // BOTÓN PRINCIPAL
           SizedBox(
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleSignIn,
+              onPressed: _isLoading
+                  ? null
+                  : (isSignIn ? _handleSignIn : _handleSignUp),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _cDeepAccent,
                 foregroundColor: Colors.white,
@@ -750,25 +1111,98 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text(
-                      'Ingresar al Sistema',
-                      style: TextStyle(
+                  : Text(
+                      isSignIn
+                          ? 'Ingresar como $_currentRoleName'
+                          : 'Registrar Cuenta de $_currentRoleName',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
           ),
+          const SizedBox(height: 16),
 
-          const SizedBox(height: 24),
+          // Alternar entre SignIn / SignUp
           Center(
-            child: Text(
-              'Estética y Belleza Strani © 2026 - Todos los derechos reservados',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _currentAuthMode = isSignIn ? AuthMode.signUp : AuthMode.signIn;
+                });
+              },
+              child: Text(
+                isSignIn
+                    ? '¿No tienes cuenta? Regístrate como $_currentRoleName'
+                    : '¿Ya tienes cuenta? Inicia sesión aquí',
+                style: const TextStyle(
+                  color: _cDeepAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // -------------------------------------------------------
+  // VISTA 3: USUARIO AUTENTICADO / SIGN OUT
+  // -------------------------------------------------------
+  Widget _buildSignOutView() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _cPastelPurple,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _cPastelPink),
+          ),
+          child: Column(
+            children: [
+              const CircleAvatar(
+                radius: 36,
+                backgroundColor: _cDeepAccent,
+                child: Icon(Icons.person_rounded, size: 40, color: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Sesión Activa: $_currentRoleName',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _cDarkText,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _loggedUser?.email ?? '',
+                style: const TextStyle(fontSize: 14, color: _cMutedText),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _handleSignOut,
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Cerrar Sesión (SignOut)'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

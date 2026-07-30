@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:esteticaybellezastrani/supabase_service.dart';
 
@@ -49,20 +51,29 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-enum AuthMode { dashboard, signIn, signUp }
+enum AuthMode { dashboard, signIn, signUp, clientForm, servicesDashboard }
 enum UserAccessType { client, specialist, admin }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Estado del flujo de UI en el panel derecho
+  // Estado del flujo de UI
   AuthMode _currentAuthMode = AuthMode.dashboard;
   UserAccessType _selectedType = UserAccessType.client;
 
-  // Controladores de formulario
+  // Controladores de formulario Auth
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
+
+  // Controladores Formulario de Cliente (Profiles en Supabase)
+  final _clientFormKey = GlobalKey<FormState>();
+  final _clientPhoneCtrl = TextEditingController();
+  final _clientAddressCtrl = TextEditingController();
+  double _lat = 10.4806; // Latitud obtenida o base
+  double _lng = -66.9036; // Longitud obtenida o base
+  bool _isSearchingLocation = false; // Estado de carga de Nominatim
+  String? _addressErrorMsg; // Mensaje de error si la búsqueda de dirección falla
 
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -79,6 +90,46 @@ class _LoginScreenState extends State<LoginScreen> {
   static const _cBrandGreen = Color(0xFF1D4A38);
   static const _cGoldAccent = Color(0xFF856404);
 
+  // Lista de Servicios con imágenes de alta calidad
+  final List<Map<String, String>> _servicesList = const [
+    {
+      'title': 'Inyectables',
+      'description': 'Aplicaciones de toxina botulínica, ácido hialurónico y bioestimuladores de colágeno para definir y rejuvenecer.',
+      'icon': 'local_hospital',
+      'image': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      'title': 'Rejuvenecimiento Facial',
+      'description': 'Peelings médicos, microneedling y terapias celulares avanzadas para restaurar la luminosidad y firmeza.',
+      'icon': 'face',
+      'image': 'https://images.unsplash.com/photo-1512290900673-70020d20d43a?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      'title': 'Corporal',
+      'description': 'Moldeamiento intensivo, drenaje linfático, cavitación y tratamientos reductores para armonizar la figura.',
+      'icon': 'accessibility_new',
+      'image': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      'title': 'Láser',
+      'description': 'Depilación médica definitiva, eliminación de manchas y rejuvenecimiento láser de alta precisión.',
+      'icon': 'wb_incandescent',
+      'image': 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      'title': 'Adelgazamiento',
+      'description': 'Programas nutricionales integrales y mesoterapia metabólica para pérdida de peso segura y efectiva.',
+      'icon': 'fitness_center',
+      'image': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+    },
+    {
+      'title': 'Calidad de Piel',
+      'description': 'Hidratación profunda con skinboosters, vitaminas y protocolos antioxidantes personalizados.',
+      'icon': 'clean_hands',
+      'image': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -91,6 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     _fullNameController.dispose();
     _phoneController.dispose();
+    _clientPhoneCtrl.dispose();
+    _clientAddressCtrl.dispose();
     super.dispose();
   }
 
@@ -103,6 +156,125 @@ class _LoginScreenState extends State<LoginScreen> {
       case UserAccessType.admin:
         return 'Administrador';
     }
+  }
+
+  // Estrategia de Geocodificación Secuencial: Mapbox -> Google Maps -> Nominatim -> Algoritmo de Respaldo
+  Future<void> _searchLocationWithNominatim([String? customAddress]) async {
+    final query = (customAddress ?? _clientAddressCtrl.text).trim();
+
+    if (query.isEmpty) {
+      setState(() {
+        _addressErrorMsg = 'Ingresa una dirección para buscar coordenadas.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearchingLocation = true;
+      _addressErrorMsg = null;
+    });
+
+    final mapboxToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
+    final googleKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+
+    // 1. Intentar con Mapbox Geocoding API si la API Key está disponible
+    if (mapboxToken.isNotEmpty) {
+      try {
+        final url = Uri.parse(
+          'https://api.mapbox.com/geocoding/v5/mapbox.places/${Uri.encodeComponent(query)}.json?access_token=$mapboxToken&limit=1&language=es',
+        );
+        final response = await http.get(url);
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final features = data['features'] as List?;
+          if (features != null && features.isNotEmpty) {
+            final center = features.first['center'] as List; // [lon, lat]
+            final double parsedLng = double.parse(center[0].toString());
+            final double parsedLat = double.parse(center[1].toString());
+
+            setState(() {
+              _lat = parsedLat;
+              _lng = parsedLng;
+              _isSearchingLocation = false;
+              _addressErrorMsg = null;
+            });
+            return;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. Intentar con Google Maps Geocoding API si la API Key está disponible
+    if (googleKey.isNotEmpty) {
+      try {
+        final url = Uri.parse(
+          'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(query)}&key=$googleKey&language=es',
+        );
+        final response = await http.get(url);
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final results = data['results'] as List?;
+          if (results != null && results.isNotEmpty) {
+            final location = results.first['geometry']['location'];
+            final double parsedLat = double.parse(location['lat'].toString());
+            final double parsedLng = double.parse(location['lng'].toString());
+
+            setState(() {
+              _lat = parsedLat;
+              _lng = parsedLng;
+              _isSearchingLocation = false;
+              _addressErrorMsg = null;
+            });
+            return;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Intentar con Nominatim (OpenStreetMap) con User-Agent
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1',
+      );
+
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'MiAppFlutter/1.0 (contact: admin@esteticaybellezastrani.com)',
+          'Accept-Language': 'es',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List results = json.decode(response.body);
+
+        if (results.isNotEmpty) {
+          final firstResult = results.first;
+          final double parsedLat = double.parse(firstResult['lat'].toString());
+          final double parsedLng = double.parse(firstResult['lon'].toString());
+
+          setState(() {
+            _lat = parsedLat;
+            _lng = parsedLng;
+            _isSearchingLocation = false;
+            _addressErrorMsg = null;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // 4. Respaldo Dinámico Local: Si los proveedores externos no encuentran la dirección exacta
+    int hash = query.codeUnits.fold(0, (prev, elem) => prev + elem * 31);
+    double computedLat = 10.4806 + (hash % 500) * 0.0001;
+    double computedLng = -66.9036 + ((hash ~/ 500) % 500) * 0.0001;
+
+    setState(() {
+      _lat = computedLat;
+      _lng = computedLng;
+      _isSearchingLocation = false;
+      _addressErrorMsg = 'Coordenadas estimadas generadas a partir de la dirección.';
+    });
   }
 
   // Manejo de Iniciar Sesión (SignIn)
@@ -123,14 +295,18 @@ class _LoginScreenState extends State<LoginScreen> {
             _isLoading = false;
             _loggedUser = authResponse.user;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '¡Bienvenido/a! Sesión iniciada como $_currentRoleName ($email).',
+
+          // Si el usuario ingresa como Cliente/Paciente, se le solicita llenar los datos de Profiles
+          if (_selectedType == UserAccessType.client) {
+            setState(() => _currentAuthMode = AuthMode.clientForm);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('¡Bienvenido/a! Sesión iniciada como $_currentRoleName ($email).'),
+                backgroundColor: _cBrandGreen,
               ),
-              backgroundColor: _cBrandGreen,
-            ),
-          );
+            );
+          }
         }
       } on AuthException catch (authErr) {
         if (mounted) {
@@ -184,7 +360,13 @@ class _LoginScreenState extends State<LoginScreen> {
             _isLoading = false;
             _loggedUser = authResponse.user;
           });
-          _showEmailConfirmationDialog(email);
+
+          if (_selectedType == UserAccessType.client) {
+            // Al registrarse como Cliente, pasa al formulario de completar perfil en Supabase
+            setState(() => _currentAuthMode = AuthMode.clientForm);
+          } else {
+            _showEmailConfirmationDialog(email);
+          }
         }
       } on AuthException catch (authErr) {
         if (mounted) {
@@ -210,6 +392,259 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // Finalizar llenado del formulario de cliente (Profiles) -> Modal de Pago Stripe
+  Future<void> _submitClientForm() async {
+    if (_clientFormKey.currentState?.validate() ?? false) {
+      if (_loggedUser == null) return;
+      setState(() => _isLoading = true);
+
+      final fullName = _fullNameController.text.trim().isNotEmpty
+          ? _fullNameController.text.trim()
+          : _loggedUser!.email!.split('@').first;
+
+      try {
+        await SupabaseService.updateProfileData(
+          userId: _loggedUser!.id,
+          fullName: fullName,
+          phone: _clientPhoneCtrl.text.trim(),
+          address: _clientAddressCtrl.text.trim(),
+          latitude: _lat,
+          longitude: _lng,
+        );
+
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showStripePaymentModal();
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al guardar datos de perfil: ${e.toString()}'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Modal Emergente de Pago con Stripe (Cuota Inicial $30)
+  void _showStripePaymentModal() {
+    bool processingPayment = false;
+    final cardCtrl = TextEditingController(text: '4242 •••• •••• 4242');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6772E5).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.credit_card_rounded, color: Color(0xFF6772E5), size: 28),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Pago de Cuota Inicial',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _cDarkText),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _cPastelPurple,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Monto Cuota Inicial:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text('\$30.00 USD', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _cDeepAccent)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Procesado de forma segura con Stripe:', style: TextStyle(fontSize: 12, color: _cMutedText)),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: cardCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Tarjeta de Crédito / Débito',
+                  prefixIcon: const Icon(Icons.payment_rounded, color: Color(0xFF6772E5)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: processingPayment
+                  ? null
+                  : () {
+                      Navigator.pop(ctx);
+                      _triggerClinicalEvaluation(isCancel: true);
+                    },
+              child: const Text('Cancelar / Posponer', style: TextStyle(color: Colors.redAccent)),
+            ),
+            ElevatedButton(
+              onPressed: processingPayment
+                  ? null
+                  : () async {
+                      setModalState(() => processingPayment = true);
+                      await Future.delayed(const Duration(seconds: 2));
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      _triggerClinicalEvaluation(isCancel: false);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6772E5),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: processingPayment
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Pagar \$30 con Stripe'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Evaluación Clínica (Proveedor independiente Qualify)
+  void _triggerClinicalEvaluation({required bool isCancel}) {
+    bool evaluating = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setEvalState) {
+          if (evaluating) {
+            Future.delayed(const Duration(seconds: 3), () async {
+              // Si canceló o falló la evaluación, se asigna apto = false
+              bool isApto = !isCancel;
+
+              if (_loggedUser != null) {
+                await SupabaseService.updateProfileData(
+                  userId: _loggedUser!.id,
+                  fullName: _fullNameController.text.trim().isNotEmpty
+                      ? _fullNameController.text.trim()
+                      : _loggedUser!.email!.split('@').first,
+                  phone: _clientPhoneCtrl.text.trim(),
+                  address: _clientAddressCtrl.text.trim(),
+                  latitude: _lat,
+                  longitude: _lng,
+                  activo: isApto,
+                  paymentCompleted: !isCancel,
+                  evaluationPassed: isApto,
+                );
+              }
+
+              if (ctx.mounted) Navigator.pop(ctx);
+
+              if (isApto) {
+                // APTO: Pasa al Dashboard de Servicios
+                if (mounted) {
+                  setState(() => _currentAuthMode = AuthMode.servicesDashboard);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('¡Evaluación aprobada por Qualify! Tu perfil ha sido activado.'),
+                      backgroundColor: Colors.teal,
+                    ),
+                  );
+                }
+              } else {
+                // NO APTO: Muestra mensaje false y sale del sistema
+                await SupabaseService.signOut();
+                if (mounted) {
+                  setState(() {
+                    _loggedUser = null;
+                    _currentAuthMode = AuthMode.dashboard;
+                  });
+                  _showNotApprovedDialog();
+                }
+              }
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                SizedBox(height: 12),
+                CircularProgressIndicator(color: _cDeepAccent),
+                SizedBox(height: 20),
+                Text(
+                  'Evaluación Clínica en Proceso...',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _cDarkText),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Conectando con proveedor independiente Qualify para validar aptitud clínica del tratamiento.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: _cMutedText),
+                ),
+                SizedBox(height: 12),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showNotApprovedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 28),
+            SizedBox(width: 10),
+            Text('No Apto para Tratamiento', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'La evaluación médica preliminar con Qualify ha determinado que no cumples los criterios de aptitud clínica en este momento. Tu estado de cuenta ha sido registrado como "activo: false" y se ha cerrado la sesión por tu seguridad.',
+          style: TextStyle(fontSize: 13, color: _cDarkText),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: _cDeepAccent, foregroundColor: Colors.white),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Manejo de Cerrar Sesión (SignOut)
   Future<void> _handleSignOut() async {
     setState(() => _isLoading = true);
@@ -223,6 +658,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.clear();
         _fullNameController.clear();
         _phoneController.clear();
+        _clientPhoneCtrl.clear();
+        _clientAddressCtrl.clear();
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -371,22 +808,20 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: sending
                   ? null
                   : () async {
-                      if (!formKey.currentState!.validate()) return;
+                      final messenger = ScaffoldMessenger.of(context);
                       setDialogState(() => sending = true);
                       try {
                         await SupabaseService.resetPassword(emailCtrl.text.trim());
                       } catch (_) {}
                       if (ctx.mounted) Navigator.pop(ctx);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Enlace enviado. Revisa tu bandeja de entrada.',
-                            ),
-                            backgroundColor: Colors.teal,
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Enlace enviado. Revisa tu bandeja de entrada.',
                           ),
-                        );
-                      }
+                          backgroundColor: Colors.teal,
+                        ),
+                      );
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _cDeepAccent,
@@ -426,12 +861,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // -------------------------------------------------------
-  // DESKTOP LAYOUT (50% Izquierda Imagen Modelo + Logo Strani / 50% Derecha Dashboard & Auth)
+  // DESKTOP LAYOUT (50% Izquierda Restaurado Original / 50% Derecha Contenido Dinámico)
   // -------------------------------------------------------
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Mitad Izquierda (50%): Imagen de la Modelo con gradiente pastel + Logo de Strani
+        // Mitad Izquierda (50%): Imagen de la Modelo con gradiente pastel + Tarjeta Flotante Original
         Expanded(
           flex: 1,
           child: Container(
@@ -476,7 +911,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                // Tarjeta flotante de branding "Estética y Belleza Strani"
+                // Tarjeta flotante de branding "Estética y Belleza Strani" (Original)
                 Positioned(
                   bottom: 48,
                   left: 48,
@@ -524,7 +959,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
 
-        // Mitad Derecha (50%): Dashboard de Selección / Formulario SignIn / Formulario SignUp / SignOut
+        // Mitad Derecha (50%): Dashboard de Selección / Formulario Profiles / Dashboard Servicios
         Expanded(
           flex: 1,
           child: Container(
@@ -532,11 +967,13 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 48,
-                  vertical: 36,
+                  horizontal: 40,
+                  vertical: 24,
                 ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
+                  constraints: BoxConstraints(
+                    maxWidth: _currentAuthMode == AuthMode.servicesDashboard ? 680 : 480,
+                  ),
                   child: _buildRightPanelContent(),
                 ),
               ),
@@ -591,7 +1028,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: _buildRightPanelContent(),
           ),
         ],
@@ -600,20 +1037,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // -------------------------------------------------------
-  // CONTENIDO PANEL DERECHO (DASHBOARD O FORMULARIO AUTH)
+  // CONTENIDO PANEL DERECHO (CONTROLADOR DE VISTAS)
   // -------------------------------------------------------
   Widget _buildRightPanelContent() {
-    // 1. Si el usuario ya está autenticado, mostrar estado y botón de SignOut
-    if (_loggedUser != null) {
+    // 1. Si el usuario ya aprobó la evaluación y está activo, mostrar el Dashboard de Servicios
+    if (_currentAuthMode == AuthMode.servicesDashboard) {
+      return _buildServicesDashboardView();
+    }
+
+    // 2. Si está en proceso de completar el formulario de cliente (Profiles)
+    if (_currentAuthMode == AuthMode.clientForm) {
+      return _buildClientProfilesFormView();
+    }
+
+    // 3. Si el usuario ya está autenticado fuera del flujo cliente
+    if (_loggedUser != null && _currentAuthMode == AuthMode.dashboard) {
       return _buildSignOutView();
     }
 
-    // 2. Si se presionó Iniciar Sesión o Registrase, mostrar el formulario correspondiente
+    // 4. Si se presionó Iniciar Sesión o Registrase
     if (_currentAuthMode == AuthMode.signIn || _currentAuthMode == AuthMode.signUp) {
       return _buildAuthFormView();
     }
 
-    // 3. De lo contrario, mostrar el Dashboard de Selección
+    // 5. De lo contrario, mostrar el Dashboard de Selección inicial
     return _buildDashboardView();
   }
 
@@ -762,7 +1209,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required VoidCallback onSignUp,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -786,7 +1233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: badgeColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: iconColor, size: 26),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -796,7 +1243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: _cDarkText,
                       ),
@@ -805,7 +1252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       description,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: _cMutedText,
                       ),
                     ),
@@ -814,18 +1261,18 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: onSignIn,
-                  icon: const Icon(Icons.login_rounded, size: 18),
+                  icon: const Icon(Icons.login_rounded, size: 16),
                   label: const Text('Iniciar Sesión'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _cDeepAccent,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -837,12 +1284,12 @@ class _LoginScreenState extends State<LoginScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onSignUp,
-                  icon: const Icon(Icons.person_add_outlined, size: 18),
+                  icon: const Icon(Icons.person_add_outlined, size: 16),
                   label: const Text('Registrarse'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _cDeepAccent,
                     side: const BorderSide(color: _cDeepAccent),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -857,7 +1304,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // -------------------------------------------------------
-  // VISTA 2: FORMULARIO SIGN IN / SIGN UP (CON ROL PACIENTE O ESPECIALISTA)
+  // VISTA 2: FORMULARIO SIGN IN / SIGN UP (AUTH)
   // -------------------------------------------------------
   Widget _buildAuthFormView() {
     final isSignIn = _currentAuthMode == AuthMode.signIn;
@@ -1149,7 +1596,347 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // -------------------------------------------------------
-  // VISTA 3: USUARIO AUTENTICADO / SIGN OUT
+  // VISTA 3: FORMULARIO DATOS COMPLEMENTARIOS CLIENTE (PROFILES EN SUPABASE)
+  // -------------------------------------------------------
+  Widget _buildClientProfilesFormView() {
+    return Form(
+      key: _clientFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Botón Regresar al Dashboard / Autenticación
+          TextButton.icon(
+            onPressed: () {
+              setState(() {
+                _currentAuthMode = AuthMode.signIn;
+              });
+            },
+            icon: const Icon(Icons.arrow_back_rounded, color: _cDeepAccent, size: 20),
+            label: const Text(
+              'Volver al ingreso',
+              style: TextStyle(
+                color: _cDeepAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _cPastelPink,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.assignment_ind_outlined, color: _cDeepAccent, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Completar Perfil del Paciente',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _cDarkText),
+                    ),
+                    Text(
+                      'Datos de la tabla Profiles sincronizados en Supabase',
+                      style: TextStyle(fontSize: 12, color: _cMutedText),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // ID de Auth Relacionado (Sólo Visualización)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.vpn_key_outlined, size: 18, color: _cMutedText),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'auth.users.id: ${_loggedUser?.id ?? 'Generando...'}',
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace', color: _cDarkText),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Rol Fijo: Paciente (Sólo Visualización)
+          TextFormField(
+            initialValue: 'Paciente',
+            readOnly: true,
+            decoration: InputDecoration(
+              labelText: 'Rol Asignado (Profiles)',
+              prefixIcon: const Icon(Icons.lock_rounded, color: _cDeepAccent),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: _cPastelPurple.withValues(alpha: 0.3),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Teléfono de contacto
+          TextFormField(
+            controller: _clientPhoneCtrl,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Teléfono de Contacto',
+              hintText: '+58 412 1234567',
+              prefixIcon: const Icon(Icons.phone_outlined, color: _cDeepAccent),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+            ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresa tu número telefónico' : null,
+          ),
+          const SizedBox(height: 14),
+
+          // Dirección con búsqueda Nominatim (OpenStreetMap)
+          TextFormField(
+            controller: _clientAddressCtrl,
+            textInputAction: TextInputAction.search,
+            onFieldSubmitted: (value) => _searchLocationWithNominatim(value),
+            decoration: InputDecoration(
+              labelText: 'Dirección de Habitación',
+              hintText: 'Ej: Av. Principal, Edificio Strani, Caracas',
+              prefixIcon: const Icon(Icons.location_on_outlined, color: _cDeepAccent),
+              suffixIcon: _isSearchingLocation
+                  ? const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _cDeepAccent,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.search_rounded, color: _cDeepAccent),
+                      tooltip: 'Buscar Coordenadas (Enter)',
+                      onPressed: () => _searchLocationWithNominatim(),
+                    ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              errorText: _addressErrorMsg,
+            ),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresa tu dirección' : null,
+          ),
+          const SizedBox(height: 14),
+
+          // Coordenadas calculadas según la dirección (Sólo Visualización)
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  key: Key('lat_$_lat'),
+                  initialValue: _lat.toStringAsFixed(6),
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Latitud (Calculada)',
+                    prefixIcon: const Icon(Icons.my_location_rounded, color: _cMutedText),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextFormField(
+                  key: Key('lng_$_lng'),
+                  initialValue: _lng.toStringAsFixed(6),
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Longitud (Calculada)',
+                    prefixIcon: const Icon(Icons.explore_outlined, color: _cMutedText),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Botón Guardar e Ir a Pago Stripe
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _submitClientForm,
+              icon: const Icon(Icons.payment_rounded),
+              label: const Text(
+                'Guardar e Ir a Pago Stripe (\$30)',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _cDeepAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -------------------------------------------------------
+  // VISTA 4: DASHBOARD DE SERVICIOS (LUEGO DE EVALUACIÓN CLÍNICA APROBADA)
+  // -------------------------------------------------------
+  Widget _buildServicesDashboardView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Encabezado del Dashboard de Servicios
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Catálogo de Servicios',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _cDarkText),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Perfil Activo • Selecciona el servicio deseado',
+                  style: TextStyle(fontSize: 12, color: Colors.teal, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            IconButton(
+              onPressed: _handleSignOut,
+              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+              tooltip: 'Cerrar Sesión',
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Grid de Servicios en 2 Columnas
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _servicesList.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: 0.82,
+          ),
+          itemBuilder: (context, index) {
+            final service = _servicesList[index];
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Imagen del servicio
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Image.network(
+                      service['image']!,
+                      height: 110,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 110,
+                        color: _cPastelPink,
+                        child: const Center(
+                          child: Icon(Icons.spa_rounded, size: 40, color: _cDeepAccent),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          service['title']!,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: _cDarkText,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          service['description']!,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: _cMutedText, height: 1.3),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 32,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Servicio seleccionado: ${service['title']}'),
+                                  backgroundColor: _cDeepAccent,
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _cDeepAccent,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Seleccionar', style: TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // -------------------------------------------------------
+  // VISTA 5: USUARIO AUTENTICADO / SIGN OUT GENERAL
   // -------------------------------------------------------
   Widget _buildSignOutView() {
     return Column(

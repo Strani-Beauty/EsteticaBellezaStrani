@@ -6,7 +6,7 @@ class SupabaseService {
   static SupabaseClient get client => _client;
   static User? get currentUser => _client.auth.currentUser;
 
-  /// Autenticación e ingreso de usuario (Paciente o Especialista)
+  /// Autenticación e ingreso de usuario
   static Future<AuthResponse> signIn({
     required String email,
     required String password,
@@ -17,15 +17,15 @@ class SupabaseService {
     );
   }
 
-  /// Registro de un nuevo Usuario (Paciente o Especialista) en Supabase
+  /// Registro de un nuevo Usuario (Paciente, Especialista o Administrador) en Supabase
   static Future<AuthResponse> signUpUser({
     required String email,
     required String password,
     required String fullName,
-    required String role, // 'Paciente' o 'Especialista'
+    required String role,
     String? phone,
   }) async {
-    // 1. Crear el usuario en Supabase Auth con su metadata
+    // 1. Crear el usuario en Supabase Auth
     final response = await _client.auth.signUp(
       email: email,
       password: password,
@@ -37,18 +37,19 @@ class SupabaseService {
 
     final user = response.user;
     if (user != null) {
-      // 2. Registrar en la tabla `profiles`
+      // 2. Registrar/actualizar en la tabla `profiles`
       try {
         await _client.from('profiles').upsert({
           'id': user.id,
           'email': email,
           'full_name': fullName,
           'role': role,
+          'activo': false,
           'created_at': DateTime.now().toIso8601String(),
         });
       } catch (_) {}
 
-      // 3. Registrar en la tabla `clients` si es Paciente
+      // 3. Si es Paciente/Cliente, registrar en la tabla `clients`
       if (role.toLowerCase() == 'paciente' || role.toLowerCase() == 'cliente') {
         try {
           await _client.from('clients').upsert({
@@ -63,6 +64,46 @@ class SupabaseService {
     }
 
     return response;
+  }
+
+  /// Actualizar los datos del perfil del cliente (Profiles en Supabase)
+  static Future<void> updateProfileData({
+    required String userId,
+    required String fullName,
+    required String phone,
+    required String address,
+    required double latitude,
+    required double longitude,
+    bool? activo,
+    bool? paymentCompleted,
+    bool? evaluationPassed,
+  }) async {
+    final Map<String, dynamic> updateData = {
+      'id': userId,
+      'full_name': fullName,
+      'phone': phone,
+      'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    if (activo != null) updateData['activo'] = activo;
+    if (paymentCompleted != null) updateData['payment_completed'] = paymentCompleted;
+    if (evaluationPassed != null) updateData['evaluation_passed'] = evaluationPassed;
+
+    try {
+      await _client.from('profiles').upsert(updateData);
+    } catch (e) {
+      // Fallback si la tabla profiles aún no tiene la columna address creada
+      final Map<String, dynamic> fallbackData = {
+        'id': userId,
+        'full_name': fullName,
+        'phone': phone,
+      };
+      if (activo != null) fallbackData['activo'] = activo;
+      await _client.from('profiles').upsert(fallbackData);
+    }
   }
 
   /// Obtener los roles disponibles de la tabla `roles` en Supabase

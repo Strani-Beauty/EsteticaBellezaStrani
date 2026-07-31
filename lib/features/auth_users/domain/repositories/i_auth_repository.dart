@@ -1,0 +1,53 @@
+import 'package:fpdart/fpdart.dart';
+import 'package:esteticaybellezastrani/app/core/error/failures.dart';
+import '../entities/profile_entity.dart';
+import '../entities/role_entity.dart';
+
+/// Contrato del repositorio de autenticación y perfiles.
+/// La implementación vive en data/repositories/auth_repository_impl.dart
+abstract class IAuthRepository {
+  // ── Auth ────────────────────────────────────────────────────
+  Future<Either<Failure, ProfileEntity>> signIn({
+    required String email,
+    required String password,
+  });
+
+  Future<Either<Failure, ProfileEntity>> signUp({
+    required String email,
+    required String password,
+    required String fullName,
+    required String rolNombre,
+    String? phone,
+  });
+
+  Future<Either<Failure, void>> signOut();
+
+  Future<Either<Failure, void>> resetPassword(String email);
+
+  // ── Profile ─────────────────────────────────────────────────
+  Future<Either<Failure, ProfileEntity>> getCurrentProfile();
+
+  Future<Either<Failure, ProfileEntity>> updateProfile({
+    required String userId,
+    String? fullName,
+    String? phone,
+    String? address,
+    double? latitude,
+    double? longitude,
+    bool? activo,
+    bool? paymentCompleted,
+    bool? evaluationPassed,
+  });
+
+  // ── Roles ────────────────────────────────────────────────────
+  Future<Either<Failure, List<RoleEntity>>> getRoles();
+
+  // ── Dispositivos / FCM ───────────────────────────────────────
+  Future<Either<Failure, void>> registerFcmToken({
+    required String profileId,
+    required String fcmToken,
+    String? plataforma,
+  });
+
+  Future<Either<Failure, void>> deactivateFcmToken(String token);
+}

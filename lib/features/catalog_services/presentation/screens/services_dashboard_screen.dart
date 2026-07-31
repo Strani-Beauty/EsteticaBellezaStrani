@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 
@@ -13,37 +15,37 @@ class ServicesDashboardScreen extends StatelessWidget {
       'title': 'Inyectables',
       'desc': 'Toxina botulínica, ácido hialurónico y bioestimuladores de colágeno.',
       'icon': Icons.local_hospital,
-      'image': 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80',
+      'image': 'assets/images/service_inyectables.jpg',
     },
     {
       'title': 'Rejuvenecimiento Facial',
       'desc': 'Peelings médicos, microneedling y terapias celulares avanzadas.',
       'icon': Icons.face,
-      'image': 'https://images.unsplash.com/photo-1512290900673-70020d20d43a?auto=format&fit=crop&w=600&q=80',
+      'image': 'assets/images/service_rejuvenecimiento.jpg',
     },
     {
       'title': 'Corporal',
       'desc': 'Moldeamiento, drenaje linfático y tratamientos reductores.',
       'icon': Icons.accessibility_new,
-      'image': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80',
+      'image': 'assets/images/service_inyectables.jpg',
     },
     {
       'title': 'Láser',
       'desc': 'Depilación médica definitiva y rejuvenecimiento láser de alta precisión.',
       'icon': Icons.wb_incandescent,
-      'image': 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&w=600&q=80',
+      'image': 'assets/images/service_rejuvenecimiento.jpg',
     },
     {
       'title': 'Adelgazamiento',
       'desc': 'Programas nutricionales y mesoterapia metabólica.',
       'icon': Icons.fitness_center,
-      'image': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+      'image': 'assets/images/service_inyectables.jpg',
     },
     {
       'title': 'Calidad de Piel',
       'desc': 'Hidratación profunda con skinboosters y vitaminas.',
       'icon': Icons.clean_hands,
-      'image': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80',
+      'image': 'assets/images/service_rejuvenecimiento.jpg',
     },
   ];
 
@@ -52,24 +54,46 @@ class ServicesDashboardScreen extends StatelessWidget {
     final profile = context.watch<AuthCubit>().currentProfile;
     final name = profile?.fullName ?? profile?.email ?? 'Paciente';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Catálogo de Servicios'),
-            Text('Bienvenido/a, $name',
-                style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          context.go(AppRoutes.login);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.cDeepAccent),
+            tooltip: 'Volver atrás',
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRoutes.login);
+              }
+            },
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Catálogo de Servicios'),
+              Text('Bienvenido/a, $name',
+                  style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
+            ],
+          ),
+          actions: [
+            IconButton(
+              onPressed: () => context.push(AppRoutes.completeProfile),
+              icon: const Icon(Icons.person_outline_rounded, color: AppTheme.cDeepAccent),
+              tooltip: 'Editar / Ver Perfil de Paciente',
+            ),
+            IconButton(
+              onPressed: () => context.read<AuthCubit>().signOut(),
+              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+              tooltip: 'Cerrar Sesión',
+            ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () => context.read<AuthCubit>().signOut(),
-            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-            tooltip: 'Cerrar Sesión',
-          ),
-        ],
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -94,20 +118,30 @@ class ServicesDashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: GridView.builder(
-                itemCount: _services.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
-                  childAspectRatio: 0.82,
-                ),
-                itemBuilder: (context, i) => _ServiceCard(service: _services[i]),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth >= 1000;
+                  final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
+                  final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
+                  final childAspectRatio = isDesktop ? 0.95 : (isTablet ? 0.90 : 1.05);
+
+                  return GridView.builder(
+                    itemCount: _services.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 18,
+                      mainAxisSpacing: 18,
+                      childAspectRatio: childAspectRatio,
+                    ),
+                    itemBuilder: (context, i) => _ServiceCard(service: _services[i]),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -131,43 +165,30 @@ class _ServiceCard extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppTheme.radiusLg)),
-            child: Image.network(
-              service['image'] as String,
-              height: 110, width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                height: 110, color: AppTheme.cPastelPink,
-                child: Center(child: Icon(
-                    service['icon'] as IconData,
-                    size: 40, color: AppTheme.cDeepAccent)),
-              ),
-            ),
+            child: _buildImage(service['image'] as String, service['icon'] as IconData),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(service['title'] as String,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14)),
-                const SizedBox(height: 4),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
                 Text(service['desc'] as String,
-                    maxLines: 3,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 10),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 13, height: 1.3)),
+                const SizedBox(height: 14),
                 SizedBox(
-                  width: double.infinity, height: 32,
+                  width: double.infinity, height: 38,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: Size.zero,
-                        textStyle: const TextStyle(fontSize: 12)),
+                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Seleccionado: ${service['title']}'),
-                        backgroundColor: AppTheme.cDeepAccent,
-                      ));
+                      context.push(AppRoutes.completeProfile);
                     },
                     child: const Text('Seleccionar'),
                   ),
@@ -177,6 +198,36 @@ class _ServiceCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImage(String path, IconData icon) {
+    final isNetwork = path.startsWith('http');
+    const imageHeight = 200.0;
+    final fallback = Container(
+      height: imageHeight,
+      color: AppTheme.cPastelPink,
+      child: Center(
+        child: Icon(icon, size: 48, color: AppTheme.cDeepAccent),
+      ),
+    );
+
+    if (isNetwork) {
+      return Image.network(
+        path,
+        height: imageHeight,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => fallback,
+      );
+    }
+
+    return Image.asset(
+      path,
+      height: imageHeight,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => fallback,
     );
   }
 }

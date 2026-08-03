@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:go_router/go_router.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
+import 'package:esteticaybellezastrani/app/config/map_config.dart';
+import 'package:esteticaybellezastrani/supabase_service.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/patient_questionnaire_screen.dart';
 import '../cubits/auth_cubit.dart';
 
-/// Pantalla para completar el perfil del paciente tras el registro.
-/// Reemplaza _buildClientProfilesFormView() del monolito original.
-/// Flujo: Dirección → Geocodificación → Guardar → Pago Stripe → Evaluación Qualify
+/// Pantalla para completar o editar el perfil del paciente.
+/// Carga datos previos de Supabase y ofrece mapa en ventana emergente cuadrada (~1/4 pantalla).
 class CompleteProfileScreen extends StatefulWidget {
   const CompleteProfileScreen({super.key});
 
@@ -21,141 +25,333 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
+  final MapController _mapController = MapController();
 
-  double _lat = 10.4806;
-  double _lng = -66.9036;
+  LatLng _selectedLocation = kDefaultCaguaLocation; // Cagua, Aragua por defecto
   bool _searchingLocation = false;
+  bool _isLoadingInitialData = true;
   String? _addressError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingProfileData();
+  }
 
   @override
   void dispose() {
     _phoneCtrl.dispose();
     _addressCtrl.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
-  // ── Geocodificación Secuencial: Mapbox → Google → Nominatim ──
+  /// Cargar datos ya existentes en Supabase para edición de perfil
+  Future<void> _loadExistingProfileData() async {
+    final cubit = context.read<AuthCubit>();
+    final profile = cubit.currentProfile;
+    final userProfileMap = await SupabaseService.getCurrentUserProfile();
+
+    if (!mounted) return;
+
+    final phone = profile?.phone ?? userProfileMap?['phone']?.toString();
+    final address = profile?.address ?? userProfileMap?['address']?.toString();
+    final lat = profile?.latitude ?? (userProfileMap?['latitude'] as num?)?.toDouble();
+    final lng = profile?.longitude ?? (userProfileMap?['longitude'] as num?)?.toDouble();
+
+    setState(() {
+      if (phone != null && phone.isNotEmpty) {
+        _phoneCtrl.text = phone;
+      }
+      if (address != null && address.isNotEmpty) {
+        _addressCtrl.text = address;
+      }
+      if (isValidMapCoordinate(lat, lng)) {
+        _selectedLocation = LatLng(lat!, lng!);
+      }
+      _isLoadingInitialData = false;
+    });
+  }
+
+  /// Geocodificación centralizada con apertura automática de ventana emergente del mapa
   Future<void> _searchLocation([String? query]) async {
     final q = (query ?? _addressCtrl.text).trim();
     if (q.isEmpty) {
       setState(() => _addressError = 'Ingresa una dirección para buscar.');
       return;
     }
-    setState(() { _searchingLocation = true; _addressError = null; });
-
-    final mapboxToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
-    final googleKey   = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
-
-    // 1. Mapbox
-    if (mapboxToken.isNotEmpty) {
-      try {
-        final url = Uri.parse(
-          'https://api.mapbox.com/geocoding/v5/mapbox.places/${Uri.encodeComponent(q)}.json?access_token=$mapboxToken&limit=1&language=es',
-        );
-        final resp = await http.get(url);
-        if (resp.statusCode == 200) {
-          final data = json.decode(resp.body);
-          final features = data['features'] as List?;
-          if (features != null && features.isNotEmpty) {
-            final center = features.first['center'] as List;
-            setState(() {
-              _lat = double.parse(center[1].toString());
-              _lng = double.parse(center[0].toString());
-              _searchingLocation = false;
-            });
-            return;
-          }
-        }
-      } catch (_) {}
-    }
-
-    // 2. Google Maps
-    if (googleKey.isNotEmpty) {
-      try {
-        final url = Uri.parse(
-          'https://maps.googleapis.com/maps/api/geocode/json?address=${Uri.encodeComponent(q)}&key=$googleKey&language=es',
-        );
-        final resp = await http.get(url);
-        if (resp.statusCode == 200) {
-          final data = json.decode(resp.body);
-          final results = data['results'] as List?;
-          if (results != null && results.isNotEmpty) {
-            final loc = results.first['geometry']['location'];
-            setState(() {
-              _lat = double.parse(loc['lat'].toString());
-              _lng = double.parse(loc['lng'].toString());
-              _searchingLocation = false;
-            });
-            return;
-          }
-        }
-      } catch (_) {}
-    }
-
-    // 3. Nominatim
-    try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(q)}&format=json&limit=1',
-      );
-      final resp = await http.get(url, headers: {
-        'User-Agent': 'EsteticaBellezaStrani/2.0',
-        'Accept-Language': 'es',
-      });
-      if (resp.statusCode == 200) {
-        final results = json.decode(resp.body) as List;
-        if (results.isNotEmpty) {
-          setState(() {
-            _lat = double.parse(results.first['lat'].toString());
-            _lng = double.parse(results.first['lon'].toString());
-            _searchingLocation = false;
-          });
-          return;
-        }
-      }
-    } catch (_) {}
-
-    // 4. Respaldo local
-    final hash = q.codeUnits.fold(0, (p, e) => p + e * 31);
     setState(() {
-      _lat = 10.4806 + (hash % 500) * 0.0001;
-      _lng = -66.9036 + ((hash ~/ 500) % 500) * 0.0001;
-      _searchingLocation = false;
-      _addressError = 'Coordenadas estimadas (sin proveedor disponible).';
+      _searchingLocation = true;
+      _addressError = null;
     });
+
+    final coords = await SupabaseService.geocodeAddress(q);
+
+    if (!mounted) return;
+
+    if (coords != null) {
+      setState(() {
+        _selectedLocation = coords;
+        _searchingLocation = false;
+      });
+      _openMapModalDialog(); // Abrir mapa emergente cuadrado al geocodificar
+    } else {
+      setState(() {
+        _searchingLocation = false;
+        _addressError = 'No se encontraron coordenadas exactas. Puedes ajustar el PIN en el mapa manualmente.';
+      });
+      _openMapModalDialog();
+    }
+  }
+
+  /// Abrir ventana emergente cuadrada (1/4 del tamaño de la pantalla total) con el mapa
+  void _openMapModalDialog() {
+    LatLng tempLocation = _selectedLocation;
+    final media = MediaQuery.of(context).size;
+    // Dimensiones cuadradas aproximadas a la cuarta parte de la ventana total
+    final side = (media.width * 0.65).clamp(280.0, 380.0);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            width: side,
+            height: side + 70, // Tamaño cuadrado + barra de acciones
+            child: Column(
+              children: [
+                // Header modal
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  color: AppTheme.cDeepAccent,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.map_rounded, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Mapa (Cagua / Aragua)',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                        onPressed: () => Navigator.pop(dialogCtx),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Mapa cuadrado interactivo
+                Expanded(
+                  child: PatientMapPicker(
+                    selectedLocation: tempLocation,
+                    mapController: _mapController,
+                    height: side,
+                    onLocationChanged: (newLoc) {
+                      tempLocation = newLoc;
+                    },
+                  ),
+                ),
+
+                // Botón de confirmación inferior
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.grey.shade50,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+                      onPressed: () {
+                        setState(() {
+                          _selectedLocation = tempLocation;
+                        });
+                        Navigator.pop(dialogCtx);
+                      },
+                      icon: const Icon(Icons.check, size: 16),
+                      label: const Text('Confirmar Posición del PIN', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
     final cubit = context.read<AuthCubit>();
     final profile = cubit.currentProfile;
-    if (profile == null) return;
+    final user = SupabaseService.currentUser;
+    final userId = profile?.id ?? user?.id;
 
-    await cubit.updateProfile(
-      userId: profile.id,
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: No se encontró sesión activa de usuario.')),
+      );
+      return;
+    }
+
+    // ── 1. Guardar datos del paciente directamente en Supabase ──
+    // NO usamos cubit.updateProfile aquí porque emite AuthLoading
+    // y destruye el contexto mientras esperamos las consultas siguientes.
+    final savedProfile = await SupabaseService.updateProfileData(
+      userId: userId,
+      fullName: profile?.fullName ?? user?.userMetadata?['full_name'] ?? 'Paciente',
       phone: _phoneCtrl.text.trim(),
       address: _addressCtrl.text.trim(),
-      latitude: _lat,
-      longitude: _lng,
+      latitude: _selectedLocation.latitude,
+      longitude: _selectedLocation.longitude,
     );
 
-    if (mounted && cubit.state is AuthAuthenticated) {
+    if (!mounted) return;
+
+    if (savedProfile.containsKey('error')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text('Error al guardar: ${savedProfile['error']}'),
+        ),
+      );
+      return;
+    }
+
+    // Mostrar confirmación de guardado exitoso
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        backgroundColor: Colors.green,
+        content: Text('✅ Datos guardados en Supabase correctamente.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    // ── 2. Verificar estado del flujo desde Supabase ──
+    final status = await SupabaseService.checkPatientFlowStatus(profileId: userId);
+    final bool paymentCompleted = status['paymentCompleted'] == true;
+    final bool hasCompletedQuestionnaire = status['hasCompletedQuestionnaire'] == true;
+    final String evaluationStatus = status['evaluationStatus']?.toString() ?? 'PENDIENTE';
+
+    if (!mounted) return;
+
+    // ── Si NO ha cancelado la cuota inicial de $30 ──
+    if (!paymentCompleted) {
       _showStripeModal();
+      return;
+    }
+
+    // ── Ya canceló la cuota → verificar cuestionario ──
+    if (!hasCompletedQuestionnaire) {
+      _openQuestionnaires(paid: true);
+      return;
+    }
+
+    // ── Ya llenó cuestionario → revisar dictamen de evaluación médica ──
+    if (evaluationStatus == 'RECHAZADA') {
+      _showNegativeEvaluationDialog();
+    } else if (evaluationStatus == 'APROBADA') {
+      _showPositiveEvaluationDialog();
+    } else {
+      // Estado pendiente: abrir cuestionario (que incluye Qualify internamente)
+      _openQuestionnaires(paid: true);
     }
   }
 
+  void _showNegativeEvaluationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: const Row(children: [
+          Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 28),
+          SizedBox(width: 10),
+          Text('Dictamen Médica No Apto', style: TextStyle(color: Colors.redAccent)),
+        ]),
+        content: const Text(
+          'Tu evaluación médica previa con Qualify no resultó apta para este servicio en este momento.',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(AppRoutes.services);
+            },
+            child: const Text('Ir a Catálogo de Servicios'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPositiveEvaluationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: const Row(children: [
+          Icon(Icons.verified_rounded, color: AppTheme.cSuccess, size: 28),
+          SizedBox(width: 10),
+          Text('Dictamen Médico Aprobado'),
+        ]),
+        content: const Text(
+          'Ya cuentas con una evaluación médica aprobada para este servicio. Redirigiendo a Cancelación Total del Servicio (Módulo a realizar a posteriori).',
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go(AppRoutes.services);
+            },
+            child: const Text('Ir a Cancelación / Servicios'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Paso 2: Modal de Pago Stripe (simulado)
+  /// Guard a nivel de instancia para evitar doble apertura por doble tap
+  bool _stripeModalOpen = false;
+
   void _showStripeModal() {
+    if (_stripeModalOpen) return;          // evita doble llamada
+    _stripeModalOpen = true;
+
     bool processing = false;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => AlertDialog(
+        builder: (dialogCtx, setModal) => AlertDialog(
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusXl)),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          ),
           title: const Row(children: [
             Icon(Icons.credit_card_rounded, color: AppTheme.cStripe, size: 28),
             SizedBox(width: 10),
-            Text('Pago de Cuota Inicial'),
+            Text('Paso 2: Pago de Cuota Inicial'),
           ]),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -184,18 +380,46 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           actions: [
             TextButton(
               onPressed: processing ? null : () {
-                Navigator.pop(ctx);
-                _triggerEvaluation(paid: false);
+                _stripeModalOpen = false;
+                Navigator.pop(dialogCtx);
+                _openQuestionnaires(paid: false, stripeRef: null);
               },
               child: const Text('Posponer', style: TextStyle(color: Colors.redAccent)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cStripe),
               onPressed: processing ? null : () async {
+                if (processing) return;    // guard extra contra doble tap
+                final cubitRef = context.read<AuthCubit>();
                 setModal(() => processing = true);
+
+                // Simular procesamiento Stripe 2 seg (reemplazar por SDK real)
                 await Future.delayed(const Duration(seconds: 2));
-                if (ctx.mounted) Navigator.pop(ctx);
-                _triggerEvaluation(paid: true);
+
+                final user = SupabaseService.currentUser;
+                final userId = cubitRef.currentProfile?.id ?? user?.id;
+                String? stripeRef;
+
+                if (userId != null) {
+                  stripeRef = 'STRIPE_INIT_${DateTime.now().millisecondsSinceEpoch}';
+                  // Marcar payment_completed y activar paciente
+                  await SupabaseService.registerInitialPayment(
+                    profileId: userId,
+                    amount: AppConstants.depositoInicial.toDouble(),
+                    paymentReference: stripeRef,
+                  );
+                  // Guardar dirección principal
+                  await SupabaseService.savePatientAddress(
+                    profileId: userId,
+                    address: _addressCtrl.text.trim(),
+                    latitude: _selectedLocation.latitude,
+                    longitude: _selectedLocation.longitude,
+                  );
+                }
+
+                _stripeModalOpen = false;
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                if (mounted) _openQuestionnaires(paid: true, stripeRef: stripeRef);
               },
               child: processing
                   ? const SizedBox(height: 18, width: 18,
@@ -205,79 +429,23 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           ],
         ),
       ),
-    );
+    ).whenComplete(() => _stripeModalOpen = false);
   }
 
-  void _triggerEvaluation({required bool paid}) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        Future.delayed(const Duration(seconds: 3), () async {
-          final cubit = context.read<AuthCubit>();
-          final profile = cubit.currentProfile;
-          if (profile == null) return;
-
-          await cubit.updateProfile(
-            userId: profile.id,
-            activo: paid,
-            paymentCompleted: paid,
-            evaluationPassed: paid,
-          );
-
-          if (ctx.mounted) Navigator.pop(ctx);
-
-          if (!paid && mounted) {
-            _showNotApprovedDialog();
-          }
-        });
-
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: 12),
-              CircularProgressIndicator(color: AppTheme.cDeepAccent),
-              SizedBox(height: 20),
-              Text('Evaluación Clínica en Proceso...',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Text('Conectando con proveedor independiente Qualify.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
-              SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showNotApprovedDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: const Row(children: [
-          Icon(Icons.cancel_outlined, color: Colors.redAccent),
-          SizedBox(width: 10),
-          Text('No Apto', style: TextStyle(color: Colors.redAccent)),
-        ]),
-        content: const Text(
-          'La evaluación médica con Qualify determinó que no cumples los criterios de aptitud clínica en este momento.',
+  /// Paso 3: Cuestionarios Médicos por Servicio
+  void _openQuestionnaires({required bool paid, String? stripeRef}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => PatientQuestionnaireScreen(
+          serviceName: 'Estética y Belleza General',
+          stripePaymentRef: stripeRef,
+          onCompleted: () {
+            // El cuestionario ya ejecutó Qualify internamente.
+            // Solo cerramos la pantalla y volvemos al perfil.
+            Navigator.pop(ctx);
+          },
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.read<AuthCubit>().signOut();
-            },
-            child: const Text('Entendido'),
-          ),
-        ],
       ),
     );
   }
@@ -288,10 +456,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final isLoading = cubit.state is AuthLoading;
     final profile = cubit.currentProfile;
 
+    if (_isLoadingInitialData) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Completar Perfil'),
-        automaticallyImplyLeading: false,
+        title: const Text('Perfil del Paciente'),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -300,7 +476,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Auth ID
+              // Badge Paciente
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -310,12 +486,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: Row(children: [
-                  const Icon(Icons.vpn_key_outlined, size: 16, color: AppTheme.cMutedText),
+                  const Icon(Icons.person_pin_rounded, size: 18, color: AppTheme.cDeepAccent),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'auth.users.id: ${profile?.id ?? '...'}',
-                      style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                      'ID del Paciente: ${profile?.id ?? SupabaseService.currentUser?.id ?? '...'}',
+                      style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -344,7 +520,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 onFieldSubmitted: _searchLocation,
                 decoration: AppTheme.fieldDecoration(
                   label: 'Dirección de Habitación',
-                  hint: 'Ej: Av. Principal, Edificio Strani, Caracas',
+                  hint: 'Ej: Calle Comercio, Res. Strani, Cagua',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _searchingLocation
                       ? const Padding(
@@ -355,6 +531,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       : IconButton(
                           icon: const Icon(Icons.search_rounded, color: AppTheme.cDeepAccent),
                           onPressed: () => _searchLocation(),
+                          tooltip: 'Buscar Dirección y Abrir Mapa',
                         ),
                   error: _addressError,
                 ),
@@ -363,43 +540,100 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               ),
               const SizedBox(height: 14),
 
-              // Coordenadas
+              // Tarjeta interactiva para disparar la Ventana Emergente del Mapa Cuadrado (~1/4 pantalla)
+              InkWell(
+                onTap: _openMapModalDialog,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cPastelPurple.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(color: AppTheme.cDeepAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cDeepAccent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.map_rounded, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Ubicación en Mapa (Ventana Emergente)',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.cDarkText),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Lat: ${_selectedLocation.latitude.toStringAsFixed(5)}, Lng: ${_selectedLocation.longitude.toStringAsFixed(5)}',
+                              style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.open_in_new_rounded, color: AppTheme.cDeepAccent, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Coordenadas seleccionadas
               Row(children: [
                 Expanded(
-                  child: TextFormField(
-                    key: Key('lat_$_lat'),
-                    initialValue: _lat.toStringAsFixed(6),
-                    readOnly: true,
-                    decoration: AppTheme.fieldDecoration(
-                      label: 'Latitud',
-                      prefix: const Icon(Icons.my_location_rounded,
-                          color: AppTheme.cMutedText),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Latitud', style: TextStyle(fontSize: 10, color: AppTheme.cMutedText)),
+                        Text(_selectedLocation.latitude.toStringAsFixed(6),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: TextFormField(
-                    key: Key('lng_$_lng'),
-                    initialValue: _lng.toStringAsFixed(6),
-                    readOnly: true,
-                    decoration: AppTheme.fieldDecoration(
-                      label: 'Longitud',
-                      prefix: const Icon(Icons.explore_outlined,
-                          color: AppTheme.cMutedText),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Longitud', style: TextStyle(fontSize: 10, color: AppTheme.cMutedText)),
+                        Text(_selectedLocation.longitude.toStringAsFixed(6),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ],
                     ),
                   ),
                 ),
               ]),
               const SizedBox(height: 24),
 
-              // Botón
+              // Botón de Envío
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
                   onPressed: isLoading ? null : _submit,
-                  icon: const Icon(Icons.payment_rounded),
+                  icon: const Icon(Icons.arrow_forward_rounded),
                   label: const Text('Guardar e Ir a Pago Stripe (\$30)'),
                 ),
               ),

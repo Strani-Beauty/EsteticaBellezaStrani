@@ -62,11 +62,31 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       },
       child: Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth >= 850;
-            return isDesktop ? _buildDesktop() : _buildMobile();
-          },
+        body: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 850;
+                return isDesktop ? _buildDesktop() : _buildMobile();
+              },
+            ),
+            Positioned(
+              top: 16,
+              left: 16,
+              child: SafeArea(
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  shape: const CircleBorder(),
+                  elevation: 3,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.cDeepAccent),
+                    tooltip: 'Volver a inicio',
+                    onPressed: () => context.go(AppRoutes.welcome),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

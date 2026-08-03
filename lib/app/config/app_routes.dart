@@ -7,12 +7,14 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
+import 'package:esteticaybellezastrani/features/welcome/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
   AppRoutes._();
 
+  static const String welcome         = '/';
   static const String login           = '/login';
   static const String completeProfile = '/complete-profile';
   static const String services        = '/services';
@@ -26,20 +28,23 @@ class AppRoutes {
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit
 final GoRouter appRouter = GoRouter(
-  initialLocation: AppRoutes.login,
+  initialLocation: AppRoutes.welcome,
   debugLogDiagnostics: false,
   redirect: (BuildContext context, GoRouterState state) {
     final authCubit = context.read<AuthCubit>();
     final authState = authCubit.state;
     final location = state.matchedLocation;
 
+    // Rutas públicas que no requieren autenticación
+    final publicRoutes = [AppRoutes.welcome, AppRoutes.services];
+
     // Si está cargando, no redirigir
     if (authState is AuthLoading || authState is AuthInitial) return null;
 
-    // Si no está autenticado → forzar login
+    // Si no está autenticado → permitir rutas públicas, sino ir a welcome
     if (authState is AuthUnauthenticated || authState is AuthInitial) {
-      if (location != AppRoutes.login) return AppRoutes.login;
-      return null;
+      if (publicRoutes.contains(location) || location == AppRoutes.login) return null;
+      return AppRoutes.welcome;
     }
 
     // Si está autenticado
@@ -60,6 +65,11 @@ final GoRouter appRouter = GoRouter(
     return null;
   },
   routes: [
+    GoRoute(
+      path: AppRoutes.welcome,
+      name: 'welcome',
+      builder: (context, state) => const WelcomeScreen(),
+    ),
     GoRoute(
       path: AppRoutes.login,
       name: 'login',

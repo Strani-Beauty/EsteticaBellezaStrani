@@ -142,11 +142,64 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
-    // Lanzar diálogo de validación Qualify (Modo Prueba)
-    _triggerQualifyTestEvaluation();
+    // Diálogo de selección de modalidad de evaluación (Telemedicina vs Medicina Interna)
+    _showEvaluationModalitySelector();
   }
 
-  void _triggerQualifyTestEvaluation() {
+  void _showEvaluationModalitySelector() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.medical_services_rounded, color: AppTheme.cDeepAccent, size: 26),
+            SizedBox(width: 10),
+            Text('Modalidad de Evaluación'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Selecciona el canal médico para dictaminar tu aptitud clínica:',
+              style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
+            ),
+            SizedBox(height: 12),
+            Text(
+              '📌 Nota: La aprobación clínica por cualquiera de las dos modalidades otorga una validez oficial de 1 año (365 días) para acceder a todos nuestros servicios.',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.cDeepAccent),
+            ),
+          ],
+        ),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _triggerEvaluationProcess(proveedor: 'Medicina Interna');
+            },
+            icon: const Icon(Icons.local_hospital_rounded, size: 18),
+            label: const Text('Medicina Interna'),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _triggerEvaluationProcess(proveedor: 'Telemedicina');
+            },
+            icon: const Icon(Icons.videocam_rounded, size: 18),
+            label: const Text('Telemedicina'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _triggerEvaluationProcess({required String proveedor}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -156,17 +209,16 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
             Future.delayed(const Duration(seconds: 3), () async {
               if (!mounted) return;
 
-              // Guardar dictamen Qualify en validaciones_telemedicina
               final user = SupabaseService.currentUser;
               if (user != null) {
                 try {
                   await SupabaseService.saveQualifyTestValidation(
                     profileId: user.id,
                     aprobado: true,
+                    proveedor: proveedor,
                   );
                 } catch (_) {}
 
-                // Crear solicitud + pago + transacción una única vez
                 try {
                   await SupabaseService.createSolicitudAndPayment(
                     profileId: user.id,
@@ -178,7 +230,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
 
               if (dialogCtx.mounted) Navigator.pop(dialogCtx);
 
-              _showQualifySuccessModal();
+              _showQualifySuccessModal(proveedor: proveedor);
             });
 
             return AlertDialog(
@@ -187,24 +239,24 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  SizedBox(height: 14),
-                  CircularProgressIndicator(color: AppTheme.cDeepAccent),
-                  SizedBox(height: 20),
+                children: [
+                  const SizedBox(height: 14),
+                  const CircularProgressIndicator(color: AppTheme.cDeepAccent),
+                  const SizedBox(height: 20),
                   Text(
-                    'Evaluación Qualify (Modo Prueba)',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    'Evaluación Médica ($proveedor)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Enviando cuestionario médico al sistema de telemedicina Qualify para dictamen clínico...',
+                    'Procesando cuestionario y expediente clínico con el departamento de $proveedor...',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                    style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
                   ),
-                  SizedBox(height: 10),
-                  Chip(
+                  const SizedBox(height: 10),
+                  const Chip(
                     backgroundColor: AppTheme.cPastelGold,
-                    label: Text('PRUEBA SIMULADA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    label: Text('VALIDEZ 1 AÑO (365 DÍAS)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -215,7 +267,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     );
   }
 
-  void _showQualifySuccessModal() {
+  void _showQualifySuccessModal({required String proveedor}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -234,14 +286,14 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '¡Evaluación Médica Exitosa!',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            Text(
+              '¡Evaluación Exitosa por $proveedor!',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'El proveedor Qualify (Modo Prueba) ha analizado tu cuestionario y has sido calificado como APTO para recibir el tratamiento.',
-              style: TextStyle(fontSize: 13, color: AppTheme.cDarkText),
+            Text(
+              'Tu expediente médico ha sido revisado y calificado como APTO por el canal de $proveedor. Ahora tienes acceso a reservar cualquier servicio del catálogo.',
+              style: const TextStyle(fontSize: 13, color: AppTheme.cDarkText),
             ),
             const SizedBox(height: 12),
             Container(
@@ -256,7 +308,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Certificado médico virtual válido por 365 días.',
+                      'Aprobación médica oficial válida por 1 año (365 días).',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -267,6 +319,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
         ),
         actions: [
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
             onPressed: () {
               Navigator.pop(ctx);
               if (widget.onCompleted != null) {
@@ -275,7 +328,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                 Navigator.of(context).maybePop(true);
               }
             },
-            child: const Text('Continuar'),
+            child: const Text('Continuar al Catálogo'),
           ),
         ],
       ),

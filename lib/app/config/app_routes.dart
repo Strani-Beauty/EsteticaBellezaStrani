@@ -10,20 +10,23 @@ import 'package:esteticaybellezastrani/features/admin_config/presentation/screen
 import 'package:esteticaybellezastrani/features/welcome/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
+
 /// Rutas nombradas de la aplicación
 class AppRoutes {
   AppRoutes._();
 
-  static const String welcome         = '/';
-  static const String login           = '/login';
-  static const String completeProfile = '/complete-profile';
-  static const String services        = '/services';
-  static const String appointments    = '/appointments';
-  static const String treatment       = '/treatment/:id';
-  static const String payment         = '/payment/:id';
-  static const String adminDashboard  = '/admin';
-  static const String specialistHome  = '/specialist';
-  static const String profile         = '/profile';
+  static const String welcome              = '/';
+  static const String login                = '/login';
+  static const String completeProfile      = '/complete-profile';
+  static const String services             = '/services';
+  static const String appointments         = '/appointments';
+  static const String treatment            = '/treatment/:id';
+  static const String payment              = '/payment/:id';
+  static const String adminDashboard       = '/admin';
+  static const String specialistHome       = '/specialist';
+  static const String profile              = '/profile';
+  static const String faceMapQuestionnaire = '/face-map-questionnaire';
 }
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit
@@ -36,7 +39,7 @@ final GoRouter appRouter = GoRouter(
     final location = state.matchedLocation;
 
     // Rutas públicas que no requieren autenticación
-    final publicRoutes = [AppRoutes.welcome, AppRoutes.services];
+    final publicRoutes = [AppRoutes.welcome, AppRoutes.services, AppRoutes.faceMapQuestionnaire];
 
     // Si está cargando, no redirigir
     if (authState is AuthLoading || authState is AuthInitial) return null;
@@ -57,7 +60,7 @@ final GoRouter appRouter = GoRouter(
       }
 
       // Si el perfil no está completo → completar perfil
-      if (!profile.activo && location != AppRoutes.completeProfile) {
+      if (!profile.activo && location != AppRoutes.completeProfile && location != AppRoutes.faceMapQuestionnaire) {
         return AppRoutes.completeProfile;
       }
     }
@@ -95,7 +98,14 @@ final GoRouter appRouter = GoRouter(
       name: 'adminDashboard',
       builder: (context, state) => const AdminDashboardScreen(),
     ),
-    // TODO Fase 3-7: registrar rutas de marketplace, tratamientos, pagos
+    GoRoute(
+      path: AppRoutes.faceMapQuestionnaire,
+      name: 'faceMapQuestionnaire',
+      builder: (context, state) {
+        final tratamientoId = state.extra as String?;
+        return FaceMapQuestionnaireScreen(tratamientoId: tratamientoId);
+      },
+    ),
   ],
 );
 

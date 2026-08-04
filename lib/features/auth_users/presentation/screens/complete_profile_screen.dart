@@ -260,14 +260,59 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
 
     // ── Ya llenó cuestionario → revisar dictamen de evaluación médica ──
-    if (evaluationStatus == 'RECHAZADA') {
+    if (evaluationStatus == 'VENCIDA') {
+      _showExpiredEvaluationDialog(status['proveedorEvaluacion']?.toString() ?? 'Telemedicina / Medicina Interna');
+    } else if (evaluationStatus == 'RECHAZADA') {
       _showNegativeEvaluationDialog();
     } else if (evaluationStatus == 'APROBADA') {
       _showPositiveEvaluationDialog();
     } else {
-      // Estado pendiente: abrir cuestionario (que incluye Qualify internamente)
+      // Estado pendiente: abrir cuestionario (que incluye evaluación médica internamente)
       _openQuestionnaires(paid: true);
     }
+  }
+
+  void _showExpiredEvaluationDialog(String proveedor) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: const Row(children: [
+          Icon(Icons.history_toggle_off_rounded, color: Colors.orangeAccent, size: 28),
+          SizedBox(width: 10),
+          Text('Evaluación Médica Expirada'),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tu aprobación médica previa ($proveedor) ha cumplido su ciclo de 1 año (365 días) de validez.',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Según las políticas del sistema, para continuar reservando servicios debes realizar una nueva evaluación clínica y el abono inicial de \$30 USD.',
+              style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _showStripeModal();
+            },
+            icon: const Icon(Icons.payment_rounded, size: 18),
+            label: const Text('Pagar \$30 USD y Renovar Evaluation'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showNegativeEvaluationDialog() {

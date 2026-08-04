@@ -9,7 +9,7 @@ abstract class Failure {
   const Failure(this.message, {this.code});
 
   @override
-  String toString() => '${runtimeType}: $message${code != null ? ' [$code]' : ''}';
+  String toString() => '$runtimeType: $message${code != null ? ' [$code]' : ''}';
 }
 
 /// Error de servidor o red (Supabase, HTTP)

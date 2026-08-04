@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Image.asset(
               'assets/images/login_model.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (context, error, stackTrace) => Container(
                 color: AppTheme.cPastelPink,
                 child: const Center(
                   child: Icon(Icons.face_retouching_natural,

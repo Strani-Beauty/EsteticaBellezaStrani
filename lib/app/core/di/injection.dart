@@ -1,5 +1,15 @@
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/auth_users/data/repositories/auth_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/auth_users/domain/repositories/i_auth_repository.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/data/repositories/catalog_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
+import 'package:esteticaybellezastrani/features/payments/data/repositories/payments_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/payments/domain/repositories/i_payments_repository.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -38,16 +48,39 @@ void setupDependencies() {
 }
 
 void _registerAuthUsers() {
-  // Datasources, Repositories, UseCases, Cubits se registran aquí
-  // Ejemplo (se completan en Fase 2):
-  // sl.registerLazySingleton<IAuthRepository>(() => AuthRepositoryImpl(sl()));
+  sl.registerLazySingleton<AuthSupabaseDataSource>(
+    () => AuthSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IAuthRepository>(
+    () => AuthRepositoryImpl(sl<AuthSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<AuthCubit>(
+    () => AuthCubit(sl<IAuthRepository>()),
+  );
 }
 
 void _registerSpecialists() {}
-void _registerPatientsCompliance() {}
-void _registerCatalogServices() {}
+
+void _registerPatientsCompliance() {
+  sl.registerLazySingleton<IPatientsComplianceRepository>(
+    () => const PatientsComplianceRepositoryImpl(),
+  );
+}
+
+void _registerCatalogServices() {
+  sl.registerLazySingleton<ICatalogRepository>(
+    () => const CatalogRepositoryImpl(),
+  );
+}
+
 void _registerMarketplaceCitas() {}
+
 void _registerTreatmentExecution() {}
-void _registerPaymentsStripe() {}
+
+void _registerPaymentsStripe() {
+  sl.registerLazySingleton<IPaymentsRepository>(
+    () => const PaymentsRepositoryImpl(),
+  );
+}
 void _registerAdminConfig() {}
 void _registerReportsDashboards() {}

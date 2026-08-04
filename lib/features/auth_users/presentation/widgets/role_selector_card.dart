@@ -10,7 +10,9 @@ class RoleSelectorCard extends StatelessWidget {
   final Color badgeColor;
   final Color iconColor;
   final VoidCallback onSignIn;
-  final VoidCallback onSignUp;
+
+  /// Si es null, el botón "Registrarse" se oculta (p. ej. Administrador).
+  final VoidCallback? onSignUp;
 
   const RoleSelectorCard({
     super.key,
@@ -76,17 +78,18 @@ class RoleSelectorCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onSignUp,
-                  icon: const Icon(Icons.person_add_outlined, size: 16),
-                  label: const Text('Registrarse'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    minimumSize: Size.zero,
+              if (onSignUp != null)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onSignUp,
+                    icon: const Icon(Icons.person_add_outlined, size: 16),
+                    label: const Text('Registrarse'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      minimumSize: Size.zero,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ],

@@ -95,32 +95,87 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     }
   }
 
-  void _onServiceSelected(Map<String, dynamic> service) {
+  Future<void> _onServiceSelected(Map<String, dynamic> service) async {
     final title = service['title'] as String? ?? '';
-
-    // ── Prueba: Disparar Cuestionario Face Maps & Torso Silhouette al seleccionar servicio Inyectables ──
-    if (title.toLowerCase().contains('inyectables')) {
-      context.push(AppRoutes.faceMapQuestionnaire);
-      return;
-    }
-
     final user = SupabaseService.currentUser;
+
     if (user == null) {
       context.go(AppRoutes.login);
       return;
     }
 
-    // ── Política de Clientes: Verificar aprobación clínica por Telemedicina o Medicina Interna ──
-    if (_evaluationStatus == 'APROBADA' && !_isExpired) {
-      // Cliente evaluado y aprobado (vigente < 1 año) → Puede cancelar parte o totalidad
-      _showPaymentOptionsModal(service);
-    } else if (_evaluationStatus == 'VENCIDA' || _isExpired) {
-      // Evaluación vencida (> 1 año) → Mostrar aviso de recordatorio y solicitar pago de $30 + nueva evaluación
-      _showExpirationReminderModal();
-    } else {
-      // Evaluación pendiente / no realizada → Redirigir a evaluación y pago inicial
-      _showPendingEvaluationModal();
+    // ── REGLA ESTRICTA RN-020 / RN-022: Validar estado de la evaluación clínica en Supabase ──
+    final ruleValidation = await SupabaseService.validateReservationRulesRN020(profileId: user.id);
+    if (!mounted) return;
+
+    final bool allowed = ruleValidation['allowed'] == true;
+    final String reason = ruleValidation['reason']?.toString() ?? 'PENDIENTE';
+
+    if (!allowed) {
+      if (reason == 'RECHAZADA') {
+        _showBlockedReservationModal(
+          title: 'Reserva Bloqueada (RN-020 / RN-022)',
+          message: 'Tu evaluación médica fue RECHAZADA. Por regulación médica y la regla RN-020/RN-022, no puedes realizar reservas de servicios.',
+          icon: Icons.gavel_rounded,
+          color: Colors.redAccent,
+        );
+        return;
+      } else if (reason == 'VENCIDA') {
+        _showExpirationReminderModal();
+        return;
+      } else {
+        _showPendingEvaluationModal();
+        return;
+      }
     }
+
+    // ── 2. Si es servicio de Inyectables, disparar Cuestionario Face Maps & Torso Silhouette ──
+    if (title.toLowerCase().contains('inyectables')) {
+      context.push(AppRoutes.faceMapQuestionnaire);
+      return;
+    }
+
+    // ── 3. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
+    _showPaymentOptionsModal(service);
+  }
+
+  void _showBlockedReservationModal({
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color color,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: Row(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: color),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Entendido', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showPaymentOptionsModal(Map<String, dynamic> service) {

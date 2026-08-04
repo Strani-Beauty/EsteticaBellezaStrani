@@ -1046,6 +1046,157 @@ class SupabaseService {
   }
 
   // ══════════════════════════════════════════════════════════════
+  // MÓDULO 3: CUESTIONARIOS DINÁMICOS & PREGUNTAS REUTILIZABLES
+  // ══════════════════════════════════════════════════════════════
+
+  /// Obtener cuestionarios activos de la tabla `cuestionarios`
+  static Future<List<Map<String, dynamic>>> fetchDynamicQuestionnaires() async {
+    try {
+      final res = await _client
+          .from('cuestionarios')
+          .select()
+          .eq('activo', true)
+          .order('id', ascending: true);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (e) {
+      debugPrint('⚠️ [fetchDynamicQuestionnaires] ERROR: $e');
+      return [];
+    }
+  }
+
+  /// Obtener las preguntas asociadas a un cuestionario específico mediante `cuestionario_preguntas` -> `preguntas`
+  static Future<List<Map<String, dynamic>>> fetchQuestionnaireQuestions(int cuestionarioId) async {
+    try {
+      final res = await _client
+          .from('cuestionario_preguntas')
+          .select('orden, preguntas(id, pregunta, tipo_respuesta, obligatoria, opciones)')
+          .eq('cuestionario_id', cuestionarioId)
+          .order('orden', ascending: true);
+
+      final List<Map<String, dynamic>> questions = [];
+      for (final row in res) {
+        if (row['preguntas'] != null) {
+          final p = Map<String, dynamic>.from(row['preguntas'] as Map);
+          p['orden'] = row['orden'];
+          questions.add(p);
+        }
+      }
+      return questions;
+    } catch (e) {
+      debugPrint('⚠️ [fetchQuestionnaireQuestions] ERROR: $e');
+      return [];
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // MÓDULO 4: CATÁLOGO PARAMETRIZABLE & MAPEO DE PRERREQUISITOS
+  // ══════════════════════════════════════════════════════════════
+
+  /// Obtener las categorías de servicio desde `categorias_servicio`
+  static Future<List<Map<String, dynamic>>> fetchCatalogCategories() async {
+    try {
+      final res = await _client
+          .from('categorias_servicio')
+          .select()
+          .eq('activo', true)
+          .order('nombre', ascending: true);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (e) {
+      debugPrint('⚠️ [fetchCatalogCategories] ERROR: $e');
+      return [];
+    }
+  }
+
+  /// Obtener los servicios del catálogo desde `servicios` vinculados con sus prerrequisitos y categoría
+  static Future<List<Map<String, dynamic>>> fetchCatalogServices({String? categoriaId}) async {
+    try {
+      var query = _client
+          .from('servicios')
+          .select('*, categorias_servicio(nombre, descripcion)')
+          .eq('activo', true);
+
+      if (categoriaId != null && categoriaId.isNotEmpty) {
+        query = query.eq('categoria_id', categoriaId);
+      }
+
+      final res = await query.order('nombre', ascending: true);
+      return List<Map<String, dynamic>>.from(res);
+    } catch (e) {
+      debugPrint('⚠️ [fetchCatalogServices] ERROR: $e');
+      return [];
+    }
+  }
+
+  /// Verifica los prerrequisitos específicos de un servicio (Telemedicina, Face Map, Fotos, Consentimiento)
+  static Future<Map<String, bool>> checkServicePrerequisites({
+    required Map<String, dynamic> serviceData,
+    required String profileId,
+  }) async {
+    final bool requiereTelemedicina = serviceData['requiere_telemedicina'] == true;
+    final bool requiereFaceMap = serviceData['requiere_face_map'] == true ||
+        (serviceData['nombre']?.toString().toLowerCase().contains('inyectable') == true);
+    final bool requiereFotos = serviceData['requiere_fotos'] == true;
+    final bool requiereConsentimiento = serviceData['requiere_consentimiento'] == true;
+
+    final status = await checkPatientFlowStatus(profileId: profileId);
+    final bool hasValidTelemedicina = status['evaluationStatus'] == 'APROBADA' && status['isExpired'] != true;
+
+    return {
+      'requiere_telemedicina': requiereTelemedicina,
+      'telemedicina_cumplida': hasValidTelemedicina,
+      'requiere_face_map': requiereFaceMap,
+      'requiere_fotos': requiereFotos,
+      'requiere_consentimiento': requiereConsentimiento,
+      'apto_para_reserva': !requiereTelemedicina || hasValidTelemedicina,
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // REGLAS ESTRICTAS DE NEGOCIO (RN-020, RN-022)
+  // ══════════════════════════════════════════════════════════════
+
+  /// Valida estrictamente si el paciente puede realizar cualquier reserva o pago de servicio.
+  /// BLOQUEA inmediatamente si la evaluación médica está VENCIDA, RECHAZADA o PENDIENTE.
+  static Future<Map<String, dynamic>> validateReservationRulesRN020({
+    required String profileId,
+  }) async {
+    final status = await checkPatientFlowStatus(profileId: profileId);
+
+    final String evalStatus = status['evaluationStatus']?.toString() ?? 'PENDIENTE';
+    final bool isExpired = status['isExpired'] == true;
+
+    if (evalStatus == 'RECHAZADA') {
+      return {
+        'allowed': false,
+        'reason': 'RECHAZADA',
+        'message': 'REGLA RN-020/RN-022: Tu evaluación médica fue RECHAZADA. Queda estrictamente bloqueada cualquier reserva hasta obtener un dictamen médico favorable.',
+      };
+    }
+
+    if (evalStatus == 'VENCIDA' || isExpired) {
+      return {
+        'allowed': false,
+        'reason': 'VENCIDA',
+        'message': 'REGLA RN-020/RN-022: Tu evaluación médica tiene más de 1 año (365 días) de emitida y está VENCIDA. Debes abonar el pago de \$30 USD y realizar una nueva evaluación médica.',
+      };
+    }
+
+    if (evalStatus == 'PENDIENTE') {
+      return {
+        'allowed': false,
+        'reason': 'PENDIENTE',
+        'message': 'REGLA RN-020/RN-022: No cuentas con una evaluación médica aprobada. Debes completar la cuota inicial de \$30 USD y la evaluación médica clínica.',
+      };
+    }
+
+    return {
+      'allowed': true,
+      'reason': 'APROBADA',
+      'message': 'Evaluación médica aprobada y vigente (< 1 año).',
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════
   // UTILIDADES GENERALES
   // ══════════════════════════════════════════════════════════════
 
@@ -1089,3 +1240,4 @@ class SupabaseService {
     await _client.auth.resetPasswordForEmail(email);
   }
 }
+

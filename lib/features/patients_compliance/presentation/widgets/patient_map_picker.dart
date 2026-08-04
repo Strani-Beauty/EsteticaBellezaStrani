@@ -26,20 +26,41 @@ class PatientMapPicker extends StatefulWidget {
 
 class _PatientMapPickerState extends State<PatientMapPicker> {
   late MapController _internalController;
+  late LatLng _location;
 
   MapController get _controller => widget.mapController ?? _internalController;
 
   @override
   void initState() {
     super.initState();
+    _location = widget.selectedLocation;
     if (widget.mapController == null) {
       _internalController = MapController();
     }
   }
 
+  @override
+  void didUpdateWidget(covariant PatientMapPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si el padre cambia la ubicación (p. ej. tras geocodificar), sincronizar el PIN.
+    if (!_sameLocation(oldWidget.selectedLocation, widget.selectedLocation)) {
+      _location = widget.selectedLocation;
+    }
+  }
+
+  bool _sameLocation(LatLng a, LatLng b) =>
+      a.latitude == b.latitude && a.longitude == b.longitude;
+
+  void _handleLocationChanged(LatLng point) {
+    // Actualiza el PIN localmente para que se mueva al instante,
+    // y notifica al padre para que capture el valor final al confirmar.
+    setState(() => _location = point);
+    widget.onLocationChanged(point);
+  }
+
   void _recenterCagua() {
     _controller.move(kDefaultCaguaLocation, kDefaultMapZoom);
-    widget.onLocationChanged(kDefaultCaguaLocation);
+    _handleLocationChanged(kDefaultCaguaLocation);
   }
 
   void _zoomIn() {
@@ -78,7 +99,7 @@ class _PatientMapPickerState extends State<PatientMapPicker> {
               minZoom: 5.0,
               maxZoom: 18.0,
               onTap: (tapPosition, point) {
-                widget.onLocationChanged(point);
+                _handleLocationChanged(point);
               },
             ),
             children: [
@@ -89,7 +110,7 @@ class _PatientMapPickerState extends State<PatientMapPicker> {
               MarkerLayer(
                 markers: [
                   Marker(
-                    point: widget.selectedLocation,
+                    point: _location,
                     width: 36,
                     height: 36,
                     alignment: Alignment.topCenter,

@@ -5,23 +5,31 @@ import 'package:esteticaybellezastrani/app/config/app_env.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/app.dart';
 
-/// Bootstrap mínimo — toda la lógica migrada a features/
+/// Bootstrap — carga de entorno, inicialización de Supabase y arranque de la app.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 1. Cargar variables de entorno
   await dotenv.load(fileName: '.env').catchError((_) {});
 
-  // 2. Inicializar Supabase
+  // 2. Validar credenciales imprescindibles antes de continuar
+  AppEnv.validate();
+
+  // 3. Inicializar Supabase
   await Supabase.initialize(
     url: AppEnv.supabaseUrl,
     // ignore: deprecated_member_use
     anonKey: AppEnv.supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+      autoRefreshToken: true,
+      detectSessionInUri: true,
+    ),
   );
 
-  // 3. Registrar dependencias (GetIt)
+  // 4. Registrar dependencias (GetIt)
   setupDependencies();
 
-  // 4. Lanzar la app
+  // 5. Lanzar la app
   runApp(const App());
 }

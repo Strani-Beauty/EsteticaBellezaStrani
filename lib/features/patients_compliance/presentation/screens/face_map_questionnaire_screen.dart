@@ -41,17 +41,17 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
   // Puntos predefinidos válidos mapeados EXACTAMENTE sobre los rasgos de Silueta.jpg
   final List<InjectionPoint> _predefinedPoints = const [
     InjectionPoint(id: 'frente', label: 'Frente / Arrugas Frontales', relativeOffset: Offset(0.50, 0.22)),
-    InjectionPoint(id: 'glabela_centro', label: 'Glabela / Entrecejo', relativeOffset: Offset(0.50, 0.33)), // Bajado a la zona entre cejas
-    InjectionPoint(id: 'patas_gallo_izq', label: 'Patas de Gallo Izq', relativeOffset: Offset(0.26, 0.42)),
-    InjectionPoint(id: 'patas_gallo_der', label: 'Patas de Gallo Der', relativeOffset: Offset(0.74, 0.42)),
-    InjectionPoint(id: 'pomulo_izq', label: 'Pómulo Izquierdo', relativeOffset: Offset(0.30, 0.52)),
-    InjectionPoint(id: 'pomulo_der', label: 'Pómulo Derecho', relativeOffset: Offset(0.70, 0.52)),
-    InjectionPoint(id: 'surco_naso_izq', label: 'Surco Nasogeniano Izq', relativeOffset: Offset(0.42, 0.55)),
-    InjectionPoint(id: 'surco_naso_der', label: 'Surco Nasogeniano Der', relativeOffset: Offset(0.58, 0.55)),
+    InjectionPoint(id: 'glabela_centro', label: 'Glabela / Entrecejo', relativeOffset: Offset(0.50, 0.33)),
+    InjectionPoint(id: 'patas_gallo_izq', label: 'Patas de Gallo Izq', relativeOffset: Offset(0.33, 0.42)), // Movido un poco hacia afuera
+    InjectionPoint(id: 'patas_gallo_der', label: 'Patas de Gallo Der', relativeOffset: Offset(0.67, 0.42)), // Movido un poco hacia afuera
+    InjectionPoint(id: 'pomulo_izq', label: 'Pómulo Izquierdo', relativeOffset: Offset(0.37, 0.51)), // Movido un poco hacia afuera
+    InjectionPoint(id: 'pomulo_der', label: 'Pómulo Derecho', relativeOffset: Offset(0.63, 0.51)), // Movido un poco hacia afuera
+    InjectionPoint(id: 'surco_naso_izq', label: 'Surco Nasogeniano Izq', relativeOffset: Offset(0.43, 0.56)),
+    InjectionPoint(id: 'surco_naso_der', label: 'Surco Nasogeniano Der', relativeOffset: Offset(0.57, 0.56)),
     InjectionPoint(id: 'labios', label: 'Labios & Perioral', relativeOffset: Offset(0.50, 0.63)),
     InjectionPoint(id: 'menton', label: 'Mentón & Barbilla', relativeOffset: Offset(0.50, 0.73)),
-    InjectionPoint(id: 'cuello_izq', label: 'Cuello / Platisma Izq', relativeOffset: Offset(0.42, 0.82)), // Subido ligeramente
-    InjectionPoint(id: 'cuello_der', label: 'Cuello / Platisma Der', relativeOffset: Offset(0.58, 0.82)), // Subido ligeramente
+    InjectionPoint(id: 'cuello_izq', label: 'Cuello / Platisma Izq', relativeOffset: Offset(0.42, 0.82)),
+    InjectionPoint(id: 'cuello_der', label: 'Cuello / Platisma Der', relativeOffset: Offset(0.58, 0.82)),
   ];
 
   // Puntos actualmente seleccionados
@@ -63,31 +63,31 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
       'id': 'ojo_izquierdo',
       'title': 'Cavidad Ocular / Globo Ocular Izquierdo',
       'reason': 'Prohibido por la FDA y la sociedad de dermatología: riesgo grave de necrosis vascular y ceguera.',
-      'bounds': const Rect.fromLTRB(0.34, 0.38, 0.44, 0.46),
+      'bounds': const Rect.fromLTRB(0.37, 0.38, 0.45, 0.46),
     },
     {
       'id': 'ojo_derecho',
       'title': 'Cavidad Ocular / Globo Ocular Derecho',
       'reason': 'Prohibido por la FDA y la sociedad de dermatología: riesgo grave de necrosis vascular y ceguera.',
-      'bounds': const Rect.fromLTRB(0.56, 0.38, 0.66, 0.46),
+      'bounds': const Rect.fromLTRB(0.55, 0.38, 0.63, 0.46),
     },
     {
       'id': 'nariz_dorso',
       'title': 'Dorso & Punta Nasal (Zona Vascular de Alto Riesgo)',
       'reason': 'Prohibido por la FDA y dermatología: alto riesgo de oclusión vascular y necrosis nasal.',
-      'bounds': const Rect.fromLTRB(0.46, 0.48, 0.54, 0.54), // Directamente sobre la nariz entre los surcos nasogenianos
+      'bounds': const Rect.fromLTRB(0.47, 0.47, 0.53, 0.53),
     },
     {
       'id': 'arteria_temporal_izq',
       'title': 'Zona Arterial Temporal de Alto Riesgo (Izq)',
       'reason': 'Prohibido para aplicación directa de inyectables sin guía ecográfica avanzada.',
-      'bounds': const Rect.fromLTRB(0.21, 0.32, 0.27, 0.40),
+      'bounds': const Rect.fromLTRB(0.26, 0.32, 0.32, 0.40), // Movido hacia adentro sobre la sien de la silueta
     },
     {
       'id': 'arteria_temporal_der',
       'title': 'Zona Arterial Temporal de Alto Riesgo (Der)',
       'reason': 'Prohibido para aplicación directa de inyectables sin guía ecográfica avanzada.',
-      'bounds': const Rect.fromLTRB(0.73, 0.32, 0.79, 0.40),
+      'bounds': const Rect.fromLTRB(0.68, 0.32, 0.74, 0.40), // Movido hacia adentro sobre la sien de la silueta
     },
     {
       'id': 'pecho_inferior',

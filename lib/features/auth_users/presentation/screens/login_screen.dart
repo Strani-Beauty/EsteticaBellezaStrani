@@ -259,11 +259,11 @@ class _LoginScreenState extends State<LoginScreen> {
         RoleSelectorCard(
           icon: Icons.admin_panel_settings_rounded,
           title: 'Administrador',
-          description: 'Reportes, configuración y control general',
+          description: 'Acceso por invitación — reportes y control general',
           badgeColor: AppTheme.cPastelGold,
           iconColor: AppTheme.cGoldAccent,
           onSignIn: () => _goToAuth(_UserType.admin, signIn: true),
-          onSignUp: () => _goToAuth(_UserType.admin, signIn: false),
+          onSignUp: null,
         ),
         const SizedBox(height: 20),
         Center(

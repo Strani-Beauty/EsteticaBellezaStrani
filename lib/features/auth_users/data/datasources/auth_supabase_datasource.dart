@@ -95,6 +95,8 @@ class AuthSupabaseDataSource {
 
   /// Crear perfil en `profiles` y registro en `pacientes`.
   /// Llamado inmediatamente después del signUp exitoso.
+  /// El trigger `handle_new_user` de la BD ya crea perfil y paciente;
+  /// este método es un respaldo tolerante para usuarios pre-trigger.
   Future<ProfileModel> createProfile({
     required String id,
     required String email,
@@ -142,21 +144,21 @@ class AuthSupabaseDataSource {
       }
     }
 
-    // 2. UPSERT en pacientes si es Paciente
+    // 2. UPSERT en pacientes si es Paciente (columna canónica: usuario_id)
     if (role == 'Paciente') {
       try {
         await _client.from('pacientes').upsert({
-          'profile_id': id,
+          'usuario_id': id,
           'activo': false,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
-        }, onConflict: 'profile_id');
+        }, onConflict: 'usuario_id');
         debugPrint('✅ [createProfile] pacientes upsertado correctamente');
       } catch (e) {
         debugPrint('❌ [createProfile] ERROR en pacientes.upsert: $e');
         try {
           await _client.from('pacientes').insert({
-            'profile_id': id,
+            'usuario_id': id,
             'activo': false,
             'created_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
@@ -204,19 +206,19 @@ class AuthSupabaseDataSource {
       }
     }
 
-    // Sincronización en la tabla pacientes
+    // Sincronización en la tabla pacientes (columna canónica: usuario_id)
     try {
       await _client.from('pacientes').upsert({
-        'profile_id': id,
+        'usuario_id': id,
         'activo': dataToUpdate['activo'] ?? false,
         'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'profile_id');
+      }, onConflict: 'usuario_id');
       debugPrint('✅ [updateProfile] pacientes sincronizado para $id');
     } catch (e) {
       debugPrint('❌ [updateProfile] ERROR pacientes.upsert: $e');
       try {
         await _client.from('pacientes').insert({
-          'profile_id': id,
+          'usuario_id': id,
           'activo': dataToUpdate['activo'] ?? false,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),

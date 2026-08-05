@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import '../entities/contrato_entity.dart';
@@ -44,6 +46,14 @@ abstract class ISpecialistsRepository {
     required TipoDocumento tipoDocumento,
     String? nombreArchivo,
     String? urlArchivo,
+    int versionDocumento,
+  });
+
+  Future<Either<Failure, DocumentoEspecialistaEntity>> subirDocumento({
+    required String especialistaId,
+    required TipoDocumento tipoDocumento,
+    required Uint8List bytes,
+    required String nombreArchivo,
     int versionDocumento,
   });
 

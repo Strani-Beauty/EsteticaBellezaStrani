@@ -36,7 +36,7 @@ class DocumentoEspecialistaModel {
       id: json['id'] as String,
       especialistaId: json['especialista_id'] as String,
       tipoDocumento: TipoDocumento.fromDb(json['tipo_documento'] as String?) ??
-          TipoDocumento.cedula,
+          TipoDocumento.otro,
       nombreArchivo: json['nombre_archivo'] as String?,
       urlArchivo: json['url_archivo'] as String?,
       estadoRevision: EstadoRevisionDocumento.fromDb(json['estado_revision'] as String?) ??

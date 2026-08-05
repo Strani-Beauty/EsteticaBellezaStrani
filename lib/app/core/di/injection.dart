@@ -99,6 +99,7 @@ void _registerSpecialists() {
       getDisponibilidad: GetDisponibilidad(sl<ISpecialistsRepository>()),
       getDocumentos: GetDocumentos(sl<ISpecialistsRepository>()),
       registerDocumento: RegisterDocumento(sl<ISpecialistsRepository>()),
+      subirDocumento: SubirDocumento(sl<ISpecialistsRepository>()),
       setDisponibilidad: SetDisponibilidad(sl<ISpecialistsRepository>()),
       getContrato: GetContrato(sl<ISpecialistsRepository>()),
       firmarContrato: FirmarContrato(sl<ISpecialistsRepository>()),

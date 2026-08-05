@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import '../../domain/entities/contrato_entity.dart';
@@ -125,6 +127,28 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
         tipoDocumento: tipoDocumento,
         nombreArchivo: nombreArchivo,
         urlArchivo: urlArchivo,
+        versionDocumento: versionDocumento,
+      );
+      return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, DocumentoEspecialistaEntity>> subirDocumento({
+    required String especialistaId,
+    required TipoDocumento tipoDocumento,
+    required Uint8List bytes,
+    required String nombreArchivo,
+    int versionDocumento = 1,
+  }) async {
+    try {
+      final model = await _dataSource.subirDocumento(
+        especialistaId: especialistaId,
+        tipoDocumento: tipoDocumento,
+        bytes: bytes,
+        nombreArchivo: nombreArchivo,
         versionDocumento: versionDocumento,
       );
       return Right(model.toEntity());

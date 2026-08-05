@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 // Los usecases se inyectan por nombre; esta regla no aplica aquí.
 // ignore_for_file: prefer_initializing_formals
@@ -107,6 +109,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final GetDisponibilidad _getDisponibilidad;
   final GetDocumentos _getDocumentos;
   final RegisterDocumento _registerDocumento;
+  final SubirDocumento _subirDocumento;
   final SetDisponibilidad _setDisponibilidad;
   final GetContrato _getContrato;
   final FirmarContrato _firmarContrato;
@@ -120,6 +123,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required GetDisponibilidad getDisponibilidad,
     required GetDocumentos getDocumentos,
     required RegisterDocumento registerDocumento,
+    required SubirDocumento subirDocumento,
     required SetDisponibilidad setDisponibilidad,
     required GetContrato getContrato,
     required FirmarContrato firmarContrato,
@@ -131,6 +135,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _getDisponibilidad = getDisponibilidad,
         _getDocumentos = getDocumentos,
         _registerDocumento = registerDocumento,
+        _subirDocumento = subirDocumento,
         _setDisponibilidad = setDisponibilidad,
         _getContrato = getContrato,
         _firmarContrato = firmarContrato,
@@ -245,6 +250,28 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       tipoDocumento: tipoDocumento,
       nombreArchivo: nombreArchivo,
       urlArchivo: urlArchivo,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (doc) => emit(current.copyWith(documentos: [...current.documentos, doc])),
+    );
+  }
+
+  /// Sube los bytes del documento al bucket y lo registra para revisión.
+  Future<void> uploadDocument({
+    required String especialistaId,
+    required TipoDocumento tipoDocumento,
+    required Uint8List bytes,
+    required String nombreArchivo,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _subirDocumento(SubirDocumentoParams(
+      especialistaId: especialistaId,
+      tipoDocumento: tipoDocumento,
+      bytes: bytes,
+      nombreArchivo: nombreArchivo,
     ));
     result.fold(
       (f) => emit(SpecialistsError(f.message)),

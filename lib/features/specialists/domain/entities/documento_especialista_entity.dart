@@ -24,16 +24,18 @@ enum EstadoRevisionDocumento {
 
 /// Tipo de documento (columna `tipo_documento`).
 enum TipoDocumento {
-  cedula,
+  identificacion,
   licencia,
   diploma,
-  seguro;
+  certificacion,
+  otro;
 
   static const Map<TipoDocumento, String> _db = {
-    TipoDocumento.cedula: 'CEDULA',
+    TipoDocumento.identificacion: 'IDENTIFICACION',
     TipoDocumento.licencia: 'LICENCIA',
     TipoDocumento.diploma: 'DIPLOMA',
-    TipoDocumento.seguro: 'SEGURO',
+    TipoDocumento.certificacion: 'CERTIFICACION',
+    TipoDocumento.otro: 'OTRO',
   };
 
   String get toDb => _db[this]!;

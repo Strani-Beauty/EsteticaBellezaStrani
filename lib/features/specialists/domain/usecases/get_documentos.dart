@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import 'package:esteticaybellezastrani/app/core/usecases/use_case.dart';
@@ -51,6 +53,40 @@ class RegisterDocumento
       tipoDocumento: params.tipoDocumento,
       nombreArchivo: params.nombreArchivo,
       urlArchivo: params.urlArchivo,
+      versionDocumento: params.versionDocumento,
+    );
+  }
+}
+
+class SubirDocumentoParams {
+  final String especialistaId;
+  final TipoDocumento tipoDocumento;
+  final Uint8List bytes;
+  final String nombreArchivo;
+  final int versionDocumento;
+  const SubirDocumentoParams({
+    required this.especialistaId,
+    required this.tipoDocumento,
+    required this.bytes,
+    required this.nombreArchivo,
+    this.versionDocumento = 1,
+  });
+}
+
+/// Sube los bytes del documento al bucket y registra la fila.
+class SubirDocumento
+    extends UseCase<DocumentoEspecialistaEntity, SubirDocumentoParams> {
+  final ISpecialistsRepository _repository;
+  SubirDocumento(this._repository);
+
+  @override
+  Future<Either<Failure, DocumentoEspecialistaEntity>> call(
+      SubirDocumentoParams params) {
+    return _repository.subirDocumento(
+      especialistaId: params.especialistaId,
+      tipoDocumento: params.tipoDocumento,
+      bytes: params.bytes,
+      nombreArchivo: params.nombreArchivo,
       versionDocumento: params.versionDocumento,
     );
   }

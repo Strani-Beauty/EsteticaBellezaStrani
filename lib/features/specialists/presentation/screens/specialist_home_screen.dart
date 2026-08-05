@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import '../cubits/specialists_cubit.dart';
 import '../../domain/entities/contrato_entity.dart';
+import '../../domain/entities/documento_especialista_entity.dart';
 import '../../domain/entities/especialista_entity.dart';
 import '../widgets/disponibilidad_card.dart';
 import '../widgets/documentos_section.dart';
@@ -18,6 +21,8 @@ class SpecialistHomeScreen extends StatefulWidget {
 }
 
 class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
+  bool _redirectedToDocuments = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,21 +45,43 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
           ),
         ],
       ),
-      body: BlocBuilder<SpecialistsCubit, SpecialistsState>(
-        builder: (context, state) {
-          if (state is SpecialistsLoading) {
-            return const Center(child: CircularProgressIndicator());
+      body: BlocListener<SpecialistsCubit, SpecialistsState>(
+        listener: (context, state) {
+          // Onboarding obligatorio: si el especialista existe pero aún no ha
+          // subido los documentos requeridos, se le lleva a esa pantalla.
+          if (state is SpecialistsLoaded &&
+              state.especialista != null &&
+              !_tieneDocumentosRequeridos(state) &&
+              !_redirectedToDocuments) {
+            _redirectedToDocuments = true;
+            context.go(
+              AppRoutes.specialistDocuments,
+              extra: state.especialista!.id,
+            );
           }
-          if (state is SpecialistsError) {
-            return _ErrorView(message: state.message);
-          }
-          if (state is! SpecialistsLoaded) {
-            return const SizedBox.shrink();
-          }
-          return _buildDashboard(context, state);
         },
+        child: BlocBuilder<SpecialistsCubit, SpecialistsState>(
+          builder: (context, state) {
+            if (state is SpecialistsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state is SpecialistsError) {
+              return _ErrorView(message: state.message);
+            }
+            if (state is! SpecialistsLoaded) {
+              return const SizedBox.shrink();
+            }
+            return _buildDashboard(context, state);
+          },
+        ),
       ),
     );
+  }
+
+  bool _tieneDocumentosRequeridos(SpecialistsLoaded state) {
+    const requeridos = [TipoDocumento.identificacion, TipoDocumento.licencia];
+    return requeridos.every((t) =>
+        state.documentos.any((d) => d.tipoDocumento == t && d.activo));
   }
 
   Widget _buildDashboard(BuildContext context, SpecialistsLoaded state) {

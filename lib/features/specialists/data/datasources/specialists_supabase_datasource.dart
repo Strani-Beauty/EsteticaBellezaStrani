@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../app/config/app_constants.dart';
 import '../models/contrato_model.dart';
 import '../models/disponibilidad_model.dart';
 import '../models/documento_especialista_model.dart';
@@ -158,6 +161,34 @@ class SpecialistsSupabaseDataSource {
     return DocumentoEspecialistaModel.fromJson(res);
   }
 
+  /// Sube los bytes del documento al bucket y registra la fila en la BD.
+  /// Devuelve el documento ya guardado con su URL pública.
+  Future<DocumentoEspecialistaModel> subirDocumento({
+    required String especialistaId,
+    required TipoDocumento tipoDocumento,
+    required Uint8List bytes,
+    required String nombreArchivo,
+    int versionDocumento = 1,
+  }) async {
+    final ext = _extension(nombreArchivo);
+    final path = '$especialistaId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+    final uploadResult = await _client.storage
+        .from(AppConstants.bucketDocumentos)
+        .uploadBinary(path, bytes);
+    final publicUrl = _client.storage
+        .from(AppConstants.bucketDocumentos)
+        .getPublicUrl(uploadResult);
+
+    return registerDocumento(
+      especialistaId: especialistaId,
+      tipoDocumento: tipoDocumento,
+      nombreArchivo: nombreArchivo,
+      urlArchivo: publicUrl,
+      versionDocumento: versionDocumento,
+    );
+  }
+
   // ── Disponibilidad ───────────────────────────────────────────
 
   Future<DisponibilidadModel?> fetchDisponibilidad(String especialistaId) async {
@@ -279,5 +310,11 @@ class SpecialistsSupabaseDataSource {
         .maybeSingle();
     if (res == null) throw Exception('No se pudo guardar la ubicación');
     return UbicacionEspecialistaModel.fromJson(res);
+  }
+
+  String _extension(String fileName) {
+    final dot = fileName.lastIndexOf('.');
+    if (dot == -1 || dot == fileName.length - 1) return 'pdf';
+    return fileName.substring(dot + 1);
   }
 }

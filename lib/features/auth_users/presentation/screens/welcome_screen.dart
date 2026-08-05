@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
+import '../cubits/auth_cubit.dart';
 
 /// Pantalla de bienvenida — punto de entrada público de la app.
 /// Presenta la marca Strani y dirige al usuario según su rol.
@@ -38,6 +40,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void dispose() {
     _animController.dispose();
     super.dispose();
+  }
+
+  /// Acceso profesional: solo entra si el usuario autenticado es especialista.
+  /// Si no hay sesión (o el rol no es especialista) se envía al login.
+  void _openSpecialist(BuildContext context) {
+    final auth = context.read<AuthCubit>();
+    final profile = auth.currentProfile;
+    if (profile != null && profile.isSpecialist) {
+      context.go(AppRoutes.specialistHome);
+    } else {
+      context.go(AppRoutes.login);
+    }
   }
 
   @override
@@ -155,7 +169,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 label: 'Especialistas',
                 subtitle: 'Acceso profesional',
                 isPrimary: false,
-                onTap: () => context.go(AppRoutes.specialistHome),
+                onTap: () => _openSpecialist(context),
               ),
             ),
             const SizedBox(width: 12),

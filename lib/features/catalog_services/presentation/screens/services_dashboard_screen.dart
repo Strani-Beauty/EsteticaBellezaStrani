@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
-import 'package:esteticaybellezastrani/supabase_service.dart';
+import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 
-/// Dashboard de catálogo de servicios — Vista post-evaluación para clientes/pacientes.
-/// Permite ingresar a cualquier servicio para cancelar parte (depósito) o la totalidad,
-/// condicionado a contar con evaluación médica vigente (< 1 año) por Telemedicina o Medicina Interna.
+/// Dashboard de catÃ¡logo de servicios â€” Vista post-evaluaciÃ³n para clientes/pacientes.
+/// Permite ingresar a cualquier servicio para cancelar parte (depÃ³sito) o la totalidad,
+/// condicionado a contar con evaluaciÃ³n mÃ©dica vigente (< 1 aÃ±o) por Telemedicina o Medicina Interna.
 class ServicesDashboardScreen extends StatefulWidget {
   const ServicesDashboardScreen({super.key});
 
@@ -25,42 +25,42 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
   static const _services = [
     {
       'title': 'Inyectables & Toxina',
-      'desc': 'Toxina botulínica, ácido hialurónico y bioestimuladores de colágeno.',
+      'desc': 'Toxina botulÃ­nica, Ã¡cido hialurÃ³nico y bioestimuladores de colÃ¡geno.',
       'price': 200.0,
       'icon': Icons.local_hospital,
       'image': 'assets/images/service_inyectables.jpg',
     },
     {
       'title': 'Rejuvenecimiento Facial',
-      'desc': 'Peelings médicos, microneedling y terapias celulares avanzadas.',
+      'desc': 'Peelings mÃ©dicos, microneedling y terapias celulares avanzadas.',
       'price': 150.0,
       'icon': Icons.face,
       'image': 'assets/images/service_rejuvenecimiento.jpg',
     },
     {
-      'title': 'Remodelación Corporal',
-      'desc': 'Moldeamiento, lipólisis de alta frecuencia y tratamientos reductores.',
+      'title': 'RemodelaciÃ³n Corporal',
+      'desc': 'Moldeamiento, lipÃ³lisis de alta frecuencia y tratamientos reductores.',
       'price': 180.0,
       'icon': Icons.accessibility_new,
       'image': 'assets/images/service_inyectables.jpg',
     },
     {
-      'title': 'Láser Médico Avanzado',
-      'desc': 'Depilación médica definitiva y rejuvenecimiento láser de alta precisión.',
+      'title': 'LÃ¡ser MÃ©dico Avanzado',
+      'desc': 'DepilaciÃ³n mÃ©dica definitiva y rejuvenecimiento lÃ¡ser de alta precisiÃ³n.',
       'price': 220.0,
       'icon': Icons.wb_incandescent,
       'image': 'assets/images/service_rejuvenecimiento.jpg',
     },
     {
       'title': 'Mesoterapia & Adelgazamiento',
-      'desc': 'Programas nutricionales y mesoterapia metabólica de alta eficiencia.',
+      'desc': 'Programas nutricionales y mesoterapia metabÃ³lica de alta eficiencia.',
       'price': 160.0,
       'icon': Icons.fitness_center,
       'image': 'assets/images/service_inyectables.jpg',
     },
     {
       'title': 'Calidad de Piel & Boosters',
-      'desc': 'Hidratación profunda con skinboosters, vitaminas y ácido hialurónico.',
+      'desc': 'HidrataciÃ³n profunda con skinboosters, vitaminas y Ã¡cido hialurÃ³nico.',
       'price': 140.0,
       'icon': Icons.clean_hands,
       'image': 'assets/images/service_rejuvenecimiento.jpg',
@@ -104,7 +104,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       return;
     }
 
-    // ── REGLA ESTRICTA RN-020 / RN-022: Validar estado de la evaluación clínica en Supabase ──
+    // â”€â”€ REGLA ESTRICTA RN-020 / RN-022: Validar estado de la evaluaciÃ³n clÃ­nica en Supabase â”€â”€
     final ruleValidation = await SupabaseService.validateReservationRulesRN020(profileId: user.id);
     if (!mounted) return;
 
@@ -115,7 +115,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       if (reason == 'RECHAZADA') {
         _showBlockedReservationModal(
           title: 'Reserva Bloqueada (RN-020 / RN-022)',
-          message: 'Tu evaluación médica fue RECHAZADA. Por regulación médica y la regla RN-020/RN-022, no puedes realizar reservas de servicios.',
+          message: 'Tu evaluaciÃ³n mÃ©dica fue RECHAZADA. Por regulaciÃ³n mÃ©dica y la regla RN-020/RN-022, no puedes realizar reservas de servicios.',
           icon: Icons.gavel_rounded,
           color: Colors.redAccent,
         );
@@ -129,13 +129,13 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       }
     }
 
-    // ── 2. Si es servicio de Inyectables, disparar Cuestionario Face Maps & Torso Silhouette ──
+    // â”€â”€ 2. Si es servicio de Inyectables, disparar Cuestionario Face Maps & Torso Silhouette â”€â”€
     if (title.toLowerCase().contains('inyectables')) {
       context.push(AppRoutes.faceMapQuestionnaire);
       return;
     }
 
-    // ── 3. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
+    // â”€â”€ 3. Si la evaluaciÃ³n estÃ¡ APROBADA y VIGENTE (< 1 aÃ±o) â†’ Mostrar Opciones de Pago / Reserva â”€â”€
     _showPaymentOptionsModal(service);
   }
 
@@ -231,7 +231,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depósito) o la totalidad:',
+              'De acuerdo a tu evaluaciÃ³n mÃ©dica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depÃ³sito) o la totalidad:',
               style: const TextStyle(fontSize: 12),
             ),
           ],
@@ -243,7 +243,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: false);
             },
             icon: const Icon(Icons.bookmark_add_rounded, size: 18),
-            label: Text('Cancelar Depósito (\$$deposito USD)'),
+            label: Text('Cancelar DepÃ³sito (\$$deposito USD)'),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
@@ -283,7 +283,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
 
     if (mounted) Navigator.pop(context); // cerrar loader
 
-    // ── Modo Prueba: Siempre procesar de forma exitosa y continuar el flujo sin detener el sistema ──
+    // â”€â”€ Modo Prueba: Siempre procesar de forma exitosa y continuar el flujo sin detener el sistema â”€â”€
     if (mounted) {
       _showPaymentSuccessDialog(serviceTitle, payFullAmount ? servicePrice : 30.0, payFullAmount);
     }
@@ -300,7 +300,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             Icon(Icons.check_circle_rounded, color: AppTheme.cSuccess, size: 28),
             SizedBox(width: 10),
-            Text('¡Pago Registrado!'),
+            Text('Â¡Pago Registrado!'),
           ],
         ),
         content: Column(
@@ -308,7 +308,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Has cancelado ${isFull ? "la totalidad" : "el depósito"} del servicio "$serviceTitle".',
+              'Has cancelado ${isFull ? "la totalidad" : "el depÃ³sito"} del servicio "$serviceTitle".',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
@@ -340,7 +340,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             Icon(Icons.history_toggle_off_rounded, color: Colors.orangeAccent, size: 28),
             SizedBox(width: 10),
-            Text('Recordatorio de Expiración'),
+            Text('Recordatorio de ExpiraciÃ³n'),
           ],
         ),
         content: Column(
@@ -348,12 +348,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tu evaluación médica por $_proveedorEvaluacion ha cumplido 1 año de validez (365 días).',
+              'Tu evaluaciÃ³n mÃ©dica por $_proveedorEvaluacion ha cumplido 1 aÃ±o de validez (365 dÃ­as).',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             const Text(
-              'Según la política de clientes del sistema, para contratar o ingresar a cualquier servicio debes abonar nuevamente el pago previo de \$30 USD y realizar una nueva evaluación médica.',
+              'SegÃºn la polÃ­tica de clientes del sistema, para contratar o ingresar a cualquier servicio debes abonar nuevamente el pago previo de \$30 USD y realizar una nueva evaluaciÃ³n mÃ©dica.',
               style: TextStyle(fontSize: 13, color: AppTheme.cDarkText, height: 1.4),
             ),
           ],
@@ -388,11 +388,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             Icon(Icons.info_outline_rounded, color: AppTheme.cDeepAccent, size: 26),
             SizedBox(width: 10),
-            Text('Evaluación Requerida'),
+            Text('EvaluaciÃ³n Requerida'),
           ],
         ),
         content: const Text(
-          'Para acceder a reservar o cancelar cualquier servicio del catálogo, primero debes completar la cuota inicial de \$30 USD y la evaluación médica (Telemedicina o Medicina Interna).',
+          'Para acceder a reservar o cancelar cualquier servicio del catÃ¡logo, primero debes completar la cuota inicial de \$30 USD y la evaluaciÃ³n mÃ©dica (Telemedicina o Medicina Interna).',
           style: TextStyle(fontSize: 13),
         ),
         actions: [
@@ -402,7 +402,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               Navigator.pop(ctx);
               context.push(AppRoutes.completeProfile);
             },
-            child: const Text('Completar Evaluación'),
+            child: const Text('Completar EvaluaciÃ³n'),
           ),
         ],
       ),
@@ -424,7 +424,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.cDeepAccent),
-            tooltip: 'Volver atrás',
+            tooltip: 'Volver atrÃ¡s',
             onPressed: () {
               if (context.canPop()) {
                 context.pop();
@@ -436,7 +436,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Catálogo de Servicios'),
+              const Text('CatÃ¡logo de Servicios'),
               Text('Bienvenido/a, $name',
                   style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
             ],
@@ -445,12 +445,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             IconButton(
               onPressed: () => context.push(AppRoutes.completeProfile),
               icon: const Icon(Icons.person_outline_rounded, color: AppTheme.cDeepAccent),
-              tooltip: 'Ver Perfil y Evaluación',
+              tooltip: 'Ver Perfil y EvaluaciÃ³n',
             ),
             IconButton(
               onPressed: () => context.read<AuthCubit>().signOut(),
               icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              tooltip: 'Cerrar Sesión',
+              tooltip: 'Cerrar SesiÃ³n',
             ),
           ],
         ),
@@ -500,7 +500,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.cDeepAccent)),
             SizedBox(width: 10),
-            Text('Verificando política de cliente y estado médico...', style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
+            Text('Verificando polÃ­tica de cliente y estado mÃ©dico...', style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
           ],
         ),
       );
@@ -523,11 +523,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Evaluación Aprobada ($_proveedorEvaluacion)',
+                    'EvaluaciÃ³n Aprobada ($_proveedorEvaluacion)',
                     style: const TextStyle(fontSize: 13, color: AppTheme.cBrandGreen, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Validez oficial de 1 año. Puedes seleccionar cualquier servicio para cancelar parte o la totalidad.',
+                    'Validez oficial de 1 aÃ±o. Puedes seleccionar cualquier servicio para cancelar parte o la totalidad.',
                     style: TextStyle(fontSize: 11, color: AppTheme.cBrandGreen.withValues(alpha: 0.85)),
                   ),
                 ],
@@ -555,11 +555,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Text(
-                    '⚠️ Evaluación Médica Expirada (Pasó 1 Año)',
+                    'âš ï¸ EvaluaciÃ³n MÃ©dica Expirada (PasÃ³ 1 AÃ±o)',
                     style: TextStyle(fontSize: 13, color: Colors.orange, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Se requiere renovar la evaluación clínica y el abono inicial de \$30 USD para reservar servicios.',
+                    'Se requiere renovar la evaluaciÃ³n clÃ­nica y el abono inicial de \$30 USD para reservar servicios.',
                     style: TextStyle(fontSize: 11, color: AppTheme.cDarkText),
                   ),
                 ],
@@ -583,7 +583,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Evaluación Médica requerida para la cancelación y reserva de servicios.',
+              'EvaluaciÃ³n MÃ©dica requerida para la cancelaciÃ³n y reserva de servicios.',
               style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, fontWeight: FontWeight.w500),
             ),
           ),

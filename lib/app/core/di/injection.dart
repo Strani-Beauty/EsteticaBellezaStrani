@@ -8,8 +8,8 @@ import 'package:esteticaybellezastrani/features/catalog_services/data/repositori
 import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
-import 'package:esteticaybellezastrani/features/payments/data/repositories/payments_repository_impl.dart';
-import 'package:esteticaybellezastrani/features/payments/domain/repositories/i_payments_repository.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/data/repositories/payments_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 
 final GetIt sl = GetIt.instance;
 

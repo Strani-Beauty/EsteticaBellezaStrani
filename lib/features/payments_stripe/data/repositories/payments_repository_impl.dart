@@ -1,9 +1,9 @@
-import 'package:esteticaybellezastrani/features/payments/domain/repositories/i_payments_repository.dart';
-import 'package:esteticaybellezastrani/supabase_service.dart';
+﻿import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
+import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 
-/// Implementación del repositorio de pagos.
-/// Por ahora delega en [SupabaseService]; en una iteración posterior el
-/// servicio monolítico migrará a datasources y este impl dejará de delegar.
+/// ImplementaciÃ³n del repositorio de pagos.
+/// Por ahora delega en [SupabaseService]; en una iteraciÃ³n posterior el
+/// servicio monolÃ­tico migrarÃ¡ a datasources y este impl dejarÃ¡ de delegar.
 class PaymentsRepositoryImpl implements IPaymentsRepository {
   const PaymentsRepositoryImpl();
 

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
-import 'package:esteticaybellezastrani/supabase_service.dart';
+import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 
-/// Modelo para un punto de inyección seleccionado en la silueta
+/// Modelo para un punto de inyecciÃ³n seleccionado en la silueta
 class InjectionPoint {
   final String id;
   final String label;
@@ -18,7 +18,7 @@ class InjectionPoint {
   });
 }
 
-/// Screen para el Cuestionario de Inyectables y Mapeo Interactivo de Puntos sobre la imagen física `Silueta.jpg`.
+/// Screen para el Cuestionario de Inyectables y Mapeo Interactivo de Puntos sobre la imagen fÃ­sica `Silueta.jpg`.
 class FaceMapQuestionnaireScreen extends StatefulWidget {
   final String? tratamientoId;
 
@@ -38,18 +38,18 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
   bool _isSaving = false;
   bool _showRegulatoryInfo = false;
 
-  // Puntos predefinidos válidos mapeados EXACTAMENTE sobre los rasgos de Silueta.jpg
+  // Puntos predefinidos vÃ¡lidos mapeados EXACTAMENTE sobre los rasgos de Silueta.jpg
   final List<InjectionPoint> _predefinedPoints = const [
     InjectionPoint(id: 'frente', label: 'Frente / Arrugas Frontales', relativeOffset: Offset(0.50, 0.22)),
     InjectionPoint(id: 'glabela_centro', label: 'Glabela / Entrecejo', relativeOffset: Offset(0.50, 0.33)),
     InjectionPoint(id: 'patas_gallo_izq', label: 'Patas de Gallo Izq', relativeOffset: Offset(0.33, 0.42)), // Movido un poco hacia afuera
     InjectionPoint(id: 'patas_gallo_der', label: 'Patas de Gallo Der', relativeOffset: Offset(0.67, 0.42)), // Movido un poco hacia afuera
-    InjectionPoint(id: 'pomulo_izq', label: 'Pómulo Izquierdo', relativeOffset: Offset(0.37, 0.51)), // Movido un poco hacia afuera
-    InjectionPoint(id: 'pomulo_der', label: 'Pómulo Derecho', relativeOffset: Offset(0.63, 0.51)), // Movido un poco hacia afuera
+    InjectionPoint(id: 'pomulo_izq', label: 'PÃ³mulo Izquierdo', relativeOffset: Offset(0.37, 0.51)), // Movido un poco hacia afuera
+    InjectionPoint(id: 'pomulo_der', label: 'PÃ³mulo Derecho', relativeOffset: Offset(0.63, 0.51)), // Movido un poco hacia afuera
     InjectionPoint(id: 'surco_naso_izq', label: 'Surco Nasogeniano Izq', relativeOffset: Offset(0.43, 0.56)),
     InjectionPoint(id: 'surco_naso_der', label: 'Surco Nasogeniano Der', relativeOffset: Offset(0.57, 0.56)),
     InjectionPoint(id: 'labios', label: 'Labios & Perioral', relativeOffset: Offset(0.50, 0.63)),
-    InjectionPoint(id: 'menton', label: 'Mentón & Barbilla', relativeOffset: Offset(0.50, 0.73)),
+    InjectionPoint(id: 'menton', label: 'MentÃ³n & Barbilla', relativeOffset: Offset(0.50, 0.73)),
     InjectionPoint(id: 'cuello_izq', label: 'Cuello / Platisma Izq', relativeOffset: Offset(0.42, 0.82)),
     InjectionPoint(id: 'cuello_der', label: 'Cuello / Platisma Der', relativeOffset: Offset(0.58, 0.82)),
   ];
@@ -57,42 +57,42 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
   // Puntos actualmente seleccionados
   final List<InjectionPoint> _selectedPoints = [];
 
-  // Zonas NO VÁLIDAS / PROHIBIDAS (Ojos, Nariz, Arterias Temporales y Pecho)
+  // Zonas NO VÃLIDAS / PROHIBIDAS (Ojos, Nariz, Arterias Temporales y Pecho)
   final List<Map<String, dynamic>> _forbiddenRegions = [
     {
       'id': 'ojo_izquierdo',
       'title': 'Cavidad Ocular / Globo Ocular Izquierdo',
-      'reason': 'Prohibido por la FDA y la sociedad de dermatología: riesgo grave de necrosis vascular y ceguera.',
+      'reason': 'Prohibido por la FDA y la sociedad de dermatologÃ­a: riesgo grave de necrosis vascular y ceguera.',
       'bounds': const Rect.fromLTRB(0.37, 0.38, 0.45, 0.46),
     },
     {
       'id': 'ojo_derecho',
       'title': 'Cavidad Ocular / Globo Ocular Derecho',
-      'reason': 'Prohibido por la FDA y la sociedad de dermatología: riesgo grave de necrosis vascular y ceguera.',
+      'reason': 'Prohibido por la FDA y la sociedad de dermatologÃ­a: riesgo grave de necrosis vascular y ceguera.',
       'bounds': const Rect.fromLTRB(0.55, 0.38, 0.63, 0.46),
     },
     {
       'id': 'nariz_dorso',
       'title': 'Dorso & Punta Nasal (Zona Vascular de Alto Riesgo)',
-      'reason': 'Prohibido por la FDA y dermatología: alto riesgo de oclusión vascular y necrosis nasal.',
+      'reason': 'Prohibido por la FDA y dermatologÃ­a: alto riesgo de oclusiÃ³n vascular y necrosis nasal.',
       'bounds': const Rect.fromLTRB(0.47, 0.47, 0.53, 0.53),
     },
     {
       'id': 'arteria_temporal_izq',
       'title': 'Zona Arterial Temporal de Alto Riesgo (Izq)',
-      'reason': 'Prohibido para aplicación directa de inyectables sin guía ecográfica avanzada.',
+      'reason': 'Prohibido para aplicaciÃ³n directa de inyectables sin guÃ­a ecogrÃ¡fica avanzada.',
       'bounds': const Rect.fromLTRB(0.26, 0.32, 0.32, 0.40), // Movido hacia adentro sobre la sien de la silueta
     },
     {
       'id': 'arteria_temporal_der',
       'title': 'Zona Arterial Temporal de Alto Riesgo (Der)',
-      'reason': 'Prohibido para aplicación directa de inyectables sin guía ecográfica avanzada.',
+      'reason': 'Prohibido para aplicaciÃ³n directa de inyectables sin guÃ­a ecogrÃ¡fica avanzada.',
       'bounds': const Rect.fromLTRB(0.68, 0.32, 0.74, 0.40), // Movido hacia adentro sobre la sien de la silueta
     },
     {
       'id': 'pecho_inferior',
       'title': 'Zona Corporal Inferior (Escote / Senos)',
-      'reason': 'La FDA prohíbe explícitamente el uso de inyectables en grandes volúmenes para modelado corporal (como senos o glúteos).',
+      'reason': 'La FDA prohÃ­be explÃ­citamente el uso de inyectables en grandes volÃºmenes para modelado corporal (como senos o glÃºteos).',
       'bounds': const Rect.fromLTRB(0.10, 0.94, 0.90, 1.00),
     },
   ];
@@ -118,7 +118,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
     final dy = details.localPosition.dy / constraints.maxHeight;
     final tappedOffset = Offset(dx, dy);
 
-    // 1. Verificar si el clic cayó dentro de una zona prohibida / no válida
+    // 1. Verificar si el clic cayÃ³ dentro de una zona prohibida / no vÃ¡lida
     for (final region in _forbiddenRegions) {
       final Rect bounds = region['bounds'] as Rect;
       if (bounds.contains(tappedOffset)) {
@@ -136,7 +136,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
       }
     }
 
-    // 3. Si se hizo clic en una zona válida del rostro o cuello, agregar punto personalizado
+    // 3. Si se hizo clic en una zona vÃ¡lida del rostro o cuello, agregar punto personalizado
     if (dy >= 0.12 && dy <= 0.92 && dx >= 0.20 && dx <= 0.80) {
       final customPoint = InjectionPoint(
         id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
@@ -149,7 +149,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Punto de inyección marcado en (${(dx * 100).toStringAsFixed(0)}%, ${(dy * 100).toStringAsFixed(0)}%)'),
+          content: Text('Punto de inyecciÃ³n marcado en (${(dx * 100).toStringAsFixed(0)}%, ${(dy * 100).toStringAsFixed(0)}%)'),
           duration: const Duration(seconds: 1),
           backgroundColor: AppTheme.cDeepAccent,
         ),
@@ -188,7 +188,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
             SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Zona No Válida / Prohibida (FDA)',
+                'Zona No VÃ¡lida / Prohibida (FDA)',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -211,7 +211,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
               ),
               child: Row(
                 children: [
-                  const Text('🚫 ', style: TextStyle(fontSize: 20)),
+                  const Text('ðŸš« ', style: TextStyle(fontSize: 20)),
                   Expanded(
                     child: Text(
                       title,
@@ -232,8 +232,8 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
             ),
             const SizedBox(height: 12),
             const Text(
-              'Regulación Sanitaria FDA:\n'
-              'Sólo están autorizados los puntos indicados de rostro y cuello. Queda prohibida la aplicación en estructuras oculares, vasculares críticas o grandes volúmenes corporales.',
+              'RegulaciÃ³n Sanitaria FDA:\n'
+              'SÃ³lo estÃ¡n autorizados los puntos indicados de rostro y cuello. Queda prohibida la aplicaciÃ³n en estructuras oculares, vasculares crÃ­ticas o grandes volÃºmenes corporales.',
               style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.cMutedText),
             ),
           ],
@@ -259,7 +259,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
     if (_selectedPoints.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor selecciona al menos un punto de inyección en la silueta.'),
+          content: Text('Por favor selecciona al menos un punto de inyecciÃ³n en la silueta.'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -298,7 +298,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
               ],
             ),
             content: Text(
-              'Se han guardado correctamente ${_selectedPoints.length} puntos de inyección en la tabla face_maps de Supabase para el Tratamiento ID: $_effectiveTratamientoId.',
+              'Se han guardado correctamente ${_selectedPoints.length} puntos de inyecciÃ³n en la tabla face_maps de Supabase para el Tratamiento ID: $_effectiveTratamientoId.',
               style: const TextStyle(fontSize: 14),
             ),
             actions: [
@@ -343,7 +343,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
         actions: [
           IconButton(
             icon: Icon(_showRegulatoryInfo ? Icons.info : Icons.info_outline),
-            tooltip: 'Regulación FDA & Estatal',
+            tooltip: 'RegulaciÃ³n FDA & Estatal',
             onPressed: () {
               setState(() => _showRegulatoryInfo = !_showRegulatoryInfo);
             },
@@ -354,10 +354,10 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. Imagen Superior: "Torso_inyectables" Completa ──
+            // â”€â”€ 1. Imagen Superior: "Torso_inyectables" Completa â”€â”€
             _buildTopHeaderTorsoImage(),
 
-            // ── Banner Regulatorio ──
+            // â”€â”€ Banner Regulatorio â”€â”€
             if (_showRegulatoryInfo) _buildRegulatoryBanner(),
 
             Padding(
@@ -369,26 +369,26 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
                   _buildTreatmentBadge(),
                   const SizedBox(height: 20),
 
-                  // ── 2. SECCIÓN MAPA INTERACTIVO (Imagen Física Silueta.jpg) ──
+                  // â”€â”€ 2. SECCIÃ“N MAPA INTERACTIVO (Imagen FÃ­sica Silueta.jpg) â”€â”€
                   _buildSectionTitle(
                     title: 'Mapa Mapeable de Inyectables (Rostro & Cuello)',
-                    subtitle: 'Haz clic directamente sobre la silueta para marcar los puntos de inyección requeridos. Las zonas oculares prohibidas están sombreadas en rojo suave sobre ambos ojos.',
+                    subtitle: 'Haz clic directamente sobre la silueta para marcar los puntos de inyecciÃ³n requeridos. Las zonas oculares prohibidas estÃ¡n sombreadas en rojo suave sobre ambos ojos.',
                     icon: Icons.touch_app_rounded,
                   ),
                   const SizedBox(height: 14),
 
-                  // Silueta interactiva mapeable usando la imagen física Silueta.jpg
+                  // Silueta interactiva mapeable usando la imagen fÃ­sica Silueta.jpg
                   _buildInteractiveSilhouetteCanvas(),
                   const SizedBox(height: 16),
 
-                  // Acceso rápido a puntos predefinidos
+                  // Acceso rÃ¡pido a puntos predefinidos
                   _buildQuickPointsBar(),
                   const SizedBox(height: 24),
 
-                  // ── 3. RESUMEN Y NOTAS ──
+                  // â”€â”€ 3. RESUMEN Y NOTAS â”€â”€
                   _buildSectionTitle(
                     title: 'Resumen de Puntos Marcados',
-                    subtitle: 'Lista de puntos de inyección válidos seleccionados:',
+                    subtitle: 'Lista de puntos de inyecciÃ³n vÃ¡lidos seleccionados:',
                     icon: Icons.checklist_rtl_rounded,
                   ),
                   const SizedBox(height: 12),
@@ -397,7 +397,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
                   _buildNotesTextField(),
                   const SizedBox(height: 24),
 
-                  // Botón Guardar en Supabase
+                  // BotÃ³n Guardar en Supabase
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -518,7 +518,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
               Icon(Icons.gavel_rounded, color: AppTheme.cGoldAccent, size: 20),
               SizedBox(width: 8),
               Text(
-                'Marco Normativo de Inyectables (FDA & Juntas Médicas)',
+                'Marco Normativo de Inyectables (FDA & Juntas MÃ©dicas)',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -529,8 +529,8 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            '• Marco Federal (FDA): Inyectables aprobados únicamente en sitios específicos de rostro y cuello (y dorso de manos). Prohibición estricta en grandes volúmenes corporales (senos, glúteos).\n'
-            '• Marco Estatal: Práctica médica bajo evaluación previa y supervisión de Director Médico (MD/DO). Prohibido para esteticistas.',
+            'â€¢ Marco Federal (FDA): Inyectables aprobados Ãºnicamente en sitios especÃ­ficos de rostro y cuello (y dorso de manos). ProhibiciÃ³n estricta en grandes volÃºmenes corporales (senos, glÃºteos).\n'
+            'â€¢ Marco Estatal: PrÃ¡ctica mÃ©dica bajo evaluaciÃ³n previa y supervisiÃ³n de Director MÃ©dico (MD/DO). Prohibido para esteticistas.',
             style: TextStyle(color: Colors.grey.shade300, fontSize: 12.5, height: 1.4),
           ),
         ],
@@ -608,7 +608,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
     );
   }
 
-  /// Canvas interactivo que muestra ÚNICAMENTE la imagen física `Silueta.jpg` / `Silueta.png`
+  /// Canvas interactivo que muestra ÃšNICAMENTE la imagen fÃ­sica `Silueta.jpg` / `Silueta.png`
   Widget _buildInteractiveSilhouetteCanvas() {
     return Card(
       elevation: 3,
@@ -625,7 +625,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Haz clic sobre la silueta para agregar/quitar puntos de inyección. Zonas oculares rojas = Prohibidas.',
+                    'Haz clic sobre la silueta para agregar/quitar puntos de inyecciÃ³n. Zonas oculares rojas = Prohibidas.',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.cDeepAccent),
                   ),
                 ),
@@ -633,7 +633,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
             ),
           ),
 
-          // Área de imagen silueta centrada a la mitad del ancho actual (1:1 proporcional)
+          // Ãrea de imagen silueta centrada a la mitad del ancho actual (1:1 proporcional)
           LayoutBuilder(
             builder: (context, constraints) {
               final double canvasWidth = (constraints.maxWidth * 0.5).clamp(280.0, 480.0);
@@ -666,7 +666,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
                         height: canvasHeight,
                         child: Stack(
                           children: [
-                            // 1. Cargar ÚNICAMENTE el activo de imagen física `Silueta.jpg` / `Silueta.png`
+                            // 1. Cargar ÃšNICAMENTE el activo de imagen fÃ­sica `Silueta.jpg` / `Silueta.png`
                             Positioned.fill(
                               child: Container(
                                 color: Colors.white,
@@ -690,7 +690,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
                               ),
                             ),
 
-                            // 2. Renderizar ZONAS NO VÁLIDAS / PROHIBIDAS (Sobre ambos ojos de Silueta.jpg)
+                            // 2. Renderizar ZONAS NO VÃLIDAS / PROHIBIDAS (Sobre ambos ojos de Silueta.jpg)
                             ..._forbiddenRegions.map((region) {
                               final Rect bounds = region['bounds'] as Rect;
                               final left = bounds.left * canvasWidth;
@@ -819,13 +819,13 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
     );
   }
 
-  /// Barra de accesos rápidos para seleccionar/desmarcar puntos predefinidos
+  /// Barra de accesos rÃ¡pidos para seleccionar/desmarcar puntos predefinidos
   Widget _buildQuickPointsBar() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Puntos de Inyección Válidos (Acceso Rápido):',
+          'Puntos de InyecciÃ³n VÃ¡lidos (Acceso RÃ¡pido):',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.cDarkText),
         ),
         const SizedBox(height: 8),
@@ -878,7 +878,7 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
           const SizedBox(height: 8),
           if (_selectedPoints.isEmpty)
             Text(
-              'No se ha marcado ningún punto de inyección en la silueta. Haz clic sobre la imagen para añadir puntos.',
+              'No se ha marcado ningÃºn punto de inyecciÃ³n en la silueta. Haz clic sobre la imagen para aÃ±adir puntos.',
               style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic, fontSize: 13),
             )
           else
@@ -914,9 +914,9 @@ class _FaceMapQuestionnaireScreenState extends State<FaceMapQuestionnaireScreen>
       controller: _notasController,
       maxLines: 3,
       decoration: InputDecoration(
-        labelText: 'Notas Clínicas / Observaciones (Opcional)',
+        labelText: 'Notas ClÃ­nicas / Observaciones (Opcional)',
         alignLabelWithHint: true,
-        hintText: 'Ej: Toxina botulínica en glabela, 15 unidades; Ácido hialurónico en surcos nasogenianos...',
+        hintText: 'Ej: Toxina botulÃ­nica en glabela, 15 unidades; Ãcido hialurÃ³nico en surcos nasogenianos...',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
         filled: true,
         fillColor: Colors.white,

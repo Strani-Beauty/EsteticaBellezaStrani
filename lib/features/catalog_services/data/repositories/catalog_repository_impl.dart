@@ -1,9 +1,9 @@
-import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
-import 'package:esteticaybellezastrani/supabase_service.dart';
+﻿import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
+import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 
-/// Implementación del repositorio de catálogo.
-/// Por ahora delega en [SupabaseService]; en una iteración posterior el
-/// servicio monolítico migrará a datasources y este impl dejará de delegar.
+/// ImplementaciÃ³n del repositorio de catÃ¡logo.
+/// Por ahora delega en [SupabaseService]; en una iteraciÃ³n posterior el
+/// servicio monolÃ­tico migrarÃ¡ a datasources y este impl dejarÃ¡ de delegar.
 class CatalogRepositoryImpl implements ICatalogRepository {
   const CatalogRepositoryImpl();
 

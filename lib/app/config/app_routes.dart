@@ -7,7 +7,7 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
-import 'package:esteticaybellezastrani/features/welcome/presentation/screens/welcome_screen.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';

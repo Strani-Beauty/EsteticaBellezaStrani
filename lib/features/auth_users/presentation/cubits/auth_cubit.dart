@@ -107,15 +107,14 @@ class AuthCubit extends Cubit<AuthState> {
       phone: phone,
     );
     result.fold(
-      (failure) => emit(AuthError(failure.message, code: failure.code)),
-      (profile) {
-        // Si requiere confirmación de correo → estado especial
-        if (!profile.activo) {
+      (failure) {
+        if (failure.code == 'email_not_confirmed') {
           emit(AuthEmailConfirmationSent(email));
         } else {
-          emit(AuthAuthenticated(profile));
+          emit(AuthError(failure.message, code: failure.code));
         }
       },
+      (profile) => emit(AuthAuthenticated(profile)),
     );
   }
 

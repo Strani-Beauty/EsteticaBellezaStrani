@@ -55,6 +55,16 @@ class AuthRepositoryImpl implements IAuthRepository {
         return const Left(AuthFailure('No se pudo crear el usuario.'));
       }
 
+      // Si Supabase no devuelve sesión es porque requiere confirmación de correo.
+      if (response.session == null) {
+        return const Left(
+          AuthFailure(
+            'Debes confirmar tu correo para activar tu cuenta.',
+            code: 'email_not_confirmed',
+          ),
+        );
+      }
+
       final profile = await _dataSource.createProfile(
         id: user.id,
         email: email,

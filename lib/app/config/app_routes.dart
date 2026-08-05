@@ -66,8 +66,11 @@ final GoRouter appRouter = GoRouter(
         return _redirectByRole(profile.rolNombre);
       }
 
-      // Si el perfil no está completo → completar perfil
-      if (!profile.activo && location != AppRoutes.completeProfile && location != AppRoutes.faceMapQuestionnaire) {
+      // Si el perfil no está completo → completar perfil (solo pacientes)
+      if (profile.isPatient &&
+          !profile.activo &&
+          location != AppRoutes.completeProfile &&
+          location != AppRoutes.faceMapQuestionnaire) {
         return AppRoutes.completeProfile;
       }
     }

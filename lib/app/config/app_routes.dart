@@ -1,10 +1,12 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/login_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/complete_profile_screen.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
+import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
@@ -91,7 +93,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.specialistHome,
       name: 'specialistHome',
-      builder: (context, state) => const SpecialistHomeScreen(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>(
+        create: (_) => sl<SpecialistsCubit>(),
+        child: const SpecialistHomeScreen(),
+      ),
     ),
     GoRoute(
       path: AppRoutes.adminDashboard,

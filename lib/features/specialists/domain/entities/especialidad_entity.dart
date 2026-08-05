@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
 
+/// Entidad de dominio: `especialidades`.
 class EspecialidadEntity extends Equatable {
-  final String id;       // UUID
+  final String id;              // uuid PK
   final String nombre;
   final String? descripcion;
   final bool activo;
@@ -21,20 +22,20 @@ class EspecialidadEntity extends Equatable {
   List<Object?> get props => [id, nombre, activo];
 }
 
-/// Relación M:N especialista-especialidad
+/// Entidad de dominio: `especialista_especialidades` (relación M:N).
 class EspecialistaEspecialidadEntity extends Equatable {
-  final String especialistaId;
-  final String especialidadId;
-  final bool principal;   // ¿Es la especialidad principal?
+  final String id;               // uuid PK
+  final String especialistaId;   // FK especialistas.id
+  final String especialidadId;   // FK especialidades.id
   final DateTime createdAt;
 
   const EspecialistaEspecialidadEntity({
+    required this.id,
     required this.especialistaId,
     required this.especialidadId,
-    required this.principal,
     required this.createdAt,
   });
 
   @override
-  List<Object?> get props => [especialistaId, especialidadId];
+  List<Object?> get props => [id, especialistaId, especialidadId];
 }

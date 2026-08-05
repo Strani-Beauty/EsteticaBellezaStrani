@@ -1,36 +1,97 @@
 import 'package:equatable/equatable.dart';
 
-enum EstadoVerificacion { pendiente, enRevision, aprobado, rechazado, bloqueado }
+/// Estado de verificación del especialista (columna `estado_verificacion`).
+enum EstadoVerificacion {
+  pendiente,
+  enRevision,
+  aprobado,
+  rechazado,
+  bloqueado;
 
+  static const Map<EstadoVerificacion, String> _db = {
+    EstadoVerificacion.pendiente: 'PENDIENTE',
+    EstadoVerificacion.enRevision: 'EN_REVISION',
+    EstadoVerificacion.aprobado: 'APROBADO',
+    EstadoVerificacion.rechazado: 'RECHAZADO',
+    EstadoVerificacion.bloqueado: 'BLOQUEADO',
+  };
+
+  String get toDb => _db[this]!;
+
+  static EstadoVerificacion? fromDb(String? value) {
+    for (final entry in _db.entries) {
+      if (entry.value == value?.toUpperCase()) return entry.key;
+    }
+    return null;
+  }
+}
+
+/// Entidad de dominio: `especialistas`.
+/// Se vincula a `profiles.id` mediante `usuario_id`.
 class EspecialistaEntity extends Equatable {
-  final String id;                    // UUID
-  final String profileId;             // FK profiles.id
-  final String? medicoRegenteId;      // FK medicos_regentes.id (DA-002)
-  final String? nombreComercial;
-  final String? rif;
-  final String? licenciaMedica;
+  final String id;                       // uuid PK
+  final String usuarioId;                // FK profiles.id (auth.users.id)
+  final String? medicoRegenteId;         // FK medicos_regentes.id
+  final String? numeroLicencia;
   final EstadoVerificacion estadoVerificacion;
-  final double comisionPorcentaje;    // % comisión plataforma
+  final DateTime? fechaSolicitudVerificacion;
+  final DateTime? fechaVerificacion;
+  final DateTime? fechaAprobacion;
+  final String? aprobadoPor;             // uuid
+  final bool disponible;
   final bool activo;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
   const EspecialistaEntity({
     required this.id,
-    required this.profileId,
+    required this.usuarioId,
     this.medicoRegenteId,
-    this.nombreComercial,
-    this.rif,
-    this.licenciaMedica,
+    this.numeroLicencia,
     required this.estadoVerificacion,
-    required this.comisionPorcentaje,
+    this.fechaSolicitudVerificacion,
+    this.fechaVerificacion,
+    this.fechaAprobacion,
+    this.aprobadoPor,
+    required this.disponible,
     required this.activo,
     required this.createdAt,
     this.updatedAt,
   });
 
   bool get isApproved => estadoVerificacion == EstadoVerificacion.aprobado;
+  bool get isPending => estadoVerificacion == EstadoVerificacion.pendiente;
+
+  EspecialistaEntity copyWith({
+    String? medicoRegenteId,
+    String? numeroLicencia,
+    EstadoVerificacion? estadoVerificacion,
+    DateTime? fechaSolicitudVerificacion,
+    DateTime? fechaVerificacion,
+    DateTime? fechaAprobacion,
+    String? aprobadoPor,
+    bool? disponible,
+    bool? activo,
+    DateTime? updatedAt,
+  }) {
+    return EspecialistaEntity(
+      id: id,
+      usuarioId: usuarioId,
+      medicoRegenteId: medicoRegenteId ?? this.medicoRegenteId,
+      numeroLicencia: numeroLicencia ?? this.numeroLicencia,
+      estadoVerificacion: estadoVerificacion ?? this.estadoVerificacion,
+      fechaSolicitudVerificacion:
+          fechaSolicitudVerificacion ?? this.fechaSolicitudVerificacion,
+      fechaVerificacion: fechaVerificacion ?? this.fechaVerificacion,
+      fechaAprobacion: fechaAprobacion ?? this.fechaAprobacion,
+      aprobadoPor: aprobadoPor ?? this.aprobadoPor,
+      disponible: disponible ?? this.disponible,
+      activo: activo ?? this.activo,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   @override
-  List<Object?> get props => [id, profileId, estadoVerificacion, activo];
+  List<Object?> get props => [id, usuarioId, estadoVerificacion, disponible, activo];
 }

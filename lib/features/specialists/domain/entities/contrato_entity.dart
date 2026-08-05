@@ -1,35 +1,71 @@
 import 'package:equatable/equatable.dart';
 
-enum TipoFirma { touch, digital }
-enum EstadoContrato { pendiente, firmado, vencido, cancelado }
+/// Método de firma del contrato (columna `metodo_firma`).
+enum MetodoFirma {
+  touch,
+  digital;
 
+  static const Map<MetodoFirma, String> _db = {
+    MetodoFirma.touch: 'TOUCH',
+    MetodoFirma.digital: 'DIGITAL',
+  };
+
+  String get toDb => _db[this]!;
+
+  static MetodoFirma? fromDb(String? value) {
+    for (final entry in _db.entries) {
+      if (entry.value == value?.toUpperCase()) return entry.key;
+    }
+    return null;
+  }
+}
+
+/// Entidad de dominio: `contratos`.
 class ContratoEntity extends Equatable {
-  final String id;               // UUID
-  final String especialistaId;  // FK especialistas.id
-  final String? templateUrl;    // URL al template PDF en Storage
-  final String? firmaUrl;       // URL a imagen de firma en Storage
-  final TipoFirma? tipoFirma;
-  final EstadoContrato estado;
+  final String id;               // uuid PK
+  final String especialistaId;   // FK especialistas.id
+  final int versionContrato;
+  final String? urlDocumento;
+  final bool firmado;
   final DateTime? fechaFirma;
-  final DateTime? fechaVencimiento;
+  final MetodoFirma? metodoFirma;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
   const ContratoEntity({
     required this.id,
     required this.especialistaId,
-    this.templateUrl,
-    this.firmaUrl,
-    this.tipoFirma,
-    required this.estado,
+    required this.versionContrato,
+    this.urlDocumento,
+    required this.firmado,
     this.fechaFirma,
-    this.fechaVencimiento,
+    this.metodoFirma,
     required this.createdAt,
     this.updatedAt,
   });
 
-  bool get isSigned => estado == EstadoContrato.firmado && firmaUrl != null;
+  bool get isSigned => firmado;
+
+  ContratoEntity copyWith({
+    String? urlDocumento,
+    bool? firmado,
+    DateTime? fechaFirma,
+    MetodoFirma? metodoFirma,
+    DateTime? updatedAt,
+  }) {
+    return ContratoEntity(
+      id: id,
+      especialistaId: especialistaId,
+      versionContrato: versionContrato,
+      urlDocumento: urlDocumento ?? this.urlDocumento,
+      firmado: firmado ?? this.firmado,
+      fechaFirma: fechaFirma ?? this.fechaFirma,
+      metodoFirma: metodoFirma ?? this.metodoFirma,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   @override
-  List<Object?> get props => [id, especialistaId, estado];
+  List<Object?> get props => [id, especialistaId, versionContrato, firmado];
 }

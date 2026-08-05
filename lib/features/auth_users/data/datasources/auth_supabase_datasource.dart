@@ -50,6 +50,12 @@ class AuthSupabaseDataSource {
     await _client.auth.signOut();
   }
 
+  /// Limpia la sesión local sin revocar tokens en el servidor.
+  /// Usado al cerrar la app/web para no depender de red.
+  Future<void> removeLocalSession() async {
+    await _client.auth.signOut(scope: SignOutScope.local);
+  }
+
   Future<void> resetPassword(String email) async {
     await _client.auth.resetPasswordForEmail(email);
   }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/i_auth_repository.dart';
@@ -154,6 +155,15 @@ class AuthCubit extends Cubit<AuthState> {
     final result = await _authRepository.signOut();
     result.fold(
       (failure) => emit(AuthError(failure.message)),
+      (_) => emit(const AuthUnauthenticated()),
+    );
+  }
+
+  /// Limpia la sesión local sin revocar en servidor (cierre de app/web).
+  Future<void> clearLocalSession() async {
+    final result = await _authRepository.removeLocalSession();
+    result.fold(
+      (failure) => debugPrint('clearLocalSession error: ${failure.message}'),
       (_) => emit(const AuthUnauthenticated()),
     );
   }

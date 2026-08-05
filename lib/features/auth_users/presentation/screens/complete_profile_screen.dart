@@ -191,6 +191,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
   }
 
+  /// Cerrar sesión y volver a la pantalla de bienvenida.
+  /// Al hacer signOut, AuthCubit pasa a AuthUnauthenticated y GoRouter
+  /// lleva al usuario de vuelta al inicio.
+  void _exitToWelcome() {
+    context.read<AuthCubit>().signOut();
+    context.go(AppRoutes.welcome);
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -513,6 +521,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       appBar: AppBar(
         title: const Text('Perfil del Paciente'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Atrás',
+          onPressed: () => _exitToWelcome(),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+            tooltip: 'Cerrar sesión',
+            onPressed: () => _exitToWelcome(),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

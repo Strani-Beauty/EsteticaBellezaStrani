@@ -22,6 +22,9 @@ abstract class IAuthRepository {
 
   Future<Either<Failure, void>> signOut();
 
+  /// Limpia la sesión local (sin revocar en servidor). Para cierre de app/web.
+  Future<Either<Failure, void>> removeLocalSession();
+
   Future<Either<Failure, void>> resetPassword(String email);
 
   // ── Profile ─────────────────────────────────────────────────

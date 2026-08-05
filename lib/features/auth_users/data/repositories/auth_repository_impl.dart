@@ -91,6 +91,16 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> removeLocalSession() async {
+    try {
+      await _dataSource.removeLocalSession();
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> resetPassword(String email) async {
     try {
       await _dataSource.resetPassword(email);

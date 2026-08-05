@@ -14,14 +14,48 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<AuthCubit>(
       create: (_) => sl<AuthCubit>()..checkCurrentSession(),
-      child: Builder(
-        builder: (context) => MaterialApp.router(
-          title: 'Estética y Belleza Strani',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          routerConfig: appRouter,
-        ),
-      ),
+      child: const _SessionLifecycleGate(),
+    );
+  }
+}
+
+/// Limpia la sesión local cuando la app/web se cierra o queda en segundo plano
+/// durante mucho tiempo, para no dejar un "usuario activo" en caché.
+class _SessionLifecycleGate extends StatefulWidget {
+  const _SessionLifecycleGate();
+
+  @override
+  State<_SessionLifecycleGate> createState() => _SessionLifecycleGateState();
+}
+
+class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      context.read<AuthCubit>().clearLocalSession();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Estética y Belleza Strani',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      routerConfig: appRouter,
     );
   }
 }

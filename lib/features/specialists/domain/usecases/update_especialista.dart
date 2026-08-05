@@ -11,6 +11,9 @@ class UpdateEspecialistaParams {
   final bool? disponible;
   final bool? activo;
   final String? estadoVerificacion;
+  final DateTime? fechaVerificacion;
+  final DateTime? fechaAprobacion;
+  final String? aprobadoPor;
   const UpdateEspecialistaParams({
     required this.id,
     this.numeroLicencia,
@@ -18,6 +21,9 @@ class UpdateEspecialistaParams {
     this.disponible,
     this.activo,
     this.estadoVerificacion,
+    this.fechaVerificacion,
+    this.fechaAprobacion,
+    this.aprobadoPor,
   });
 }
 
@@ -35,6 +41,13 @@ class UpdateEspecialista
     if (params.disponible != null) data['disponible'] = params.disponible;
     if (params.activo != null) data['activo'] = params.activo;
     if (params.estadoVerificacion != null) data['estado_verificacion'] = params.estadoVerificacion;
+    if (params.fechaVerificacion != null) {
+      data['fecha_verificacion'] = params.fechaVerificacion!.toIso8601String();
+    }
+    if (params.fechaAprobacion != null) {
+      data['fecha_aprobacion'] = params.fechaAprobacion!.toIso8601String();
+    }
+    if (params.aprobadoPor != null) data['aprobado_por'] = params.aprobadoPor;
     return _repository.updateEspecialista(params.id, data);
   }
 }

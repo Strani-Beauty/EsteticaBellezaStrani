@@ -14,6 +14,8 @@ class EspecialistaModel {
   final bool activo;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String? nombreUsuario;
+  final String? emailUsuario;
 
   const EspecialistaModel({
     required this.id,
@@ -29,9 +31,12 @@ class EspecialistaModel {
     required this.activo,
     required this.createdAt,
     this.updatedAt,
+    this.nombreUsuario,
+    this.emailUsuario,
   });
 
   factory EspecialistaModel.fromJson(Map<String, dynamic> json) {
+    final profile = json['profiles'] as Map<String, dynamic>?;
     return EspecialistaModel(
       id: json['id'] as String,
       usuarioId: json['usuario_id'] as String,
@@ -48,6 +53,8 @@ class EspecialistaModel {
       activo: json['activo'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: _parseDate(json['updated_at']),
+      nombreUsuario: profile?['full_name'] as String?,
+      emailUsuario: profile?['email'] as String?,
     );
   }
 
@@ -84,6 +91,8 @@ class EspecialistaModel {
       activo: activo,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      nombreUsuario: nombreUsuario,
+      emailUsuario: emailUsuario,
     );
   }
 

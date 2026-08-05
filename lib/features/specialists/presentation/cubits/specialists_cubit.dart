@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 // Los usecases se inyectan por nombre; esta regla no aplica aquí.
 // ignore_for_file: prefer_initializing_formals
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:esteticaybellezastrani/app/core/usecases/use_case.dart';
 import '../../domain/entities/contrato_entity.dart';
 import '../../domain/entities/disponibilidad_entity.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
@@ -12,6 +13,7 @@ import '../../domain/entities/especialista_entity.dart';
 import '../../domain/entities/medico_regente_entity.dart';
 import '../../domain/entities/ubicacion_especialista_entity.dart';
 import '../../domain/usecases/create_especialista.dart';
+import '../../domain/usecases/get_all_especialistas.dart';
 import '../../domain/usecases/get_contrato.dart';
 import '../../domain/usecases/get_disponibilidad.dart';
 import '../../domain/usecases/get_documentos.dart';
@@ -20,6 +22,7 @@ import '../../domain/usecases/get_medicos_regentes.dart';
 import '../../domain/usecases/get_my_specialist.dart';
 import '../../domain/usecases/save_ubicacion.dart';
 import '../../domain/usecases/set_disponibilidad.dart';
+import '../../domain/usecases/update_especialista.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADOS
@@ -47,6 +50,7 @@ class SpecialistsLoaded extends SpecialistsState {
   final DisponibilidadEntity? disponibilidad;
   final ContratoEntity? contrato;
   final UbicacionEspecialistaEntity? ubicacion;
+  final List<EspecialistaEntity> especialistas;
 
   const SpecialistsLoaded({
     this.especialista,
@@ -56,6 +60,7 @@ class SpecialistsLoaded extends SpecialistsState {
     this.disponibilidad,
     this.contrato,
     this.ubicacion,
+    this.especialistas = const [],
   });
 
   SpecialistsLoaded copyWith({
@@ -66,6 +71,7 @@ class SpecialistsLoaded extends SpecialistsState {
     DisponibilidadEntity? disponibilidad,
     ContratoEntity? contrato,
     UbicacionEspecialistaEntity? ubicacion,
+    List<EspecialistaEntity>? especialistas,
   }) {
     return SpecialistsLoaded(
       especialista: especialista ?? this.especialista,
@@ -75,19 +81,21 @@ class SpecialistsLoaded extends SpecialistsState {
       disponibilidad: disponibilidad ?? this.disponibilidad,
       contrato: contrato ?? this.contrato,
       ubicacion: ubicacion ?? this.ubicacion,
+      especialistas: especialistas ?? this.especialistas,
     );
   }
 
   @override
   List<Object?> get props => [
-    especialista,
-    medicosRegentes,
-    especialidades,
-    documentos,
-    disponibilidad,
-    contrato,
-    ubicacion,
-  ];
+        especialista,
+        medicosRegentes,
+        especialidades,
+        documentos,
+        disponibilidad,
+        contrato,
+        ubicacion,
+        especialistas,
+      ];
 }
 
 class SpecialistsError extends SpecialistsState {
@@ -114,6 +122,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final GetContrato _getContrato;
   final FirmarContrato _firmarContrato;
   final SaveUbicacion _saveUbicacion;
+  final UpdateEspecialista _updateEspecialista;
+  final GetAllEspecialistas _getAllEspecialistas;
 
   SpecialistsCubit({
     required GetMySpecialist getMySpecialist,
@@ -128,6 +138,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required GetContrato getContrato,
     required FirmarContrato firmarContrato,
     required SaveUbicacion saveUbicacion,
+    required UpdateEspecialista updateEspecialista,
+    required GetAllEspecialistas getAllEspecialistas,
   })  : _getMySpecialist = getMySpecialist,
         _createEspecialista = createEspecialista,
         _getMedicosRegentes = getMedicosRegentes,
@@ -140,6 +152,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _getContrato = getContrato,
         _firmarContrato = firmarContrato,
         _saveUbicacion = saveUbicacion,
+        _updateEspecialista = updateEspecialista,
+        _getAllEspecialistas = getAllEspecialistas,
         super(const SpecialistsInitial());
 
   /// Carga el tablero completo del especialista.
@@ -318,6 +332,52 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
       (u) => emit(current.copyWith(ubicacion: u)),
+    );
+  }
+
+  /// Lista todos los especialistas (panel de administración).
+  Future<void> loadAllEspecialistas() async {
+    emit(const SpecialistsLoading());
+    final result = await _getAllEspecialistas(const NoParams());
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (especialistas) => emit(SpecialistsLoaded(especialistas: especialistas)),
+    );
+  }
+
+  /// Cambia el estado de verificación de la licencia de un especialista
+  /// (aprobado/rechazado/bloqueado) desde el panel de administración.
+  Future<void> updateVerificacion({
+    required String especialistaId,
+    required EstadoVerificacion estado,
+    required String aprobadoPor,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final now = DateTime.now();
+    final result = await _updateEspecialista(UpdateEspecialistaParams(
+      id: especialistaId,
+      estadoVerificacion: estado.toDb,
+      activo: estado == EstadoVerificacion.aprobado,
+      fechaVerificacion: now,
+      fechaAprobacion: estado == EstadoVerificacion.aprobado ? now : null,
+      aprobadoPor: aprobadoPor,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (actualizado) => emit(current.copyWith(
+        especialistas: [
+          for (final e in current.especialistas)
+            if (e.id == actualizado.id)
+              actualizado.copyWith(
+                nombreUsuario: e.nombreUsuario,
+                emailUsuario: e.emailUsuario,
+              )
+            else
+              e,
+        ],
+      )),
     );
   }
 

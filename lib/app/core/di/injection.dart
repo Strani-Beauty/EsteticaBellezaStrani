@@ -14,6 +14,7 @@ import 'package:esteticaybellezastrani/features/specialists/data/datasources/spe
 import 'package:esteticaybellezastrani/features/specialists/data/repositories/specialists_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/repositories/i_specialists_repository.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/create_especialista.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_all_especialistas.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_contrato.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_disponibilidad.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_documentos.dart';
@@ -22,6 +23,7 @@ import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_my_specialist.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/save_ubicacion.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/set_disponibilidad.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_especialista.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/datasources/treatment_photos_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/repositories/treatment_photos_repository_impl.dart';
@@ -104,6 +106,8 @@ void _registerSpecialists() {
       getContrato: GetContrato(sl<ISpecialistsRepository>()),
       firmarContrato: FirmarContrato(sl<ISpecialistsRepository>()),
       saveUbicacion: SaveUbicacion(sl<ISpecialistsRepository>()),
+      updateEspecialista: UpdateEspecialista(sl<ISpecialistsRepository>()),
+      getAllEspecialistas: GetAllEspecialistas(sl<ISpecialistsRepository>()),
     ),
   );
 }

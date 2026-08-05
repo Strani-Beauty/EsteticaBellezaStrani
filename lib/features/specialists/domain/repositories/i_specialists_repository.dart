@@ -29,6 +29,8 @@ abstract class ISpecialistsRepository {
     Map<String, dynamic> data,
   );
 
+  Future<Either<Failure, List<EspecialistaEntity>>> getEspecialistas();
+
   // ── Médicos Regentes ─────────────────────────────────────────
   Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes();
 

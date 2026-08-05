@@ -47,13 +47,23 @@ class AuthSupabaseDataSource {
   }
 
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    try {
+      await _client.auth.signOut();
+    } catch (e) {
+      // gotrue ya limpia la sesión local antes del revoke en servidor.
+      // Si el revoke falla (red/servidor), no debe bloquear el logout.
+      debugPrint('⚠️ signOut revoke en servidor falló (se ignora): $e');
+    }
   }
 
   /// Limpia la sesión local sin revocar tokens en el servidor.
   /// Usado al cerrar la app/web para no depender de red.
   Future<void> removeLocalSession() async {
-    await _client.auth.signOut(scope: SignOutScope.local);
+    try {
+      await _client.auth.signOut(scope: SignOutScope.local);
+    } catch (e) {
+      debugPrint('⚠️ removeLocalSession falló (se ignora): $e');
+    }
   }
 
   Future<void> resetPassword(String email) async {

@@ -120,7 +120,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.adminDashboard,
       name: 'adminDashboard',
-      builder: (context, state) => const AdminDashboardScreen(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>(
+        create: (_) => sl<SpecialistsCubit>(),
+        child: const AdminDashboardScreen(),
+      ),
     ),
     GoRoute(
       path: AppRoutes.faceMapQuestionnaire,

@@ -42,6 +42,8 @@ class EspecialistaEntity extends Equatable {
   final bool activo;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String? nombreUsuario;           // join con profiles.full_name
+  final String? emailUsuario;            // join con profiles.email
 
   const EspecialistaEntity({
     required this.id,
@@ -57,6 +59,8 @@ class EspecialistaEntity extends Equatable {
     required this.activo,
     required this.createdAt,
     this.updatedAt,
+    this.nombreUsuario,
+    this.emailUsuario,
   });
 
   bool get isApproved => estadoVerificacion == EstadoVerificacion.aprobado;
@@ -73,6 +77,8 @@ class EspecialistaEntity extends Equatable {
     bool? disponible,
     bool? activo,
     DateTime? updatedAt,
+    String? nombreUsuario,
+    String? emailUsuario,
   }) {
     return EspecialistaEntity(
       id: id,
@@ -89,6 +95,8 @@ class EspecialistaEntity extends Equatable {
       activo: activo ?? this.activo,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      nombreUsuario: nombreUsuario ?? this.nombreUsuario,
+      emailUsuario: emailUsuario ?? this.emailUsuario,
     );
   }
 

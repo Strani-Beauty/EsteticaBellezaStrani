@@ -89,6 +89,16 @@ class SpecialistsSupabaseDataSource {
     return EspecialistaModel.fromJson(res);
   }
 
+  /// Lista todos los especialistas (uso administrativo).
+  /// Incluye nombre/email del perfil vía join a `profiles` (usuario_id).
+  Future<List<EspecialistaModel>> fetchEspecialistas() async {
+    final res = await _client
+        .from('especialistas')
+        .select('*, profiles (full_name, email)')
+        .order('created_at');
+    return res.map((json) => EspecialistaModel.fromJson(json)).toList();
+  }
+
   // ── Médicos Regentes ─────────────────────────────────────────
 
   Future<List<MedicoRegenteModel>> fetchMedicosRegentes() async {

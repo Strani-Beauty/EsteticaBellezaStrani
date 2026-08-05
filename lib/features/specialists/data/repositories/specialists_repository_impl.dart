@@ -71,6 +71,16 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
   }
 
   @override
+  Future<Either<Failure, List<EspecialistaEntity>>> getEspecialistas() async {
+    try {
+      final models = await _dataSource.fetchEspecialistas();
+      return Right(models.map((m) => m.toEntity()).toList());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes() async {
     try {
       final models = await _dataSource.fetchMedicosRegentes();

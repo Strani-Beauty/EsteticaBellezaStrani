@@ -13,6 +13,8 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/presentation/screens/fotografias_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -29,6 +31,7 @@ class AppRoutes {
   static const String specialistHome       = '/specialist';
   static const String profile              = '/profile';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
+  static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
 }
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit
@@ -109,6 +112,17 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final tratamientoId = state.extra as String?;
         return FaceMapQuestionnaireScreen(tratamientoId: tratamientoId);
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.fotografiasTratamiento,
+      name: 'fotografiasTratamiento',
+      builder: (context, state) {
+        final tratamientoId = state.pathParameters['id'] ?? '';
+        return BlocProvider<TreatmentPhotosCubit>(
+          create: (_) => sl<TreatmentPhotosCubit>(),
+          child: FotografiasScreen(tratamientoId: tratamientoId),
+        );
       },
     ),
   ],

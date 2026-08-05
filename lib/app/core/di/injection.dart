@@ -23,6 +23,14 @@ import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/save_ubicacion.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/set_disponibilidad.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/data/datasources/treatment_photos_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/data/repositories/treatment_photos_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/domain/repositories/i_treatment_photos_repository.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases/eliminar_fotografia.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases/get_fotografias.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases/registrar_fotografia_por_url.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases/subir_fotografia.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -49,6 +57,9 @@ void setupDependencies() {
 
   // ── Features: Treatment Execution ────────────────────────
   _registerTreatmentExecution();
+
+  // ── Features: Treatment Photos ───────────────────────────
+  _registerTreatmentPhotos();
 
   // ── Features: Payments Stripe ─────────────────────────────
   _registerPaymentsStripe();
@@ -111,6 +122,24 @@ void _registerCatalogServices() {
 void _registerMarketplaceCitas() {}
 
 void _registerTreatmentExecution() {}
+
+void _registerTreatmentPhotos() {
+  sl.registerLazySingleton<TreatmentPhotosSupabaseDataSource>(
+    () => TreatmentPhotosSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<ITreatmentPhotosRepository>(
+    () => TreatmentPhotosRepositoryImpl(sl<TreatmentPhotosSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<TreatmentPhotosCubit>(
+    () => TreatmentPhotosCubit(
+      getFotografias: GetFotografias(sl<ITreatmentPhotosRepository>()),
+      subirFotografia: SubirFotografia(sl<ITreatmentPhotosRepository>()),
+      registrarFotografiaPorUrl:
+          RegistrarFotografiaPorUrl(sl<ITreatmentPhotosRepository>()),
+      eliminarFotografia: EliminarFotografia(sl<ITreatmentPhotosRepository>()),
+    ),
+  );
+}
 
 void _registerPaymentsStripe() {
   sl.registerLazySingleton<IPaymentsRepository>(

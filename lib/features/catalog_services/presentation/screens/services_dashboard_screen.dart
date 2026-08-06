@@ -453,7 +453,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
                               onPressed: () => context.read<CatalogCubit>().load(),
                               icon: const Icon(Icons.refresh_rounded, size: 18),
-                              label: const Text('Reintentar'),
+label: const Text('Reintentar'),
                             ),
                           ],
                         ),
@@ -495,7 +495,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                     final isDesktop = constraints.maxWidth >= 1000;
                     final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
                     final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
-                    final childAspectRatio = isDesktop ? 0.92 : (isTablet ? 0.88 : 1.02);
+                    final childAspectRatio = isDesktop ? 0.92 : (isTablet ? 0.88 : 0.90);
 
                     return Stack(
                       children: [
@@ -707,13 +707,16 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: AppTheme.cardShadow,
-      ),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: AppTheme.cardShadow,
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -778,14 +781,26 @@ class _ServiceCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
   Widget _buildHero() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _buildHeroFallback(),
+    );
+  }
+
+  Widget _buildHeroFallback() {
     final icon = _iconForServicio(service);
 
     return Container(
-      height: 150,
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -793,7 +808,6 @@ class _ServiceCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
       ),
       child: Center(
         child: Icon(icon, size: 52, color: AppTheme.cDeepAccent),

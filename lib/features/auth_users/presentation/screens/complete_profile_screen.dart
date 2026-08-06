@@ -27,7 +27,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _addressCtrl = TextEditingController();
   final MapController _mapController = MapController();
 
-  LatLng _selectedLocation = kDefaultCaguaLocation; // Cagua, Aragua por defecto
+  LatLng _selectedLocation = kDefaultLocation; // Houston, TX por defecto
   bool _searchingLocation = false;
   bool _isLoadingInitialData = true;
   String? _addressError;
@@ -136,7 +136,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           Icon(Icons.map_rounded, color: Colors.white, size: 18),
                           SizedBox(width: 8),
                           Text(
-                            'Mapa (Cagua / Aragua)',
+                            'Mapa (Houston, TX)',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ],
@@ -585,7 +585,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 onFieldSubmitted: _searchLocation,
                 decoration: AppTheme.fieldDecoration(
                   label: 'DirecciÃ³n de HabitaciÃ³n',
-                  hint: 'Ej: Calle Comercio, Res. Strani, Cagua',
+                  hint: 'Ej: Main St, Houston, TX',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _searchingLocation
                       ? const Padding(

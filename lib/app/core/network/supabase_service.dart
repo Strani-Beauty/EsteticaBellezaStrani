@@ -196,10 +196,10 @@ class SupabaseService {
 
   static Future<LatLng?> _geocodeViaNominatimFallback(String address) async {
     try {
-      // Si la dirección no menciona Cagua o Aragua, añadir sufijo para contextualizar
+      // Si la dirección no menciona Houston o Texas, añadir sufijo para contextualizar
       String query = address;
-      if (!query.toLowerCase().contains('cagua') && !query.toLowerCase().contains('aragua')) {
-        query = '$address, Cagua, Aragua, Venezuela';
+      if (!query.toLowerCase().contains('houston') && !query.toLowerCase().contains('texas')) {
+        query = '$address, Houston, TX, USA';
       }
 
       final url = Uri.parse(

@@ -58,9 +58,9 @@ class _PatientMapPickerState extends State<PatientMapPicker> {
     widget.onLocationChanged(point);
   }
 
-  void _recenterCagua() {
-    _controller.move(kDefaultCaguaLocation, kDefaultMapZoom);
-    _handleLocationChanged(kDefaultCaguaLocation);
+  void _recenterDefault() {
+    _controller.move(kDefaultLocation, kDefaultMapZoom);
+    _handleLocationChanged(kDefaultLocation);
   }
 
   void _zoomIn() {
@@ -190,10 +190,10 @@ class _PatientMapPickerState extends State<PatientMapPicker> {
                   height: 30,
                   child: FloatingActionButton.small(
                     heroTag: 'recenter_cagua_btn',
-                    tooltip: 'Centrar en Cagua, Aragua',
+                    tooltip: 'Centrar en Houston, TX',
                     elevation: 1,
                     backgroundColor: AppTheme.cDeepAccent,
-                    onPressed: _recenterCagua,
+                    onPressed: _recenterDefault,
                     child: const Icon(Icons.location_city_rounded, color: Colors.white, size: 15),
                   ),
                 ),

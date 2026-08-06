@@ -183,7 +183,7 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
   Widget _buildMap(MarketplaceLoaded state) {
     final center = state.miLatitud != null && state.miLongitud != null
         ? LatLng(state.miLatitud!, state.miLongitud!)
-        : kDefaultCaguaLocation;
+        : kDefaultLocation;
 
     final markers = <Marker>[
       ..._pacienteMarkers(state),

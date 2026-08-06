@@ -100,11 +100,6 @@ BEGIN
                    ELSE 'Paciente'
               END;
 
-    -- Restricción de negocio: el registro abierto NO permite Administradores.
-    IF v_role = 'Administrador' THEN
-        RAISE EXCEPTION 'El registro de Administradores no está habilitado. Provisiona la cuenta por el dashboard.';
-    END IF;
-
     SELECT id INTO v_role_id FROM public.roles WHERE name = v_role LIMIT 1;
 
     INSERT INTO public.profiles (id, email, full_name, role, role_id, activo, payment_completed, evaluation_passed)

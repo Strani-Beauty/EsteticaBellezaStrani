@@ -20,8 +20,8 @@ const kUserAgentPackageName = 'com.esteticaybellezastrani.app';
 /// Delay mínimo entre solicitudes de geocoding (rate limit Nominatim ~1 req/s).
 const kGeocodeMinIntervalMs = 1100;
 
-/// Ubicación por defecto centrada en Cagua, Estado Aragua, Venezuela.
-const kDefaultCaguaLocation = LatLng(10.1863, -67.4594);
+/// Ubicación por defecto centrada en Houston, Texas, USA (mercado de la app).
+const kDefaultLocation = LatLng(29.7604, -95.3698);
 const kDefaultMapZoom = 13.0;
 const kFocusMapZoom = 16.0;
 

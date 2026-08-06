@@ -71,7 +71,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
       if (isValidMapCoordinate(lat, lng)) {
         _selectedLocation = LatLng(lat!, lng!);
       } else {
-        _selectedLocation = kDefaultCaguaLocation;
+        _selectedLocation = kDefaultLocation;
       }
       _isLoadingInitial = false;
     });
@@ -104,7 +104,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
     } else {
       setState(() {
         _isGeocoding = false;
-        _statusMessage = 'No se encontrÃ³ la direcciÃ³n. Se mantuvo la ubicaciÃ³n actual en Cagua/Aragua.';
+        _statusMessage = 'No se encontrÃ³ la direcciÃ³n. Se mantuvo la ubicaciÃ³n actual en Houston, TX.';
       });
       _openSquareMapDialog();
     }
@@ -273,7 +273,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                 onFieldSubmitted: (_) => _searchAddress(),
                 decoration: AppTheme.fieldDecoration(
                   label: 'DirecciÃ³n Completa',
-                  hint: 'Ej: Av. BolÃ­var, Cagua, Aragua',
+                  hint: 'Ej: Main St, Houston, TX',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _isGeocoding
                       ? const Padding(

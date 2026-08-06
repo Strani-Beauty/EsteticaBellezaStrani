@@ -6,7 +6,7 @@ async function geocodeWithNominatim(address: string) {
   url.searchParams.set('q', address);
   url.searchParams.set('format', 'json');
   url.searchParams.set('limit', '1');
-  url.searchParams.set('countrycodes', 've'); // ajusta a tu país
+  url.searchParams.set('countrycodes', 'us'); // mercado: Houston, TX, USA
 
   const response = await fetch(url.toString(), {
     headers: {

@@ -17,6 +17,8 @@ import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/screens/fotografias_screen.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/screens/specialist_map_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -35,6 +37,7 @@ class AppRoutes {
   static const String profile              = '/profile';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
+  static const String specialistPatientMap = '/specialist/map';
 }
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit
@@ -147,6 +150,16 @@ final GoRouter appRouter = GoRouter(
           child: FotografiasScreen(tratamientoId: tratamientoId),
         );
       },
+    ),
+    GoRoute(
+      path: AppRoutes.specialistPatientMap,
+      name: 'specialistPatientMap',
+      builder: (context, state) => BlocProvider<MarketplaceCubit>(
+        create: (_) => sl<MarketplaceCubit>(),
+        child: SpecialistMapScreen(
+          especialistaId: state.extra as String? ?? '',
+        ),
+      ),
     ),
   ],
 );

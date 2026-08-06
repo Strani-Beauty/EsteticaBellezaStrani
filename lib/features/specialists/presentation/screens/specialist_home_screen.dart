@@ -125,6 +125,15 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
             ),
             const SizedBox(height: 16),
             _ContratoCard(contrato: state.contrato),
+            if (especialista.isApproved && (state.disponibilidad?.isAvailable ?? false)) ...[
+              const SizedBox(height: 16),
+              _MapaPacientesCard(
+                onTap: () => context.push(
+                  AppRoutes.specialistPatientMap,
+                  extra: especialista.id,
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -252,6 +261,36 @@ class _ContratoCard extends StatelessWidget {
               : 'Aún no has firmado tu contrato.',
         ),
         trailing: firmado ? const Icon(Icons.check_circle, color: AppTheme.cBrandGreen) : null,
+      ),
+    );
+  }
+}
+
+class _MapaPacientesCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MapaPacientesCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: const BoxDecoration(
+            color: AppTheme.cBrandGreen,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.map_rounded, color: Colors.white, size: 26),
+        ),
+        title: const Text(
+          'Buscar Pacientes en Mapa',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text(
+          'Visualiza pacientes que buscan especialista y asigna por cercanía (primer aviso gana).',
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
       ),
     );
   }

@@ -10,6 +10,14 @@ import 'package:esteticaybellezastrani/features/catalog_services/domain/reposito
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_servicios.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/data/datasources/marketplace_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/data/repositories/marketplace_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/domain/repositories/i_marketplace_repository.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecases/aceptar_solicitud.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecases/get_especialistas_aprobados.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecases/get_mi_ubicacion.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecases/get_solicitudes_pendientes.dart';
+import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/data/repositories/payments_repository_impl.dart';
@@ -137,7 +145,24 @@ void _registerCatalogServices() {
   );
 }
 
-void _registerMarketplaceCitas() {}
+void _registerMarketplaceCitas() {
+  sl.registerLazySingleton<MarketplaceSupabaseDataSource>(
+    () => MarketplaceSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IMarketplaceRepository>(
+    () => MarketplaceRepositoryImpl(sl<MarketplaceSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<MarketplaceCubit>(
+    () => MarketplaceCubit(
+      getSolicitudesPendientes:
+          GetSolicitudesPendientes(sl<IMarketplaceRepository>()),
+      getEspecialistasAprobados:
+          GetEspecialistasAprobados(sl<IMarketplaceRepository>()),
+      getMiUbicacion: GetMiUbicacion(sl<IMarketplaceRepository>()),
+      aceptarSolicitud: AceptarSolicitud(sl<IMarketplaceRepository>()),
+    ),
+  );
+}
 
 void _registerTreatmentExecution() {}
 

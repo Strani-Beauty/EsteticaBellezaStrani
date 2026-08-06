@@ -32,13 +32,23 @@ class AppConstants {
   static const String noDisponible = 'NO_DISPONIBLE';
   static const String ocupado = 'OCUPADO';
 
+  // ── Estados de Solicitud ────────────────────────────────────
+  static const String solicitudBorrador = 'BORRADOR';
+  static const String solicitudPendientePago = 'PENDIENTE_PAGO';
+  static const String solicitudPublicada = 'PUBLICADA';
+  static const String solicitudBuscandoEspecialista = 'BUSCANDO_ESPECIALISTA';
+  static const String solicitudAceptada = 'ACEPTADA';
+  static const String solicitudCancelada = 'CANCELADA';
+  static const String solicitudExpirada = 'EXPIRADA';
+
   // ── Estados de Cita ─────────────────────────────────────────
-  static const String citaSolicitada = 'SOLICITADA';
-  static const String citaAceptada = 'ACEPTADA';
+  static const String citaProgramada = 'PROGRAMADA';
   static const String citaEnCamino = 'EN_CAMINO';
-  static const String citaEnCurso = 'EN_CURSO';
-  static const String citaCompletada = 'COMPLETADA';
+  static const String citaLlego = 'LLEGO';
+  static const String citaEnProceso = 'EN_PROCESO';
+  static const String citaFinalizada = 'FINALIZADA';
   static const String citaCancelada = 'CANCELADA';
+  static const String citaNoCompletada = 'NO_COMPLETADA';
 
   // ── Estados de Tratamiento ─────────────────────────────────
   static const String tratamientoIniciado = 'INICIADO';
@@ -77,6 +87,7 @@ class AppConstants {
   // ── Supabase RPCs ──────────────────────────────────────────
   static const String rpcEspecialistasCercanos = 'especialistas_disponibles_cercanos';
   static const String rpcValidarDisponibilidad = 'validar_disponibilidad_especialista';
+  static const String rpcAceptarSolicitud = 'aceptar_solicitud';
 
   // ── Durations ──────────────────────────────────────────────
   static const Duration debounceDuration = Duration(milliseconds: 500);

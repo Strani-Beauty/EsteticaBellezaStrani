@@ -4,8 +4,12 @@ import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth
 import 'package:esteticaybellezastrani/features/auth_users/data/repositories/auth_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/auth_users/domain/repositories/i_auth_repository.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/data/datasources/catalog_services_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/data/repositories/catalog_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_servicios.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/data/repositories/payments_repository_impl.dart';
@@ -119,8 +123,17 @@ void _registerPatientsCompliance() {
 }
 
 void _registerCatalogServices() {
+  sl.registerLazySingleton<CatalogServicesSupabaseDataSource>(
+    () => CatalogServicesSupabaseDataSource(sl<SupabaseClient>()),
+  );
   sl.registerLazySingleton<ICatalogRepository>(
-    () => const CatalogRepositoryImpl(),
+    () => CatalogRepositoryImpl(sl<CatalogServicesSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<CatalogCubit>(
+    () => CatalogCubit(
+      getCategorias: GetCategorias(sl<ICatalogRepository>()),
+      getServicios: GetServicios(sl<ICatalogRepository>()),
+    ),
   );
 }
 

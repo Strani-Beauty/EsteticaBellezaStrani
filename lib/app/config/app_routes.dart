@@ -5,6 +5,7 @@ import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/login_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/complete_profile_screen.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
@@ -96,7 +97,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.services,
       name: 'services',
-      builder: (context, state) => const ServicesDashboardScreen(),
+      builder: (context, state) => BlocProvider<CatalogCubit>(
+        create: (_) => sl<CatalogCubit>(),
+        child: const ServicesDashboardScreen(),
+      ),
     ),
     GoRoute(
       path: AppRoutes.specialistHome,

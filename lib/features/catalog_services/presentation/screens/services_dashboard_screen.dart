@@ -5,10 +5,13 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 
-/// Dashboard de catÃ¡logo de servicios â€” Vista post-evaluaciÃ³n para clientes/pacientes.
-/// Permite ingresar a cualquier servicio para cancelar parte (depÃ³sito) o la totalidad,
-/// condicionado a contar con evaluaciÃ³n mÃ©dica vigente (< 1 aÃ±o) por Telemedicina o Medicina Interna.
+/// Dashboard de catálogo de servicios — Vista post-evaluación para clientes/pacientes.
+/// Los servicios y categorías se cargan desde Supabase (`servicios`, `categorias_servicio`).
+/// Permite ingresar a cualquier servicio para cancelar parte (depósito) o la totalidad,
+/// condicionado a contar con evaluación médica vigente (< 1 año).
 class ServicesDashboardScreen extends StatefulWidget {
   const ServicesDashboardScreen({super.key});
 
@@ -22,55 +25,13 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
   String _proveedorEvaluacion = 'Telemedicina';
   bool _isExpired = false;
 
-  static const _services = [
-    {
-      'title': 'Inyectables & Toxina',
-      'desc': 'Toxina botulÃ­nica, Ã¡cido hialurÃ³nico y bioestimuladores de colÃ¡geno.',
-      'price': 200.0,
-      'icon': Icons.local_hospital,
-      'image': 'assets/images/service_inyectables.jpg',
-    },
-    {
-      'title': 'Rejuvenecimiento Facial',
-      'desc': 'Peelings mÃ©dicos, microneedling y terapias celulares avanzadas.',
-      'price': 150.0,
-      'icon': Icons.face,
-      'image': 'assets/images/service_rejuvenecimiento.jpg',
-    },
-    {
-      'title': 'RemodelaciÃ³n Corporal',
-      'desc': 'Moldeamiento, lipÃ³lisis de alta frecuencia y tratamientos reductores.',
-      'price': 180.0,
-      'icon': Icons.accessibility_new,
-      'image': 'assets/images/service_inyectables.jpg',
-    },
-    {
-      'title': 'LÃ¡ser MÃ©dico Avanzado',
-      'desc': 'DepilaciÃ³n mÃ©dica definitiva y rejuvenecimiento lÃ¡ser de alta precisiÃ³n.',
-      'price': 220.0,
-      'icon': Icons.wb_incandescent,
-      'image': 'assets/images/service_rejuvenecimiento.jpg',
-    },
-    {
-      'title': 'Mesoterapia & Adelgazamiento',
-      'desc': 'Programas nutricionales y mesoterapia metabÃ³lica de alta eficiencia.',
-      'price': 160.0,
-      'icon': Icons.fitness_center,
-      'image': 'assets/images/service_inyectables.jpg',
-    },
-    {
-      'title': 'Calidad de Piel & Boosters',
-      'desc': 'HidrataciÃ³n profunda con skinboosters, vitaminas y Ã¡cido hialurÃ³nico.',
-      'price': 140.0,
-      'icon': Icons.clean_hands,
-      'image': 'assets/images/service_rejuvenecimiento.jpg',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
     _loadFlowStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CatalogCubit>().load();
+    });
   }
 
   Future<void> _loadFlowStatus() async {
@@ -95,8 +56,8 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     }
   }
 
-  Future<void> _onServiceSelected(Map<String, dynamic> service) async {
-    final title = service['title'] as String? ?? '';
+  Future<void> _onServiceSelected(ServicioEntity service) async {
+    final title = service.nombre;
     final user = SupabaseService.currentUser;
 
     if (user == null) {
@@ -104,7 +65,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       return;
     }
 
-    // â”€â”€ REGLA ESTRICTA RN-020 / RN-022: Validar estado de la evaluaciÃ³n clÃ­nica en Supabase â”€â”€
+    // ── REGLA ESTRICTA RN-020 / RN-022: Validar estado de la evaluación clínica en Supabase ──
     final ruleValidation = await SupabaseService.validateReservationRulesRN020(profileId: user.id);
     if (!mounted) return;
 
@@ -115,7 +76,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       if (reason == 'RECHAZADA') {
         _showBlockedReservationModal(
           title: 'Reserva Bloqueada (RN-020 / RN-022)',
-          message: 'Tu evaluaciÃ³n mÃ©dica fue RECHAZADA. Por regulaciÃ³n mÃ©dica y la regla RN-020/RN-022, no puedes realizar reservas de servicios.',
+          message: 'Tu evaluación médica fue RECHAZADA. Por regulación médica y la regla RN-020/RN-022, no puedes realizar reservas de servicios.',
           icon: Icons.gavel_rounded,
           color: Colors.redAccent,
         );
@@ -129,13 +90,13 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       }
     }
 
-    // â”€â”€ 2. Si es servicio de Inyectables, disparar Cuestionario Face Maps & Torso Silhouette â”€â”€
-    if (title.toLowerCase().contains('inyectables')) {
+    // ── 2. Si el servicio requiere Face Map, disparar Cuestionario Face Maps & Torso Silhouette ──
+    if (service.requiereFaceMap || title.toLowerCase().contains('inyectable')) {
       context.push(AppRoutes.faceMapQuestionnaire);
       return;
     }
 
-    // â”€â”€ 3. Si la evaluaciÃ³n estÃ¡ APROBADA y VIGENTE (< 1 aÃ±o) â†’ Mostrar Opciones de Pago / Reserva â”€â”€
+    // ── 3. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
     _showPaymentOptionsModal(service);
   }
 
@@ -178,9 +139,9 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     );
   }
 
-  void _showPaymentOptionsModal(Map<String, dynamic> service) {
-    final title = service['title'] as String;
-    final price = (service['price'] as num).toDouble();
+  void _showPaymentOptionsModal(ServicioEntity service) {
+    final title = service.nombre;
+    final price = service.precioBase;
     const deposito = 30.0;
 
     showDialog(
@@ -211,7 +172,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              service['desc'] as String,
+              service.descripcion ?? '',
               style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
             ),
             const SizedBox(height: 14),
@@ -231,7 +192,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'De acuerdo a tu evaluaciÃ³n mÃ©dica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depÃ³sito) o la totalidad:',
+              'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depósito) o la totalidad:',
               style: const TextStyle(fontSize: 12),
             ),
           ],
@@ -243,7 +204,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: false);
             },
             icon: const Icon(Icons.bookmark_add_rounded, size: 18),
-            label: Text('Cancelar DepÃ³sito (\$$deposito USD)'),
+            label: Text('Cancelar Depósito (\$$deposito USD)'),
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
@@ -283,7 +244,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
 
     if (mounted) Navigator.pop(context); // cerrar loader
 
-    // â”€â”€ Modo Prueba: Siempre procesar de forma exitosa y continuar el flujo sin detener el sistema â”€â”€
+    // ── Modo Prueba: Siempre procesar de forma exitosa y continuar el flujo sin detener el sistema ──
     if (mounted) {
       _showPaymentSuccessDialog(serviceTitle, payFullAmount ? servicePrice : 30.0, payFullAmount);
     }
@@ -300,7 +261,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             Icon(Icons.check_circle_rounded, color: AppTheme.cSuccess, size: 28),
             SizedBox(width: 10),
-            Text('Â¡Pago Registrado!'),
+            Text('¡Pago Registrado!'),
           ],
         ),
         content: Column(
@@ -308,7 +269,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Has cancelado ${isFull ? "la totalidad" : "el depÃ³sito"} del servicio "$serviceTitle".',
+              'Has cancelado ${isFull ? "la totalidad" : "el depósito"} del servicio "$serviceTitle".',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
@@ -340,7 +301,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             Icon(Icons.history_toggle_off_rounded, color: Colors.orangeAccent, size: 28),
             SizedBox(width: 10),
-            Text('Recordatorio de ExpiraciÃ³n'),
+            Text('Recordatorio de Expiración'),
           ],
         ),
         content: Column(
@@ -348,12 +309,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tu evaluaciÃ³n mÃ©dica por $_proveedorEvaluacion ha cumplido 1 aÃ±o de validez (365 dÃ­as).',
+              'Tu evaluación médica por $_proveedorEvaluacion ha cumplido 1 año de validez (365 días).',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             const Text(
-              'SegÃºn la polÃ­tica de clientes del sistema, para contratar o ingresar a cualquier servicio debes abonar nuevamente el pago previo de \$30 USD y realizar una nueva evaluaciÃ³n mÃ©dica.',
+              'Según la política de clientes del sistema, para contratar o ingresar a cualquier servicio debes abonar nuevamente el pago previo de \$30 USD y realizar una nueva evaluación médica.',
               style: TextStyle(fontSize: 13, color: AppTheme.cDarkText, height: 1.4),
             ),
           ],
@@ -388,11 +349,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             Icon(Icons.info_outline_rounded, color: AppTheme.cDeepAccent, size: 26),
             SizedBox(width: 10),
-            Text('EvaluaciÃ³n Requerida'),
+            Text('Evaluación Requerida'),
           ],
         ),
         content: const Text(
-          'Para acceder a reservar o cancelar cualquier servicio del catÃ¡logo, primero debes completar la cuota inicial de \$30 USD y la evaluaciÃ³n mÃ©dica (Telemedicina o Medicina Interna).',
+          'Para acceder a reservar o cancelar cualquier servicio del catálogo, primero debes completar la cuota inicial de \$30 USD y la evaluación médica (Telemedicina o Medicina Interna).',
           style: TextStyle(fontSize: 13),
         ),
         actions: [
@@ -402,7 +363,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               Navigator.pop(ctx);
               context.push(AppRoutes.completeProfile);
             },
-            child: const Text('Completar EvaluaciÃ³n'),
+            child: const Text('Completar Evaluación'),
           ),
         ],
       ),
@@ -424,7 +385,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.cDeepAccent),
-            tooltip: 'Volver atrÃ¡s',
+            tooltip: 'Volver atrás',
             onPressed: () {
               if (context.canPop()) {
                 context.pop();
@@ -436,7 +397,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('CatÃ¡logo de Servicios'),
+              const Text('Catálogo de Servicios'),
               Text('Bienvenido/a, $name',
                   style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
             ],
@@ -445,12 +406,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             IconButton(
               onPressed: () => context.push(AppRoutes.completeProfile),
               icon: const Icon(Icons.person_outline_rounded, color: AppTheme.cDeepAccent),
-              tooltip: 'Ver Perfil y EvaluaciÃ³n',
+              tooltip: 'Ver Perfil y Evaluación',
             ),
             IconButton(
               onPressed: () => context.read<AuthCubit>().signOut(),
               icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              tooltip: 'Cerrar SesiÃ³n',
+              tooltip: 'Cerrar Sesión',
             ),
           ],
         ),
@@ -462,32 +423,141 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               _buildStatusBanner(),
               const SizedBox(height: 16),
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isDesktop = constraints.maxWidth >= 1000;
-                    final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
-                    final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
-                    final childAspectRatio = isDesktop ? 0.92 : (isTablet ? 0.88 : 1.02);
-
-                    return GridView.builder(
-                      itemCount: _services.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 18,
-                        mainAxisSpacing: 18,
-                        childAspectRatio: childAspectRatio,
-                      ),
-                      itemBuilder: (context, i) => _ServiceCard(
-                        service: _services[i],
-                        onTap: () => _onServiceSelected(_services[i]),
-                      ),
-                    );
+                child: BlocConsumer<CatalogCubit, CatalogState>(
+                  listener: (context, state) {
+                    if (state is CatalogError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(state.message)),
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    if (state is CatalogLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+                      );
+                    }
+                    if (state is CatalogError) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No pudimos cargar el catálogo de servicios.',
+                              style: TextStyle(color: AppTheme.cMutedText),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+                              onPressed: () => context.read<CatalogCubit>().load(),
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    if (state is CatalogLoaded) {
+                      return _buildCatalog(state);
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCatalog(CatalogLoaded state) {
+    final servicios = state.servicios;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCategoryChips(state),
+        const SizedBox(height: 12),
+        Expanded(
+          child: servicios.isEmpty && !state.loadingServicios
+              ? const Center(
+                  child: Text(
+                    'No hay servicios disponibles en este momento.',
+                    style: TextStyle(color: AppTheme.cMutedText),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= 1000;
+                    final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
+                    final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
+                    final childAspectRatio = isDesktop ? 0.92 : (isTablet ? 0.88 : 1.02);
+
+                    return Stack(
+                      children: [
+                        GridView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: servicios.length,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 18,
+                            mainAxisSpacing: 18,
+                            childAspectRatio: childAspectRatio,
+                          ),
+                          itemBuilder: (context, i) => _ServiceCard(
+                            service: servicios[i],
+                            onTap: () => _onServiceSelected(servicios[i]),
+                          ),
+                        ),
+                        if (state.loadingServicios)
+                          const Positioned.fill(
+                            child: ColoredBox(
+                              color: Colors.white54,
+                              child: Center(
+                                child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChips(CatalogLoaded state) {
+    final selectedId = state.selectedCategoriaId;
+
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _CategoryChip(
+              label: 'Todos',
+              selected: selectedId == null,
+              onTap: () => context.read<CatalogCubit>().selectCategoria(null),
+            ),
+          ),
+          ...state.categorias.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _CategoryChip(
+                label: c.nombre,
+                selected: selectedId == c.id,
+                onTap: () => context.read<CatalogCubit>().selectCategoria(c.id),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -500,7 +570,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           children: [
             SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.cDeepAccent)),
             SizedBox(width: 10),
-            Text('Verificando polÃ­tica de cliente y estado mÃ©dico...', style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
+            Text('Verificando política de cliente y estado médico...', style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
           ],
         ),
       );
@@ -523,11 +593,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'EvaluaciÃ³n Aprobada ($_proveedorEvaluacion)',
+                    'Evaluación Aprobada ($_proveedorEvaluacion)',
                     style: const TextStyle(fontSize: 13, color: AppTheme.cBrandGreen, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Validez oficial de 1 aÃ±o. Puedes seleccionar cualquier servicio para cancelar parte o la totalidad.',
+                    'Validez oficial de 1 año. Puedes seleccionar cualquier servicio para cancelar parte o la totalidad.',
                     style: TextStyle(fontSize: 11, color: AppTheme.cBrandGreen.withValues(alpha: 0.85)),
                   ),
                 ],
@@ -555,11 +625,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Text(
-                    'âš ï¸ EvaluaciÃ³n MÃ©dica Expirada (PasÃ³ 1 AÃ±o)',
+                    '⚠️ Evaluación Médica Expirada (Pasó 1 Año)',
                     style: TextStyle(fontSize: 13, color: Colors.orange, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Se requiere renovar la evaluaciÃ³n clÃ­nica y el abono inicial de \$30 USD para reservar servicios.',
+                    'Se requiere renovar la evaluación clínica y el abono inicial de \$30 USD para reservar servicios.',
                     style: TextStyle(fontSize: 11, color: AppTheme.cDarkText),
                   ),
                 ],
@@ -583,7 +653,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'EvaluaciÃ³n MÃ©dica requerida para la cancelaciÃ³n y reserva de servicios.',
+              'Evaluación Médica requerida para la cancelación y reserva de servicios.',
               style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, fontWeight: FontWeight.w500),
             ),
           ),
@@ -593,16 +663,50 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
   }
 }
 
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        color: selected ? Colors.white : AppTheme.cDarkText,
+        fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+      ),
+      selectedColor: AppTheme.cDeepAccent,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: selected ? AppTheme.cDeepAccent : Colors.grey.shade300,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      ),
+      showCheckmark: false,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+}
+
 class _ServiceCard extends StatelessWidget {
-  final Map<String, dynamic> service;
+  final ServicioEntity service;
   final VoidCallback onTap;
 
   const _ServiceCard({required this.service, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final price = (service['price'] as num).toDouble();
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -613,10 +717,7 @@ class _ServiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
-            child: _buildImage(service['image'] as String, service['icon'] as IconData),
-          ),
+          _buildHero(),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -627,40 +728,50 @@ class _ServiceCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        service['title'] as String,
+                        service.nombre,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Text(
-                      '\$$price',
+                      _formatPrice(service),
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  service['desc'] as String,
+                  service.descripcion ?? '',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, height: 1.3),
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 38,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.cDeepAccent,
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                    onPressed: onTap,
-                    icon: const Icon(Icons.payment_rounded, size: 16),
-                    label: const Text('Cancelar / Reservar'),
-                  ),
+                Row(
+                  children: [
+                    if (service.nombreCategoria != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppTheme.cPastelPurple,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          service.nombreCategoria!,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (service.requiereFotos)
+                      const Tooltip(
+                        message: 'Este servicio requiere evidencia fotográfica',
+                        child: Icon(Icons.photo_camera_outlined, size: 16, color: AppTheme.cDeepAccent),
+                      ),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right_rounded, color: AppTheme.cMutedText, size: 20),
+                  ],
                 ),
               ],
             ),
@@ -670,23 +781,56 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(String path, IconData icon) {
-    const imageHeight = 160.0;
-    final fallback = Container(
-      height: imageHeight,
-      color: AppTheme.cPastelPink,
+  Widget _buildHero() {
+    final icon = _iconForServicio(service);
+
+    return Container(
+      height: 150,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppTheme.cPastelPink, AppTheme.cPastelPurple],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
+      ),
       child: Center(
-        child: Icon(icon, size: 48, color: AppTheme.cDeepAccent),
+        child: Icon(icon, size: 52, color: AppTheme.cDeepAccent),
       ),
     );
+  }
 
-    return Image.asset(
-      path,
-      height: imageHeight,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => fallback,
-    );
+  String _formatPrice(ServicioEntity service) {
+    final suffix = switch (service.tipoPrecio) {
+      TipoPrecio.precioFijo => '',
+      TipoPrecio.porUnidad => '/unidad',
+      TipoPrecio.porJeringa => '/jeringa',
+      TipoPrecio.porSesion => '/sesión',
+      TipoPrecio.porPlan => '/plan',
+    };
+    return '\$${service.precioBase}${suffix.isEmpty ? '' : ' '}$suffix';
   }
 }
 
+IconData _iconForServicio(ServicioEntity service) {
+  final nombre = service.nombre.toLowerCase();
+  final categoria = service.nombreCategoria?.toLowerCase() ?? '';
+
+  if (nombre.contains('inyectable') || nombre.contains('toxina') || nombre.contains('jeringa') || categoria.contains('inyectable')) {
+    return Icons.local_hospital;
+  }
+  if (nombre.contains('lás') || nombre.contains('lase') || nombre.contains('pulsada')) {
+    return Icons.wb_incandescent;
+  }
+  if (nombre.contains('corporal') || nombre.contains('cuerpo') || nombre.contains('lipólisis') || nombre.contains('reductor') || nombre.contains('moldeamiento')) {
+    return Icons.accessibility_new;
+  }
+  if (nombre.contains('mesoterapia') || nombre.contains('adelgazamiento') || nombre.contains('nutricion')) {
+    return Icons.fitness_center;
+  }
+  if (nombre.contains('rejuvenecimiento') || nombre.contains('facial') || nombre.contains('piel') || nombre.contains('peeling') || nombre.contains('booster') || nombre.contains('skin')) {
+    return Icons.face;
+  }
+  return Icons.spa;
+}

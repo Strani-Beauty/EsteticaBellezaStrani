@@ -45,6 +45,22 @@ import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases/registrar_fotografia_por_url.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/usecases/subir_fotografia.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/data/datasources/treatment_execution_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/data/repositories/treatment_execution_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/repositories/i_treatment_execution_repository.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/actualizar_tratamiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/agregar_producto.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/avanzar_estado_cita.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/eliminar_producto.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/finalizar_tratamiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_cita_detalle.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_consentimiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_mis_citas.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_productos.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/iniciar_tratamiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/registrar_consentimiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/subir_firma.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/presentation/cubits/treatment_execution_cubit.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -164,7 +180,39 @@ void _registerMarketplaceCitas() {
   );
 }
 
-void _registerTreatmentExecution() {}
+void _registerTreatmentExecution() {
+  sl.registerLazySingleton<TreatmentExecutionSupabaseDataSource>(
+    () => TreatmentExecutionSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<ITreatmentExecutionRepository>(
+    () => TreatmentExecutionRepositoryImpl(
+      sl<TreatmentExecutionSupabaseDataSource>(),
+    ),
+  );
+  sl.registerLazySingleton<TreatmentExecutionCubit>(
+    () => TreatmentExecutionCubit(
+      getMisCitas: GetMisCitas(sl<ITreatmentExecutionRepository>()),
+      getCitaDetalle: GetCitaDetalle(sl<ITreatmentExecutionRepository>()),
+      getProductos: GetProductos(sl<ITreatmentExecutionRepository>()),
+      getConsentimiento: GetConsentimiento(sl<ITreatmentExecutionRepository>()),
+      avanzarEstadoCita:
+          AvanzarEstadoCita(sl<ITreatmentExecutionRepository>()),
+      iniciarTratamiento:
+          IniciarTratamiento(sl<ITreatmentExecutionRepository>()),
+      actualizarTratamiento:
+          ActualizarTratamiento(sl<ITreatmentExecutionRepository>()),
+      agregarProducto: AgregarProducto(sl<ITreatmentExecutionRepository>()),
+      eliminarProducto: EliminarProducto(sl<ITreatmentExecutionRepository>()),
+      registrarConsentimiento: RegistrarConsentimiento(
+        sl<ITreatmentExecutionRepository>(),
+      ),
+      subirFirma: SubirFirma(sl<ITreatmentExecutionRepository>()),
+      finalizarTratamiento: FinalizarTratamiento(
+        sl<ITreatmentExecutionRepository>(),
+      ),
+    ),
+  );
+}
 
 void _registerTreatmentPhotos() {
   sl.registerLazySingleton<TreatmentPhotosSupabaseDataSource>(

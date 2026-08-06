@@ -81,14 +81,23 @@ UPDATE public.pacientes
    SELECT id FROM public.profiles WHERE email LIKE 'paciente%@test.com'
  );
 
+-- Garantiza la fila en `pacientes` (no depende de la trigger) con su propio UUID.
+INSERT INTO public.pacientes (usuario_id, activo, created_at, updated_at)
+SELECT p.id, TRUE, now(), now()
+FROM public.profiles p
+WHERE p.email LIKE 'paciente%@test.com'
+ON CONFLICT (usuario_id) DO NOTHING;
+
 -- Evaluación médica vigente (1 año) para que el flujo de reservas funcione.
+-- paciente_id → pacientes.id (UUID propio), NO el profile/auth id.
 INSERT INTO public.validaciones_telemedicina (
   id, paciente_id, proveedor, codigo_referencia, fecha_validacion,
   fecha_vencimiento, estado, created_at, updated_at
 )
-SELECT '30000000-0000-0000-0000-000000000001', p.id, 'Telemedicina',
-       'TST-' || p.id, now(), now() + interval '365 days', 'APROBADA', now(), now()
+SELECT '30000000-0000-0000-0000-000000000001', pac.id, 'Telemedicina',
+       'TST-' || pac.id, now(), now() + interval '365 days', 'APROBADA', now(), now()
 FROM public.profiles p
+JOIN public.pacientes pac ON pac.usuario_id = p.id
 WHERE p.email = 'paciente1@test.com'
 ON CONFLICT (id) DO NOTHING;
 
@@ -118,19 +127,19 @@ INSERT INTO public.especialistas (
   id, usuario_id, numero_licencia, estado_verificacion,
   fecha_solicitud_verificacion, fecha_aprobacion, disponible, activo
 )
-SELECT '50000000-0000-0000-0000-000000000001', pr.id, 'TX-MD-1001', 'APROBADO',
+SELECT '50000000-0000-0000-0000-000000000001'::uuid, pr.id, 'TX-MD-1001', 'APROBADO',
        now() - interval '10 days', now(), TRUE, TRUE
 FROM public.profiles pr WHERE pr.email = 'especialista1@test.com'
 UNION ALL
-SELECT '50000000-0000-0000-0000-000000000002', pr.id, 'TX-MD-1002', 'APROBADO',
+SELECT '50000000-0000-0000-0000-000000000002'::uuid, pr.id, 'TX-MD-1002', 'APROBADO',
        now() - interval '9 days', now(), TRUE, TRUE
 FROM public.profiles pr WHERE pr.email = 'especialista2@test.com'
 UNION ALL
-SELECT '50000000-0000-0000-0000-000000000003', pr.id, 'TX-MD-1003', 'APROBADO',
+SELECT '50000000-0000-0000-0000-000000000003'::uuid, pr.id, 'TX-MD-1003', 'APROBADO',
        now() - interval '8 days', now(), TRUE, TRUE
 FROM public.profiles pr WHERE pr.email = 'especialista3@test.com'
 UNION ALL
-SELECT '50000000-0000-0000-0000-000000000004', pr.id, 'TX-MD-1004', 'APROBADO',
+SELECT '50000000-0000-0000-0000-000000000004'::uuid, pr.id, 'TX-MD-1004', 'APROBADO',
        now() - interval '7 days', now(), TRUE, TRUE
 FROM public.profiles pr WHERE pr.email = 'especialista4@test.com'
 ON CONFLICT (id) DO NOTHING;
@@ -152,6 +161,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ── 6. CATÁLOGO: categorías y servicios ────────────────────────────────────
 INSERT INTO public.categorias_servicio (id, nombre, descripcion, activo, created_at, updated_at)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 'Inyectables', 'Toxina, ácido hialurónico y bioestimuladores', TRUE, now(), now()),
        (2, 'Rejuvenecimiento Facial', 'Peelings, microneedling y terapias celulares', TRUE, now(), now()),
        (3, 'Remodelación Corporal', 'Lipólisis y tratamientos reductores', TRUE, now(), now()),
@@ -188,7 +198,7 @@ INSERT INTO public.direcciones_paciente (
   id, paciente_id, direccion, ciudad, estado, codigo_postal,
   latitud, longitud, es_principal, created_at, ubicacion
 )
-SELECT '70000000-0000-0000-0000-000000000001', pac.id,
+SELECT '70000000-0000-0000-0000-000000000001'::uuid, pac.id,
        '2310 Main St', 'Houston', 'TX', '77002',
        29.7410, -95.3727, TRUE, now(),
        'SRID=4326;POINT(-95.3727 29.7410)'::geography
@@ -196,7 +206,7 @@ FROM public.pacientes pac
 JOIN public.profiles pr ON pr.id = pac.usuario_id
 WHERE pr.email = 'paciente1@test.com'
 UNION ALL
-SELECT '70000000-0000-0000-0000-000000000002', pac.id,
+SELECT '70000000-0000-0000-0000-000000000002'::uuid, pac.id,
        '1202 Heights Blvd', 'Houston', 'TX', '77008',
        29.8034, -95.3964, TRUE, now(),
        'SRID=4326;POINT(-95.3964 29.8034)'::geography
@@ -204,7 +214,7 @@ FROM public.pacientes pac
 JOIN public.profiles pr ON pr.id = pac.usuario_id
 WHERE pr.email = 'paciente2@test.com'
 UNION ALL
-SELECT '70000000-0000-0000-0000-000000000003', pac.id,
+SELECT '70000000-0000-0000-0000-000000000003'::uuid, pac.id,
        '5085 Westheimer Rd', 'Houston', 'TX', '77056',
        29.7380, -95.4650, TRUE, now(),
        'SRID=4326;POINT(-95.4650 29.7380)'::geography
@@ -212,7 +222,7 @@ FROM public.pacientes pac
 JOIN public.profiles pr ON pr.id = pac.usuario_id
 WHERE pr.email = 'paciente3@test.com'
 UNION ALL
-SELECT '70000000-0000-0000-0000-000000000004', pac.id,
+SELECT '70000000-0000-0000-0000-000000000004'::uuid, pac.id,
        '700 Waugh Dr', 'Houston', 'TX', '77019',
        29.7445, -95.3916, TRUE, now(),
        'SRID=4326;POINT(-95.3916 29.7445)'::geography
@@ -220,7 +230,7 @@ FROM public.pacientes pac
 JOIN public.profiles pr ON pr.id = pac.usuario_id
 WHERE pr.email = 'paciente4@test.com'
 UNION ALL
-SELECT '70000000-0000-0000-0000-000000000005', pac.id,
+SELECT '70000000-0000-0000-0000-000000000005'::uuid, pac.id,
        '2071 N Fry Rd', 'Katy', 'TX', '77449',
        29.7858, -95.8244, TRUE, now(),
        'SRID=4326;POINT(-95.8244 29.7858)'::geography
@@ -236,8 +246,8 @@ INSERT INTO public.solicitudes (
   deposito_requerido, deposito_pagado, radio_busqueda,
   fecha_expiracion, created_at, updated_at
 )
-SELECT '80000000-0000-0000-0000-000000000001', sol.paciente_id, sol.servicio_id,
-       sol.direccion_id, sol.estado, now(), sol.deposito, TRUE, sol.radio,
+SELECT '80000000-0000-0000-0000-000000000001'::uuid, sol.paciente_id, sol.servicio_id,
+       sol.direccion_id, sol.estado::estado_solicitud_enum, now(), sol.deposito, TRUE, sol.radio,
        sol.expira, now(), now()
 FROM (
   SELECT pac.id AS paciente_id,
@@ -299,9 +309,9 @@ INSERT INTO public.solicitudes (
   deposito_requerido, deposito_pagado, radio_busqueda,
   fecha_expiracion, created_at, updated_at
 )
-SELECT '80000000-0000-0000-0000-000000000099', pac.id,
+SELECT '80000000-0000-0000-0000-000000000099'::uuid, pac.id,
        '11111111-1111-1111-1111-111111111111'::uuid,
-       d.id, 'ACEPTADA', now(), 30, TRUE, 10, now() + interval '3 days', now(), now()
+       d.id, 'ACEPTADA'::estado_solicitud_enum, now(), 30, TRUE, 10, now() + interval '3 days', now(), now()
 FROM public.pacientes pac
 JOIN public.profiles pr ON pr.id = pac.usuario_id
 JOIN public.direcciones_paciente d ON d.paciente_id = pac.id

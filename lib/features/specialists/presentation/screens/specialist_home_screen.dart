@@ -133,6 +133,13 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
                   extra: especialista.id,
                 ),
               ),
+              const SizedBox(height: 16),
+              _MisCitasCard(
+                onTap: () => context.push(
+                  AppRoutes.misCitas,
+                  extra: especialista.id,
+                ),
+              ),
             ],
           ],
         ],
@@ -288,6 +295,37 @@ class _MapaPacientesCard extends StatelessWidget {
         ),
         subtitle: const Text(
           'Visualiza pacientes que buscan especialista y asigna por cercanía (primer aviso gana).',
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _MisCitasCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MisCitasCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: const BoxDecoration(
+            color: AppTheme.cDeepAccent,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.event_available_rounded,
+              color: Colors.white, size: 26),
+        ),
+        title: const Text(
+          'Mis citas',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text(
+          'Ejecuta el ciclo de tus citas: desplazamiento, tratamiento, insumos y firma.',
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: onTap,

@@ -19,6 +19,9 @@ import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cu
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/screens/fotografias_screen.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/screens/specialist_map_screen.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/presentation/cubits/treatment_execution_cubit.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/mis_citas_screen.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/cita_detalle_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -38,6 +41,8 @@ class AppRoutes {
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
   static const String specialistPatientMap = '/specialist/map';
+  static const String misCitas = '/specialist/mis-citas';
+  static const String misCitasDetalle = '/specialist/mis-citas/:id';
 }
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit
@@ -158,6 +163,26 @@ final GoRouter appRouter = GoRouter(
         create: (_) => sl<MarketplaceCubit>(),
         child: SpecialistMapScreen(
           especialistaId: state.extra as String? ?? '',
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.misCitas,
+      name: 'misCitas',
+      builder: (context, state) => BlocProvider<TreatmentExecutionCubit>(
+        create: (_) => sl<TreatmentExecutionCubit>(),
+        child: MisCitasScreen(
+          especialistaId: state.extra as String? ?? '',
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.misCitasDetalle,
+      name: 'misCitasDetalle',
+      builder: (context, state) => BlocProvider<TreatmentExecutionCubit>(
+        create: (_) => sl<TreatmentExecutionCubit>(),
+        child: CitaDetalleScreen(
+          citaId: state.pathParameters['id'] ?? '',
         ),
       ),
     ),

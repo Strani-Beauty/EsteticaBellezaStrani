@@ -30,7 +30,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final profile = context.watch<AuthCubit>().currentProfile;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Panel Admin — ${profile?.fullName ?? 'Administrador'}'),
+        title: Text(
+          'Panel Admin — ${profile?.fullName ?? 'Administrador'}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
             onPressed: () => context.read<AuthCubit>().signOut(),

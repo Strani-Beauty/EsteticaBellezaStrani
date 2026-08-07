@@ -373,37 +373,49 @@ class _FotografiasScreenState extends State<FotografiasScreen> {
   }
 
   void _previewPhoto(FotografiaTratamientoEntity foto) {
+    final size = MediaQuery.of(context).size;
+    final dialogMaxHeight = size.height * 0.85;
+    final imgMaxHeight = (size.height * 0.6).clamp(120.0, 480.0);
     showDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: CachedNetworkImage(
-                imageUrl: foto.archivoUrl,
-                fit: BoxFit.cover,
-                placeholder: (_, _) => const Center(
-                  child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: dialogMaxHeight),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: imgMaxHeight),
+                    child: CachedNetworkImage(
+                      imageUrl: foto.archivoUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => const Center(
+                        child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+                      ),
+                      errorWidget: (_, _, _) => const Center(
+                        child: Icon(Icons.broken_image_outlined, color: AppTheme.cMutedText, size: 48),
+                      ),
+                    ),
+                  ),
                 ),
-                errorWidget: (_, _, _) => const Center(
-                  child: Icon(Icons.broken_image_outlined, color: AppTheme.cMutedText, size: 48),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  color: AppTheme.cPastelPurple,
+                  child: Text(
+                    '${foto.descripcion?.isNotEmpty == true ? foto.descripcion! : 'Fotografía de tratamiento'} — ${foto.fechaCaptura.toLocal().toString().substring(0, 16)}',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.cDarkText),
+                  ),
                 ),
-              ),
+              ],
             ),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              color: AppTheme.cPastelPurple,
-              child: Text(
-                '${foto.descripcion?.isNotEmpty == true ? foto.descripcion! : 'Fotografía de tratamiento'} — ${foto.fechaCaptura.toLocal().toString().substring(0, 16)}',
-                style: const TextStyle(fontSize: 12, color: AppTheme.cDarkText),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

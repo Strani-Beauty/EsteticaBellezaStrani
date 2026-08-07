@@ -77,44 +77,47 @@ class _FirmaConsentimientoScreenState extends State<FirmaConsentimientoScreen> {
             ),
           ],
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              const Text(
-                'El paciente declara estar informado sobre el tratamiento '
-                'a realizar y autoriza su ejecución.',
-                style: TextStyle(color: AppTheme.cMutedText),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.cDeepAccent),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'El paciente declara estar informado sobre el tratamiento '
+                  'a realizar y autoriza su ejecución.',
+                  style: TextStyle(color: AppTheme.cMutedText),
                 ),
-                child: Signature(
-                  controller: _controller,
-                  height: 240,
-                  backgroundColor: Colors.white,
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppTheme.cDeepAccent),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Signature(
+                    controller: _controller,
+                    height: 240,
+                    backgroundColor: Colors.white,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _guardando ? null : _guardar,
-                  icon: _guardando
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.draw_rounded),
-                  label: const Text('Guardar firma'),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _guardando ? null : _guardar,
+                    icon: _guardando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.draw_rounded),
+                    label: const Text('Guardar firma'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

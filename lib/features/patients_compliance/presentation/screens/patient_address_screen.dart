@@ -114,7 +114,12 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
   void _openSquareMapDialog() {
     LatLng tempLoc = _selectedLocation;
     final media = MediaQuery.of(context).size;
-    final side = (media.width * 0.65).clamp(280.0, 380.0);
+    const headerHeight = 46.0;
+    const bottomHeight = 54.0;
+    // Dimensiones adaptativas: ancho proporcional al dispositivo y alto que
+    // siempre cabe en la pantalla (evita overflow en landscape/teclado).
+    final modalWidth = (media.width * 0.9).clamp(280.0, 400.0);
+    final mapHeight = (media.height - headerHeight - bottomHeight - 64).clamp(160.0, 380.0);
 
     showDialog(
       context: context,
@@ -124,9 +129,10 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
           clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: SizedBox(
-            width: side,
-            height: side + 68,
+            width: modalWidth,
+            height: headerHeight + bottomHeight + mapHeight,
             child: Column(
               children: [
                 Container(
@@ -152,7 +158,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                   child: PatientMapPicker(
                     selectedLocation: tempLoc,
                     mapController: _mapController,
-                    height: side,
+                    height: mapHeight,
                     onLocationChanged: (newLoc) {
                       tempLoc = newLoc;
                     },

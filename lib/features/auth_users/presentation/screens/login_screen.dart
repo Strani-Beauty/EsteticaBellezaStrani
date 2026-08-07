@@ -176,10 +176,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(AppConstants.appName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 6),
                   Text(
                     'Plataforma integral de gestión y servicios de belleza.',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -328,9 +332,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 22, width: 22,
                           child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                         )
-                      : Text(isSignIn
-                          ? 'Ingresar como $_rolNombre'
-                          : 'Registrar cuenta de $_rolNombre'),
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(isSignIn
+                              ? 'Ingresar como $_rolNombre'
+                              : 'Registrar cuenta de $_rolNombre'),
+                        ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -447,10 +454,12 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: const Row(children: [
-          Icon(Icons.mark_email_read_outlined, color: AppTheme.cDeepAccent),
-          SizedBox(width: 10),
-          Text('Confirma tu correo'),
+        title: Row(children: [
+          const Icon(Icons.mark_email_read_outlined, color: AppTheme.cDeepAccent),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text('Confirma tu correo'),
+          ),
         ]),
         content: Text('Revisa tu bandeja de $email para confirmar la cuenta.'),
         actions: [

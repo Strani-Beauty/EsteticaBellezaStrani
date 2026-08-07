@@ -754,15 +754,19 @@ class _ServiceCard extends StatelessWidget {
                 Row(
                   children: [
                     if (service.nombreCategoria != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppTheme.cPastelPurple,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          service.nombreCategoria!,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.cPastelPurple,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            service.nombreCategoria!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),

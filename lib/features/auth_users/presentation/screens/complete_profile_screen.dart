@@ -104,12 +104,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
-  /// Abrir ventana emergente cuadrada (1/4 del tamaÃ±o de la pantalla total) con el mapa
+/// Abrir ventana emergente cuadrada (1/4 del tamaño de la pantalla total) con el mapa
   void _openMapModalDialog() {
     LatLng tempLocation = _selectedLocation;
     final media = MediaQuery.of(context).size;
-    // Dimensiones cuadradas aproximadas a la cuarta parte de la ventana total
-    final side = (media.width * 0.65).clamp(280.0, 380.0);
+    const headerHeight = 46.0;
+    const bottomHeight = 54.0;
+    // Dimensiones adaptativas: ancho proporcional al dispositivo y alto que
+    // siempre cabe en la pantalla (evita overflow en landscape/teclado).
+    final modalWidth = (media.width * 0.9).clamp(280.0, 400.0);
+    final mapHeight = (media.height - headerHeight - bottomHeight - 64).clamp(140.0, 380.0);
 
     showDialog(
       context: context,
@@ -119,9 +123,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           ),
           clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: SizedBox(
-            width: side,
-            height: side + 70, // TamaÃ±o cuadrado + barra de acciones
+            width: modalWidth,
+            height: headerHeight + bottomHeight + mapHeight,
             child: Column(
               children: [
                 // Header modal
@@ -156,14 +161,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   child: PatientMapPicker(
                     selectedLocation: tempLocation,
                     mapController: _mapController,
-                    height: side,
+                    height: mapHeight,
                     onLocationChanged: (newLoc) {
                       tempLocation = newLoc;
                     },
                   ),
                 ),
 
-                // BotÃ³n de confirmaciÃ³n inferior
+                // Botón de confirmación inferior
                 Container(
                   padding: const EdgeInsets.all(8),
                   color: Colors.grey.shade50,
@@ -179,7 +184,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         Navigator.pop(dialogCtx);
                       },
                       icon: const Icon(Icons.check, size: 16),
-                      label: const Text('Confirmar PosiciÃ³n del PIN', style: TextStyle(fontSize: 12)),
+                      label: const Text('Confirmar Posición del PIN', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ),

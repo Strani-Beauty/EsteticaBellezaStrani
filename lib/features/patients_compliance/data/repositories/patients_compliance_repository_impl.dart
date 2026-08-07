@@ -1,10 +1,10 @@
-﻿import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:latlong2/latlong.dart';
 
-/// ImplementaciÃ³n del repositorio de compliance del paciente.
-/// Por ahora delega en [SupabaseService]; en una iteraciÃ³n posterior el
-/// servicio monolÃ­tico migrarÃ¡ a datasources y este impl dejarÃ¡ de delegar.
+/// Implementación del repositorio de compliance del paciente.
+/// Por ahora delega en [SupabaseService]; en una iteración posterior el
+/// servicio monolítico migrará a datasources y este impl dejará de delegar.
 class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository {
   const PatientsComplianceRepositoryImpl();
 

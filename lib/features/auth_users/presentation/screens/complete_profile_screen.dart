@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -46,7 +46,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     super.dispose();
   }
 
-  /// Cargar datos ya existentes en Supabase para ediciÃ³n de perfil
+  /// Cargar datos ya existentes en Supabase para edición de perfil
   Future<void> _loadExistingProfileData() async {
     final cubit = context.read<AuthCubit>();
     final profile = cubit.currentProfile;
@@ -73,11 +73,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     });
   }
 
-  /// GeocodificaciÃ³n centralizada con apertura automÃ¡tica de ventana emergente del mapa
+  /// Geocodificación centralizada con apertura automática de ventana emergente del mapa
   Future<void> _searchLocation([String? query]) async {
     final q = (query ?? _addressCtrl.text).trim();
     if (q.isEmpty) {
-      setState(() => _addressError = 'Ingresa una direcciÃ³n para buscar.');
+      setState(() => _addressError = 'Ingresa una dirección para buscar.');
       return;
     }
     setState(() {
@@ -214,13 +214,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: No se encontrÃ³ sesiÃ³n activa de usuario.')),
+        const SnackBar(content: Text('Error: No se encontró sesión activa de usuario.')),
       );
       return;
     }
 
-    // â”€â”€ 1. Guardar datos del paciente directamente en Supabase â”€â”€
-    // NO usamos cubit.updateProfile aquÃ­ porque emite AuthLoading
+    // ── 1. Guardar datos del paciente directamente en Supabase ──
+    // NO usamos cubit.updateProfile aquí porque emite AuthLoading
     // y destruye el contexto mientras esperamos las consultas siguientes.
     final savedProfile = await SupabaseService.updateProfileData(
       userId: userId,
@@ -243,16 +243,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       return;
     }
 
-    // Mostrar confirmaciÃ³n de guardado exitoso
+    // Mostrar confirmación de guardado exitoso
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         backgroundColor: Colors.green,
-        content: Text('âœ… Datos guardados en Supabase correctamente.'),
+        content: Text('✅ Datos guardados en Supabase correctamente.'),
         duration: Duration(seconds: 2),
       ),
     );
 
-    // â”€â”€ 2. Verificar estado del flujo desde Supabase â”€â”€
+    // ── 2. Verificar estado del flujo desde Supabase ──
     final status = await SupabaseService.checkPatientFlowStatus(profileId: userId);
     final bool paymentCompleted = status['paymentCompleted'] == true;
     final bool hasCompletedQuestionnaire = status['hasCompletedQuestionnaire'] == true;
@@ -260,19 +260,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     if (!mounted) return;
 
-    // â”€â”€ Si NO ha cancelado la cuota inicial de $30 â”€â”€
+    // ── Si NO ha cancelado la cuota inicial de $30 ──
     if (!paymentCompleted) {
       _showStripeModal();
       return;
     }
 
-    // â”€â”€ Ya cancelÃ³ la cuota â†’ verificar cuestionario â”€â”€
+    // ── Ya canceló la cuota → verificar cuestionario ──
     if (!hasCompletedQuestionnaire) {
       _openQuestionnaires(paid: true);
       return;
     }
 
-    // â”€â”€ Ya llenÃ³ cuestionario â†’ revisar dictamen de evaluaciÃ³n mÃ©dica â”€â”€
+    // ── Ya llenó cuestionario → revisar dictamen de evaluación médica ──
     if (evaluationStatus == 'VENCIDA') {
       _showExpiredEvaluationDialog(status['proveedorEvaluacion']?.toString() ?? 'Telemedicina / Medicina Interna');
     } else if (evaluationStatus == 'RECHAZADA') {
@@ -280,7 +280,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     } else if (evaluationStatus == 'APROBADA') {
       _showPositiveEvaluationDialog();
     } else {
-      // Estado pendiente: abrir cuestionario (que incluye evaluaciÃ³n mÃ©dica internamente)
+      // Estado pendiente: abrir cuestionario (que incluye evaluación médica internamente)
       _openQuestionnaires(paid: true);
     }
   }
@@ -296,19 +296,19 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         title: const Row(children: [
           Icon(Icons.history_toggle_off_rounded, color: Colors.orangeAccent, size: 28),
           SizedBox(width: 10),
-          Text('EvaluaciÃ³n MÃ©dica Expirada'),
+          Text('Evaluación Médica Expirada'),
         ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tu aprobaciÃ³n mÃ©dica previa ($proveedor) ha cumplido su ciclo de 1 aÃ±o (365 dÃ­as) de validez.',
+              'Tu aprobación médica previa ($proveedor) ha cumplido su ciclo de 1 año (365 días) de validez.',
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
             const Text(
-              'SegÃºn las polÃ­ticas del sistema, para continuar reservando servicios debes realizar una nueva evaluaciÃ³n clÃ­nica y el abono inicial de \$30 USD.',
+              'Según las políticas del sistema, para continuar reservando servicios debes realizar una nueva evaluación clínica y el abono inicial de \$30 USD.',
               style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
             ),
           ],
@@ -339,10 +339,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         title: const Row(children: [
           Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 28),
           SizedBox(width: 10),
-          Text('Dictamen MÃ©dica No Apto', style: TextStyle(color: Colors.redAccent)),
+          Text('Dictamen Médica No Apto', style: TextStyle(color: Colors.redAccent)),
         ]),
         content: const Text(
-          'Tu evaluaciÃ³n mÃ©dica previa con Qualify no resultÃ³ apta para este servicio en este momento.',
+          'Tu evaluación médica previa con Qualify no resultó apta para este servicio en este momento.',
           style: TextStyle(fontSize: 14),
         ),
         actions: [
@@ -351,7 +351,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Navigator.pop(ctx);
               context.go(AppRoutes.services);
             },
-            child: const Text('Ir a CatÃ¡logo de Servicios'),
+            child: const Text('Ir a Catálogo de Servicios'),
           ),
         ],
       ),
@@ -369,10 +369,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         title: const Row(children: [
           Icon(Icons.verified_rounded, color: AppTheme.cSuccess, size: 28),
           SizedBox(width: 10),
-          Text('Dictamen MÃ©dico Aprobado'),
+          Text('Dictamen Médico Aprobado'),
         ]),
         content: const Text(
-          'Ya cuentas con una evaluaciÃ³n mÃ©dica aprobada para este servicio. Redirigiendo a CancelaciÃ³n Total del Servicio (MÃ³dulo a realizar a posteriori).',
+          'Ya cuentas con una evaluación médica aprobada para este servicio. Redirigiendo a Cancelación Total del Servicio (Módulo a realizar a posteriori).',
           style: TextStyle(fontSize: 14),
         ),
         actions: [
@@ -382,7 +382,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Navigator.pop(ctx);
               context.go(AppRoutes.services);
             },
-            child: const Text('Ir a CancelaciÃ³n / Servicios'),
+            child: const Text('Ir a Cancelación / Servicios'),
           ),
         ],
       ),
@@ -466,7 +466,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     amount: AppConstants.depositoInicial.toDouble(),
                     paymentReference: stripeRef,
                   );
-                  // Guardar direcciÃ³n principal
+                  // Guardar dirección principal
                   await SupabaseService.savePatientAddress(
                     profileId: userId,
                     address: _addressCtrl.text.trim(),
@@ -490,16 +490,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     ).whenComplete(() => _stripeModalOpen = false);
   }
 
-  /// Paso 3: Cuestionarios MÃ©dicos por Servicio
+  /// Paso 3: Cuestionarios Médicos por Servicio
   void _openQuestionnaires({required bool paid, String? stripeRef}) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (ctx) => PatientQuestionnaireScreen(
-          serviceName: 'EstÃ©tica y Belleza General',
+          serviceName: 'Estética y Belleza General',
           stripePaymentRef: stripeRef,
           onCompleted: () {
-            // El cuestionario ya ejecutÃ³ Qualify internamente.
+            // El cuestionario ya ejecutó Qualify internamente.
             // Solo cerramos la pantalla y volvemos al perfil.
             Navigator.pop(ctx);
           },
@@ -569,27 +569,27 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // TelÃ©fono
+              // Teléfono
               TextFormField(
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
                 decoration: AppTheme.fieldDecoration(
-                  label: 'TelÃ©fono de Contacto',
+                  label: 'Teléfono de Contacto',
                   hint: '+58 412 1234567',
                   prefix: const Icon(Icons.phone_outlined, color: AppTheme.cDeepAccent),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty
-                    ? 'Ingresa tu nÃºmero telefÃ³nico' : null,
+                    ? 'Ingresa tu número telefónico' : null,
               ),
               const SizedBox(height: 14),
 
-              // DirecciÃ³n
+              // Dirección
               TextFormField(
                 controller: _addressCtrl,
                 textInputAction: TextInputAction.search,
                 onFieldSubmitted: _searchLocation,
                 decoration: AppTheme.fieldDecoration(
-                  label: 'DirecciÃ³n de HabitaciÃ³n',
+                  label: 'Dirección de Habitación',
                   hint: 'Ej: Main St, Houston, TX',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _searchingLocation
@@ -601,12 +601,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       : IconButton(
                           icon: const Icon(Icons.search_rounded, color: AppTheme.cDeepAccent),
                           onPressed: () => _searchLocation(),
-                          tooltip: 'Buscar DirecciÃ³n y Abrir Mapa',
+                          tooltip: 'Buscar Dirección y Abrir Mapa',
                         ),
                   error: _addressError,
                 ),
                 validator: (v) => v == null || v.trim().isEmpty
-                    ? 'Ingresa tu direcciÃ³n' : null,
+                    ? 'Ingresa tu dirección' : null,
               ),
               const SizedBox(height: 14),
 
@@ -637,7 +637,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'UbicaciÃ³n en Mapa (Ventana Emergente)',
+                              'Ubicación en Mapa (Ventana Emergente)',
                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.cDarkText),
                             ),
                             const SizedBox(height: 2),
@@ -697,7 +697,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               ]),
               const SizedBox(height: 24),
 
-              // BotÃ³n de EnvÃ­o
+              // Botón de Envío
               SizedBox(
                 width: double.infinity,
                 height: 50,

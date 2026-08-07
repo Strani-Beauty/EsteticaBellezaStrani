@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/cuestionario_entity.dart';
 
-/// Screen de Cuestionario ClÃ­nico Pre-Tratamiento (Previo a Consulta Qualify Modo Prueba).
+/// Screen de Cuestionario Clínico Pre-Tratamiento (Previo a Consulta Qualify Modo Prueba).
 class PatientQuestionnaireScreen extends StatefulWidget {
   final String? serviceName;
   final VoidCallback? onCompleted;
@@ -24,11 +24,11 @@ class PatientQuestionnaireScreen extends StatefulWidget {
 class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Preguntas dinÃ¡micas de prueba (simulando tabla preguntas / cuestionario_preguntas por servicio)
+  // Preguntas dinámicas de prueba (simulando tabla preguntas / cuestionario_preguntas por servicio)
   final List<PreguntaEntity> _preguntas = [
     PreguntaEntity(
       id: 'p1',
-      texto: 'Â¿Tienes alguna alergia conocida a la lidocaÃ­na, anestÃ©sicos locales o Ã¡cido hialurÃ³nico?',
+      texto: '¿Tienes alguna alergia conocida a la lidocaína, anestésicos locales o ácido hialurónico?',
       tipo: TipoPregunta.boolean,
       obligatoria: true,
       activo: true,
@@ -36,7 +36,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     ),
     PreguntaEntity(
       id: 'p2',
-      texto: 'Â¿EstÃ¡s actualmente embarazada, en perÃ­odo de lactancia o planeando embarazo en los prÃ³ximos 3 meses?',
+      texto: '¿Estás actualmente embarazada, en período de lactancia o planeando embarazo en los próximos 3 meses?',
       tipo: TipoPregunta.boolean,
       obligatoria: true,
       activo: true,
@@ -44,7 +44,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     ),
     PreguntaEntity(
       id: 'p3',
-      texto: 'Â¿Padeces alguna enfermedad autoinmune, diabetes no controlada o trastorno de coagulaciÃ³n?',
+      texto: '¿Padeces alguna enfermedad autoinmune, diabetes no controlada o trastorno de coagulación?',
       tipo: TipoPregunta.boolean,
       obligatoria: true,
       activo: true,
@@ -52,7 +52,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     ),
     PreguntaEntity(
       id: 'p4',
-      texto: 'Menciona cualquier medicamento o suplemento que estÃ©s tomando actualmente (anticoagulantes, aspirina, etc.):',
+      texto: 'Menciona cualquier medicamento o suplemento que estés tomando actualmente (anticoagulantes, aspirina, etc.):',
       tipo: TipoPregunta.abierta,
       obligatoria: false,
       activo: true,
@@ -60,9 +60,9 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     ),
     PreguntaEntity(
       id: 'p5',
-      texto: 'Â¿Has recibido tratamientos estÃ©ticos faciales o inyectables en los Ãºltimos 6 meses?',
+      texto: '¿Has recibido tratamientos estéticos faciales o inyectables en los últimos 6 meses?',
       tipo: TipoPregunta.seleccionMultiple,
-      opciones: const ['BÃ³tox / Toxina BotulÃ­nica', 'Ãcido HialurÃ³nico', 'Peeling QuÃ­mico', 'Hilos Tensores', 'Ninguno'],
+      opciones: const ['Bótox / Toxina Botulínica', 'Ácido Hialurónico', 'Peeling Químico', 'Hilos Tensores', 'Ninguno'],
       obligatoria: true,
       activo: true,
       createdAt: DateTime.now(),
@@ -130,11 +130,11 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
       }
     }
 
-    // Persistir evaluaciÃ³n clÃ­nica en Supabase
+    // Persistir evaluación clínica en Supabase
     try {
       await SupabaseService.saveHealthEvaluation(
         profileId: userId,
-        serviceName: widget.serviceName ?? 'EstÃ©tica General',
+        serviceName: widget.serviceName ?? 'Estética General',
         answers: respuestasFinales,
       );
     } catch (_) {}
@@ -142,7 +142,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
-    // DiÃ¡logo de selecciÃ³n de modalidad de evaluaciÃ³n (Telemedicina vs Medicina Interna)
+    // Diálogo de selección de modalidad de evaluación (Telemedicina vs Medicina Interna)
     _showEvaluationModalitySelector();
   }
 
@@ -158,7 +158,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           children: [
             Icon(Icons.medical_services_rounded, color: AppTheme.cDeepAccent, size: 26),
             SizedBox(width: 10),
-            Text('Modalidad de EvaluaciÃ³n'),
+            Text('Modalidad de Evaluación'),
           ],
         ),
         content: Column(
@@ -166,12 +166,12 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
-              'Selecciona el canal mÃ©dico para dictaminar tu aptitud clÃ­nica:',
+              'Selecciona el canal médico para dictaminar tu aptitud clínica:',
               style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
             ),
             SizedBox(height: 12),
             Text(
-              'ðŸ“Œ Nota: La aprobaciÃ³n clÃ­nica por cualquiera de las dos modalidades otorga una validez oficial de 1 aÃ±o (365 dÃ­as) para acceder a todos nuestros servicios.',
+              '📌 Nota: La aprobación clínica por cualquiera de las dos modalidades otorga una validez oficial de 1 año (365 días) para acceder a todos nuestros servicios.',
               style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.cDeepAccent),
             ),
           ],
@@ -244,19 +244,19 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                   const CircularProgressIndicator(color: AppTheme.cDeepAccent),
                   const SizedBox(height: 20),
                   Text(
-                    'EvaluaciÃ³n MÃ©dica ($proveedor)',
+                    'Evaluación Médica ($proveedor)',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Procesando cuestionario y expediente clÃ­nico con el departamento de $proveedor...',
+                    'Procesando cuestionario y expediente clínico con el departamento de $proveedor...',
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
                   ),
                   const SizedBox(height: 10),
                   const Chip(
                     backgroundColor: AppTheme.cPastelGold,
-                    label: Text('VALIDEZ 1 AÃ‘O (365 DÃAS)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                    label: Text('VALIDEZ 1 AÑO (365 DÍAS)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -287,12 +287,12 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Â¡EvaluaciÃ³n Exitosa por $proveedor!',
+              '¡Evaluación Exitosa por $proveedor!',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu expediente mÃ©dico ha sido revisado y calificado como APTO por el canal de $proveedor. Ahora tienes acceso a reservar cualquier servicio del catÃ¡logo.',
+              'Tu expediente médico ha sido revisado y calificado como APTO por el canal de $proveedor. Ahora tienes acceso a reservar cualquier servicio del catálogo.',
               style: const TextStyle(fontSize: 13, color: AppTheme.cDarkText),
             ),
             const SizedBox(height: 12),
@@ -308,7 +308,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'AprobaciÃ³n mÃ©dica oficial vÃ¡lida por 1 aÃ±o (365 dÃ­as).',
+                      'Aprobación médica oficial válida por 1 año (365 días).',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -328,7 +328,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                 Navigator.of(context).maybePop(true);
               }
             },
-            child: const Text('Continuar al CatÃ¡logo'),
+            child: const Text('Continuar al Catálogo'),
           ),
         ],
       ),
@@ -341,7 +341,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Cuestionario: ${widget.serviceName ?? 'Servicio EstÃ©tico'}'),
+        title: Text('Cuestionario: ${widget.serviceName ?? 'Servicio Estético'}'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -368,11 +368,11 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'EvaluaciÃ³n MÃ©dica Previa',
+                          'Evaluación Médica Previa',
                           style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
                         ),
                         Text(
-                          'Completa las preguntas clÃ­nicas requeridas para tu aptitud.',
+                          'Completa las preguntas clínicas requeridas para tu aptitud.',
                           style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
                         ),
                       ],
@@ -413,7 +413,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
               ),
               const SizedBox(height: 20),
 
-              // Lista de preguntas dinÃ¡micas
+              // Lista de preguntas dinámicas
               ..._preguntas.asMap().entries.map((entry) {
                 final idx = entry.key + 1;
                 final p = entry.value;
@@ -422,7 +422,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
 
               const SizedBox(height: 24),
 
-              // BotÃ³n de EnvÃ­o
+              // Botón de Envío
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -489,7 +489,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                 children: [
                   Expanded(
                     child: ChoiceChip(
-                      label: const Center(child: Text('SÃ­')),
+                      label: const Center(child: Text('Sí')),
                       selected: _respuestas[pregunta.id] == true,
                       selectedColor: AppTheme.cPastelPink,
                       onSelected: (selected) {
@@ -521,7 +521,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                 onChanged: (_) => setState(() {}),
                 decoration: AppTheme.fieldDecoration(
                   label: 'Detalles (opcional)',
-                  hint: 'Escribe tu respuesta aquÃ­...',
+                  hint: 'Escribe tu respuesta aquí...',
                 ),
               )
             else if (pregunta.tipo == TipoPregunta.seleccionMultiple && pregunta.opciones != null)

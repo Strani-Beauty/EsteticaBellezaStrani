@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
@@ -6,7 +6,7 @@ import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
 
-/// Pantalla del formulario de direcciÃ³n del paciente con mapa en ventana emergente cuadrada.
+/// Pantalla del formulario de dirección del paciente con mapa en ventana emergente cuadrada.
 class PatientAddressScreen extends StatefulWidget {
   final String? initialAddress;
   final double? initialLat;
@@ -47,7 +47,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
     super.dispose();
   }
 
-  /// Cargar datos ya almacenados en Supabase si no fueron provistos explÃ­citamente
+  /// Cargar datos ya almacenados en Supabase si no fueron provistos explícitamente
   Future<void> _loadInitialPatientData() async {
     String addr = widget.initialAddress ?? '';
     double? lat = widget.initialLat;
@@ -81,7 +81,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
   Future<void> _searchAddress() async {
     final query = _addressCtrl.text.trim();
     if (query.isEmpty) {
-      setState(() => _statusMessage = 'Ingresa una direcciÃ³n para geocodificar.');
+      setState(() => _statusMessage = 'Ingresa una dirección para geocodificar.');
       return;
     }
 
@@ -98,19 +98,19 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
       setState(() {
         _selectedLocation = coords;
         _isGeocoding = false;
-        _statusMessage = 'UbicaciÃ³n localizada. Puedes verificar el PIN en el mapa.';
+        _statusMessage = 'Ubicación localizada. Puedes verificar el PIN en el mapa.';
       });
       _openSquareMapDialog();
     } else {
       setState(() {
         _isGeocoding = false;
-        _statusMessage = 'No se encontrÃ³ la direcciÃ³n. Se mantuvo la ubicaciÃ³n actual en Houston, TX.';
+        _statusMessage = 'No se encontró la dirección. Se mantuvo la ubicación actual en Houston, TX.';
       });
       _openSquareMapDialog();
     }
   }
 
-  /// Desplegar mapa en una ventana emergente cuadrada (aprox 1/4 del tamaÃ±o de la pantalla total)
+  /// Desplegar mapa en una ventana emergente cuadrada (aprox 1/4 del tamaño de la pantalla total)
   void _openSquareMapDialog() {
     LatLng tempLoc = _selectedLocation;
     final media = MediaQuery.of(context).size;
@@ -142,7 +142,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Seleccionar PosiciÃ³n del PIN',
+                        'Seleccionar Posición del PIN',
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       IconButton(
@@ -180,7 +180,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                         Navigator.pop(dialogCtx);
                       },
                       icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text('Confirmar PosiciÃ³n del PIN', style: TextStyle(fontSize: 12)),
+                      label: const Text('Confirmar Posición del PIN', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ),
@@ -192,14 +192,14 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
     );
   }
 
-  /// Guardar la latitud, longitud y direcciÃ³n en Supabase
+  /// Guardar la latitud, longitud y dirección en Supabase
   Future<void> _saveLocation() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final user = SupabaseService.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: No se encontrÃ³ sesiÃ³n activa de usuario.')),
+        const SnackBar(content: Text('Error: No se encontró sesión activa de usuario.')),
       );
       return;
     }
@@ -221,7 +221,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
-          content: Text('âœ… DirecciÃ³n y posiciÃ³n exacta guardadas en Supabase exitosamente.'),
+          content: Text('✅ Dirección y posición exacta guardadas en Supabase exitosamente.'),
         ),
       );
 
@@ -251,7 +251,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('UbicaciÃ³n del Paciente'),
+        title: const Text('Ubicación del Paciente'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -262,23 +262,23 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'DirecciÃ³n de Residencia',
+                'Dirección de Residencia',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Busca tu direcciÃ³n o presiona el botÃ³n para abrir el mapa en una ventana emergente y ajustar tu PIN.',
+                'Busca tu dirección o presiona el botón para abrir el mapa en una ventana emergente y ajustar tu PIN.',
                 style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
               ),
               const SizedBox(height: 16),
 
-              // Campo de DirecciÃ³n
+              // Campo de Dirección
               TextFormField(
                 controller: _addressCtrl,
                 textInputAction: TextInputAction.search,
                 onFieldSubmitted: (_) => _searchAddress(),
                 decoration: AppTheme.fieldDecoration(
-                  label: 'DirecciÃ³n Completa',
+                  label: 'Dirección Completa',
                   hint: 'Ej: Main St, Houston, TX',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _isGeocoding
@@ -293,10 +293,10 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                       : IconButton(
                           icon: const Icon(Icons.search_rounded, color: AppTheme.cDeepAccent),
                           onPressed: _searchAddress,
-                          tooltip: 'Buscar DirecciÃ³n',
+                          tooltip: 'Buscar Dirección',
                         ),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresa una direcciÃ³n vÃ¡lida' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresa una dirección válida' : null,
               ),
               const SizedBox(height: 10),
 
@@ -318,7 +318,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                   ),
                 ),
 
-              // BotÃ³n de activaciÃ³n del Mapa Emergente Cuadrado
+              // Botón de activación del Mapa Emergente Cuadrado
               InkWell(
                 onTap: _openSquareMapDialog,
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -413,7 +413,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
               ),
               const SizedBox(height: 24),
 
-              // BotÃ³n Guardar
+              // Botón Guardar
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -426,7 +426,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.check_circle_rounded),
-                  label: Text(_isSaving ? 'Guardando en Supabase...' : 'Confirmar y Guardar UbicaciÃ³n'),
+                  label: Text(_isSaving ? 'Guardando en Supabase...' : 'Confirmar y Guardar Ubicación'),
                 ),
               ),
             ],

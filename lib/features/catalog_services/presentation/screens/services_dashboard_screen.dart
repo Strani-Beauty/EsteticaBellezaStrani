@@ -720,7 +720,7 @@ class _ServiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHero(),
+          Expanded(child: _buildHero()),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -786,24 +786,18 @@ class _ServiceCard extends StatelessWidget {
   }
 
   Widget _buildHero() {
-    final assetPath = _assetHeroForServicio(service);
+    final slug = _slugify(service.nombre);
 
     return Container(
-      height: 260,
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: assetPath == null
-          ? _buildHeroFallback()
-          : Image.asset(
-              assetPath,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) => _buildHeroFallback(),
-            ),
+      child: _ServiceHeroImage(
+        basePath: 'assets/images/service_$slug',
+        fallback: _buildHeroFallback(),
+      ),
     );
   }
 
@@ -859,22 +853,54 @@ IconData _iconForServicio(ServicioEntity service) {
   return Icons.spa;
 }
 
-/// Devuelve el asset de imagen de la categoría del servicio siguiendo la
-/// convención `assets/images/service_<slug>.jpg`, donde el slug es el nombre
-/// de la categoría en minúsculas, sin acentos y con espacios convertidos a
-/// guion bajo. `null` si el servicio no tiene categoría.
-String? _assetHeroForServicio(ServicioEntity service) {
-  final categoria = service.nombreCategoria;
-  if (categoria == null || categoria.trim().isEmpty) return null;
+const _kServiceAssetExtensions = ['.jpg', '.jfif', '.png', '.webp'];
 
+/// Widget de hero que intenta cargar `assets/images/service_<slug>` probando
+/// cada extensión soportada. Si ninguna existe, muestra el fallback (gradiente
+/// con ícono) sin depender del AssetManifest.
+class _ServiceHeroImage extends StatefulWidget {
+  final String basePath;
+  final Widget fallback;
+
+  const _ServiceHeroImage({required this.basePath, required this.fallback});
+
+  @override
+  State<_ServiceHeroImage> createState() => _ServiceHeroImageState();
+}
+
+class _ServiceHeroImageState extends State<_ServiceHeroImage> {
+  int _extIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_extIndex >= _kServiceAssetExtensions.length) return widget.fallback;
+
+    final path = widget.basePath + _kServiceAssetExtensions[_extIndex];
+    return Image.asset(
+      path,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (context, error, stackTrace) {
+        final next = _extIndex + 1;
+        if (next >= _kServiceAssetExtensions.length) return widget.fallback;
+        _extIndex = next;
+        return build(context);
+      },
+    );
+  }
+}
+
+/// Convierte un texto a slug para asset: minúsculas, sin acentos, sin
+/// caracteres especiales y con los espacios como guion bajo.
+String _slugify(String input) {
   const accents = {
-    'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
-    'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U', 'ñ': 'n', 'Ñ': 'N',
+    'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u',
+    'ñ': 'n', 'Á': 'a', 'É': 'e', 'Í': 'i', 'Ó': 'o', 'Ú': 'u', 'Ü': 'u', 'Ñ': 'n',
   };
   final buffer = StringBuffer();
-  for (final char in categoria.toLowerCase().trim().split('')) {
+  for (final char in input.toLowerCase().trim().split('')) {
     buffer.write(accents[char] ?? (RegExp(r'[a-z0-9 ]').hasMatch(char) ? char : ''));
   }
-  final slug = buffer.toString().trim().replaceAll(RegExp(r'\s+'), '_');
-  return 'assets/images/service_$slug.jpg';
+  return buffer.toString().trim().replaceAll(RegExp(r'\s+'), '_');
 }

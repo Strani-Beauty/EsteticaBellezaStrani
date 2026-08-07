@@ -786,14 +786,24 @@ class _ServiceCard extends StatelessWidget {
   }
 
   Widget _buildHero() {
+    final assetPath = _assetHeroForServicio(service);
+
     return Container(
-      height: 200,
+      height: 260,
       width: double.infinity,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: _buildHeroFallback(),
+      child: assetPath == null
+          ? _buildHeroFallback()
+          : Image.asset(
+              assetPath,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) => _buildHeroFallback(),
+            ),
     );
   }
 
@@ -847,4 +857,24 @@ IconData _iconForServicio(ServicioEntity service) {
     return Icons.face;
   }
   return Icons.spa;
+}
+
+/// Devuelve el asset de imagen de la categoría del servicio siguiendo la
+/// convención `assets/images/service_<slug>.jpg`, donde el slug es el nombre
+/// de la categoría en minúsculas, sin acentos y con espacios convertidos a
+/// guion bajo. `null` si el servicio no tiene categoría.
+String? _assetHeroForServicio(ServicioEntity service) {
+  final categoria = service.nombreCategoria;
+  if (categoria == null || categoria.trim().isEmpty) return null;
+
+  const accents = {
+    'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+    'Á': 'A', 'É': 'E', 'Í': 'I', 'Ó': 'O', 'Ú': 'U', 'ñ': 'n', 'Ñ': 'N',
+  };
+  final buffer = StringBuffer();
+  for (final char in categoria.toLowerCase().trim().split('')) {
+    buffer.write(accents[char] ?? (RegExp(r'[a-z0-9 ]').hasMatch(char) ? char : ''));
+  }
+  final slug = buffer.toString().trim().replaceAll(RegExp(r'\s+'), '_');
+  return 'assets/images/service_$slug.jpg';
 }

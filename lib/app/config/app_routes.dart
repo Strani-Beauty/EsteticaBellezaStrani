@@ -75,11 +75,14 @@ final GoRouter appRouter = GoRouter(
         return _redirectByRole(profile.rolNombre);
       }
 
-      // Si el perfil no está completo → completar perfil (solo pacientes)
+      // Si el perfil no está completo → completar perfil (solo pacientes).
+      // El catálogo (/services) siempre queda accesible para que un paciente
+      // recién registrado pueda elegir servicio antes de completar el onboarding.
       if (profile.isPatient &&
           !profile.activo &&
           location != AppRoutes.completeProfile &&
-          location != AppRoutes.faceMapQuestionnaire) {
+          location != AppRoutes.faceMapQuestionnaire &&
+          location != AppRoutes.services) {
         return AppRoutes.completeProfile;
       }
     }

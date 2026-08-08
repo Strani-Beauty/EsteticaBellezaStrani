@@ -112,6 +112,8 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: Row(
           children: [
             Icon(icon, color: color, size: 28),
@@ -124,9 +126,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ),
           ],
         ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 13, height: 1.4),
+        content: SingleChildScrollView(
+          child: Text(
+            message,
+            style: const TextStyle(fontSize: 13, height: 1.4),
+          ),
         ),
         actions: [
           ElevatedButton(
@@ -150,6 +154,8 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: Row(
           children: [
             const Icon(Icons.payment_rounded, color: AppTheme.cDeepAccent, size: 26),
@@ -162,58 +168,70 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              service.descripcion ?? '',
-              style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.cPastelPurple,
-                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Precio Total del Servicio:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text('\$$price USD', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.cDarkText)),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                service.descripcion ?? '',
+                style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
               ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depósito) o la totalidad:',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.cPastelPurple,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Flexible(
+                      child: Text('Precio Total del Servicio:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('\$$price USD', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.cDarkText)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depósito) o la totalidad:',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
         ),
         actions: [
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: false);
-            },
-            icon: const Icon(Icons.bookmark_add_rounded, size: 18),
-            label: Text('Cancelar Depósito (\$$deposito USD)'),
-          ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: true);
-            },
-            icon: const Icon(Icons.check_circle_rounded, size: 18),
-            label: Text('Cancelar Totalidad (\$$price USD)'),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: false);
+                },
+                icon: const Icon(Icons.bookmark_add_rounded, size: 18),
+                label: Text('Cancelar Depósito (\$$deposito USD)'),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: true);
+                },
+                icon: const Icon(Icons.check_circle_rounded, size: 18),
+                label: Text('Cancelar Totalidad (\$$price USD)'),
+              ),
+            ],
           ),
         ],
       ),
@@ -257,27 +275,31 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(
           children: [
             Icon(Icons.check_circle_rounded, color: AppTheme.cSuccess, size: 28),
             SizedBox(width: 10),
-            Text('¡Pago Registrado!'),
+            Expanded(child: Text('¡Pago Registrado!')),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Has cancelado ${isFull ? "la totalidad" : "el depósito"} del servicio "$serviceTitle".',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'La solicitud se ha registrado correctamente en tu expediente y se han generado las transacciones correspondientes en el sistema por \$$amount USD.',
-              style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Has cancelado ${isFull ? "la totalidad" : "el depósito"} del servicio "$serviceTitle".',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'La solicitud se ha registrado correctamente en tu expediente y se han generado las transacciones correspondientes en el sistema por \$$amount USD.',
+                style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+              ),
+            ],
+          ),
         ),
         actions: [
           ElevatedButton(
@@ -297,27 +319,31 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(
           children: [
             Icon(Icons.history_toggle_off_rounded, color: Colors.orangeAccent, size: 28),
             SizedBox(width: 10),
-            Text('Recordatorio de Expiración'),
+            Expanded(child: Text('Recordatorio de Expiración')),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tu evaluación médica por $_proveedorEvaluacion ha cumplido 1 año de validez (365 días).',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Según la política de clientes del sistema, para contratar o ingresar a cualquier servicio debes abonar nuevamente el pago previo de \$30 USD y realizar una nueva evaluación médica.',
-              style: TextStyle(fontSize: 13, color: AppTheme.cDarkText, height: 1.4),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tu evaluación médica por $_proveedorEvaluacion ha cumplido 1 año de validez (365 días).',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Según la política de clientes del sistema, para contratar o ingresar a cualquier servicio debes abonar nuevamente el pago previo de \$30 USD y realizar una nueva evaluación médica.',
+                style: TextStyle(fontSize: 13, color: AppTheme.cDarkText, height: 1.4),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -345,16 +371,20 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(
           children: [
             Icon(Icons.info_outline_rounded, color: AppTheme.cDeepAccent, size: 26),
             SizedBox(width: 10),
-            Text('Evaluación Requerida'),
+            Expanded(child: Text('Evaluación Requerida')),
           ],
         ),
-        content: const Text(
-          'Para acceder a reservar o cancelar cualquier servicio del catálogo, primero debes completar la cuota inicial de \$30 USD y la evaluación médica (Telemedicina o Medicina Interna).',
-          style: TextStyle(fontSize: 13),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Para acceder a reservar o cancelar cualquier servicio del catálogo, primero debes completar la cuota inicial de \$30 USD y la evaluación médica (Telemedicina o Medicina Interna).',
+            style: TextStyle(fontSize: 13),
+          ),
         ),
         actions: [
           ElevatedButton(

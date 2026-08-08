@@ -293,25 +293,29 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(children: [
           Icon(Icons.history_toggle_off_rounded, color: Colors.orangeAccent, size: 28),
           SizedBox(width: 10),
-          Text('Evaluación Médica Expirada'),
+          Expanded(child: Text('Evaluación Médica Expirada')),
         ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tu aprobación médica previa ($proveedor) ha cumplido su ciclo de 1 año (365 días) de validez.',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Según las políticas del sistema, para continuar reservando servicios debes realizar una nueva evaluación clínica y el abono inicial de \$30 USD.',
-              style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tu aprobación médica previa ($proveedor) ha cumplido su ciclo de 1 año (365 días) de validez.',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Según las políticas del sistema, para continuar reservando servicios debes realizar una nueva evaluación clínica y el abono inicial de \$30 USD.',
+                style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
+              ),
+            ],
+          ),
         ),
         actions: [
           ElevatedButton.icon(
@@ -336,14 +340,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(children: [
           Icon(Icons.cancel_outlined, color: Colors.redAccent, size: 28),
           SizedBox(width: 10),
-          Text('Dictamen Médica No Apto', style: TextStyle(color: Colors.redAccent)),
+          Expanded(child: Text('Dictamen Médica No Apto', style: TextStyle(color: Colors.redAccent))),
         ]),
-        content: const Text(
-          'Tu evaluación médica previa con Qualify no resultó apta para este servicio en este momento.',
-          style: TextStyle(fontSize: 14),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Tu evaluación médica previa con Qualify no resultó apta para este servicio en este momento.',
+            style: TextStyle(fontSize: 14),
+          ),
         ),
         actions: [
           ElevatedButton(
@@ -366,14 +374,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(children: [
           Icon(Icons.verified_rounded, color: AppTheme.cSuccess, size: 28),
           SizedBox(width: 10),
-          Text('Dictamen Médico Aprobado'),
+          Expanded(child: Text('Dictamen Médico Aprobado')),
         ]),
-        content: const Text(
-          'Ya cuentas con una evaluación médica aprobada para este servicio. Redirigiendo a Cancelación Total del Servicio (Módulo a realizar a posteriori).',
-          style: TextStyle(fontSize: 14),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Ya cuentas con una evaluación médica aprobada para este servicio. Redirigiendo a Cancelación Total del Servicio (Módulo a realizar a posteriori).',
+            style: TextStyle(fontSize: 14),
+          ),
         ),
         actions: [
           ElevatedButton(
@@ -406,83 +418,97 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radiusXl),
           ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          constraints: const BoxConstraints(maxWidth: 440),
           title: const Row(children: [
             Icon(Icons.credit_card_rounded, color: AppTheme.cStripe, size: 28),
             SizedBox(width: 10),
-            Text('Paso 2: Pago de Cuota Inicial'),
+            Expanded(child: Text('Paso 2: Pago de Cuota Inicial')),
           ]),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppTheme.cPastelPurple,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cPastelPurple,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Flexible(
+                        child: Text('Cuota Inicial:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      SizedBox(width: 8),
+                      Text('\$${AppConstants.depositoInicial} USD',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                              color: AppTheme.cDeepAccent)),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
-                    Text('Cuota Inicial:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text('\$${AppConstants.depositoInicial} USD',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
-                            color: AppTheme.cDeepAccent)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text('Procesado de forma segura con Stripe.',
-                  style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
-            ],
+                const SizedBox(height: 12),
+                const Text('Procesado de forma segura con Stripe.',
+                    style: TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
+              ],
+            ),
           ),
           actions: [
-            TextButton(
-              onPressed: processing ? null : () {
-                _stripeModalOpen = false;
-                Navigator.pop(dialogCtx);
-                _openQuestionnaires(paid: false, stripeRef: null);
-              },
-              child: const Text('Posponer', style: TextStyle(color: Colors.redAccent)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cStripe),
-              onPressed: processing ? null : () async {
-                if (processing) return;    // guard extra contra doble tap
-                final cubitRef = context.read<AuthCubit>();
-                setModal(() => processing = true);
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: processing ? null : () {
+                    _stripeModalOpen = false;
+                    Navigator.pop(dialogCtx);
+                    _openQuestionnaires(paid: false, stripeRef: null);
+                  },
+                  child: const Text('Posponer', style: TextStyle(color: Colors.redAccent)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cStripe),
+                  onPressed: processing ? null : () async {
+                    if (processing) return;    // guard extra contra doble tap
+                    final cubitRef = context.read<AuthCubit>();
+                    setModal(() => processing = true);
 
-                // Simular procesamiento Stripe 2 seg (reemplazar por SDK real)
-                await Future.delayed(const Duration(seconds: 2));
+                    // Simular procesamiento Stripe 2 seg (reemplazar por SDK real)
+                    await Future.delayed(const Duration(seconds: 2));
 
-                final user = SupabaseService.currentUser;
-                final userId = cubitRef.currentProfile?.id ?? user?.id;
-                String? stripeRef;
+                    final user = SupabaseService.currentUser;
+                    final userId = cubitRef.currentProfile?.id ?? user?.id;
+                    String? stripeRef;
 
-                if (userId != null) {
-                  stripeRef = 'STRIPE_INIT_${DateTime.now().millisecondsSinceEpoch}';
-                  // Marcar payment_completed y activar paciente
-                  await SupabaseService.registerInitialPayment(
-                    profileId: userId,
-                    amount: AppConstants.depositoInicial.toDouble(),
-                    paymentReference: stripeRef,
-                  );
-                  // Guardar dirección principal
-                  await SupabaseService.savePatientAddress(
-                    profileId: userId,
-                    address: _addressCtrl.text.trim(),
-                    latitude: _selectedLocation.latitude,
-                    longitude: _selectedLocation.longitude,
-                  );
-                }
+                    if (userId != null) {
+                      stripeRef = 'STRIPE_INIT_${DateTime.now().millisecondsSinceEpoch}';
+                      // Marcar payment_completed y activar paciente
+                      await SupabaseService.registerInitialPayment(
+                        profileId: userId,
+                        amount: AppConstants.depositoInicial.toDouble(),
+                        paymentReference: stripeRef,
+                      );
+                      // Guardar dirección principal
+                      await SupabaseService.savePatientAddress(
+                        profileId: userId,
+                        address: _addressCtrl.text.trim(),
+                        latitude: _selectedLocation.latitude,
+                        longitude: _selectedLocation.longitude,
+                      );
+                    }
 
-                _stripeModalOpen = false;
-                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-                if (mounted) _openQuestionnaires(paid: true, stripeRef: stripeRef);
-              },
-              child: processing
-                  ? const SizedBox(height: 18, width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Pagar con Stripe'),
+                    _stripeModalOpen = false;
+                    if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                    if (mounted) _openQuestionnaires(paid: true, stripeRef: stripeRef);
+                  },
+                  child: processing
+                      ? const SizedBox(height: 18, width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Pagar con Stripe'),
+                ),
+              ],
             ),
           ],
         ),
@@ -498,10 +524,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         builder: (ctx) => PatientQuestionnaireScreen(
           serviceName: 'Estética y Belleza General',
           stripePaymentRef: stripeRef,
-          onCompleted: () {
+          onCompleted: () async {
             // El cuestionario ya ejecutó Qualify internamente.
-            // Solo cerramos la pantalla y volvemos al perfil.
+            // Refrescamos el perfil y volvemos a llevar al paciente al catálogo.
             Navigator.pop(ctx);
+            await context.read<AuthCubit>().refreshProfile();
+            if (!mounted) return;
+            context.go(AppRoutes.services);
           },
         ),
       ),

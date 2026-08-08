@@ -69,6 +69,15 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
+  /// Recarga el perfil sin emitir estado de loading (para refrescos en caliente).
+  Future<void> refreshProfile() async {
+    final result = await _authRepository.getCurrentProfile();
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (profile) => emit(AuthAuthenticated(profile)),
+    );
+  }
+
   // ── Sign In ─────────────────────────────────────────────────
   Future<void> signIn({
     required String email,

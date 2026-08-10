@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/pago_entity.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 import '../../domain/entities/cita_ejecucion_entity.dart';
 import '../../domain/entities/consentimiento_tratamiento_entity.dart';
 import '../../domain/entities/producto_aplicado_entity.dart';
@@ -186,6 +190,8 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
       ),
     );
     if (guardar == true && mounted) {
+      final saldoCobrado = await _pagarSaldoPendiente(cita);
+      if (!saldoCobrado) return;
       await cubit.finalizar(
         citaId: cita.id,
         tratamientoId: tratamientoId,
@@ -195,6 +201,90 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
             ? null
             : recomendaciones.text,
       );
+    }
+  }
+
+  /// Cobra el saldo pendiente de la solicitud antes de finalizar el tratamiento.
+  /// Devuelve `false` si el pago se cancela o falla (no se finaliza la cita).
+  Future<bool> _pagarSaldoPendiente(CitaEjecucionEntity cita) async {
+    final solicitudId = cita.solicitudId;
+    if (solicitudId == null) return true; // sin solicitud → nada que cobrar
+
+    final pago = await _consultarPago(solicitudId);
+    if (!mounted) return false;
+    if (pago == null || pago.saldoPendiente <= 0) return true;
+    final monto = pago.saldoPendiente;
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cobrar saldo pendiente'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'El paciente aún tiene un saldo pendiente de \$${monto.toStringAsFixed(2)} USD '
+              'por este servicio.',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Se abrirá el pago con Stripe antes de finalizar el tratamiento.',
+              style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Cobrar y Finalizar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return false;
+
+    final stripeRef = await procesarPagoStripe(
+      monto: monto,
+      concepto: 'SALDO',
+      solicitudId: solicitudId,
+      citaId: cita.id,
+    );
+    if (stripeRef == null) {
+      _mensaje('El pago del saldo no se completó.');
+      return false;
+    }
+
+    try {
+      final registrado = await sl<IPaymentsRepository>().registrarPagoSaldo(
+        citaId: cita.id,
+        solicitudId: solicitudId,
+        monto: monto,
+        stripePaymentRef: stripeRef,
+      );
+      if (registrado) {
+        _mensaje('Saldo de \$${monto.toStringAsFixed(2)} USD cobrado.');
+      }
+      return true;
+    } catch (e) {
+      _mensaje('No se pudo registrar el saldo: $e');
+      return false;
+    }
+  }
+
+  Future<PagoEntity?> _consultarPago(String solicitudId) async {
+    try {
+      return await sl<IPaymentsRepository>().consultarPago(
+        solicitudId: solicitudId,
+      );
+    } catch (e) {
+      _mensaje('No se pudo consultar el estado de pago: $e');
+      return null;
     }
   }
 }

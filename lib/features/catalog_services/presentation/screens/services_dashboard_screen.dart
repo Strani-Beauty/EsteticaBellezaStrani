@@ -3,10 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 
 /// Dashboard de catálogo de servicios — Vista post-evaluación para clientes/pacientes.
 /// Los servicios y categorías se cargan desde Supabase (`servicios`, `categorias_servicio`).
@@ -221,7 +224,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: false);
+                  _processServicePayment(
+                    servicioId: service.id,
+                    serviceTitle: title,
+                    servicePrice: price,
+                    payFullAmount: false,
+                  );
                 },
                 icon: const Icon(Icons.bookmark_add_rounded, size: 18),
                 label: Text('Cancelar Depósito (\$$deposito USD)'),
@@ -230,7 +238,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  _processServicePayment(serviceTitle: title, servicePrice: price, payFullAmount: true);
+                  _processServicePayment(
+                    servicioId: service.id,
+                    serviceTitle: title,
+                    servicePrice: price,
+                    payFullAmount: true,
+                  );
                 },
                 icon: const Icon(Icons.check_circle_rounded, size: 18),
                 label: Text('Cancelar Totalidad (\$$price USD)'),
@@ -243,6 +256,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
   }
 
   Future<void> _processServicePayment({
+    required String servicioId,
     required String serviceTitle,
     required double servicePrice,
     required bool payFullAmount,
@@ -250,25 +264,56 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     final user = SupabaseService.currentUser;
     if (user == null) return;
 
-    // Mostrar loader breve
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator(color: AppTheme.cDeepAccent)),
+    // Pago real con Stripe (o simulado si no hay clave configurada)
+    const deposito = 30.0;
+    final montoAPagar = payFullAmount ? servicePrice : deposito;
+    final stripeRef = await procesarPagoStripe(
+      monto: montoAPagar,
+      concepto: payFullAmount ? 'PAGO_TOTAL' : 'DEPOSITO',
     );
+    if (stripeRef == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('El pago no se completó. Intenta de nuevo.')),
+        );
+      }
+      return;
+    }
 
-    await SupabaseService.createServicePayment(
-      profileId: user.id,
-      serviceTitle: serviceTitle,
-      servicePrice: servicePrice,
-      payFullAmount: payFullAmount,
-    );
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator(color: AppTheme.cDeepAccent)),
+      );
+    }
+
+    String? solicitudId;
+    try {
+      solicitudId = await sl<IPaymentsRepository>().createServicePayment(
+        profileId: user.id,
+        servicioId: servicioId,
+        servicePrice: servicePrice,
+        payFullAmount: payFullAmount,
+        stripePaymentRef: stripeRef,
+      );
+    } catch (e) {
+      debugPrint('❌ [_processServicePayment] $e');
+    }
 
     if (mounted) Navigator.pop(context); // cerrar loader
 
-    // ── Modo Prueba: Siempre procesar de forma exitosa y continuar el flujo sin detener el sistema ──
+    if (solicitudId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo registrar la solicitud. Intenta de nuevo.')),
+        );
+      }
+      return;
+    }
+
     if (mounted) {
-      _showPaymentSuccessDialog(serviceTitle, payFullAmount ? servicePrice : 30.0, payFullAmount);
+      _showPaymentSuccessDialog(serviceTitle, montoAPagar, payFullAmount);
     }
   }
 

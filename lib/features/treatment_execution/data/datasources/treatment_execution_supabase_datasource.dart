@@ -17,7 +17,7 @@ class TreatmentExecutionSupabaseDataSource {
 
   static const String _citaSelect = '''
     *,
-    solicitudes(servicios(nombre, precio_base), pacientes(profiles(full_name, phone)), direcciones_paciente(latitud, longitud, direccion, ciudad)),
+    solicitudes(id, servicios(nombre, precio_base), pacientes(profiles(full_name, phone)), direcciones_paciente(latitud, longitud, direccion, ciudad)),
     tratamientos(*)
   ''';
 

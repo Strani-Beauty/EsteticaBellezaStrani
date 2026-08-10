@@ -7,9 +7,12 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/patient_questionnaire_screen.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 import '../cubits/auth_cubit.dart';
 
 /// Pantalla para completar o editar el perfil del paciente.
@@ -475,29 +478,38 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                     final cubitRef = context.read<AuthCubit>();
                     setModal(() => processing = true);
 
-                    // Simular procesamiento Stripe 2 seg (reemplazar por SDK real)
-                    await Future.delayed(const Duration(seconds: 2));
-
                     final user = SupabaseService.currentUser;
                     final userId = cubitRef.currentProfile?.id ?? user?.id;
-                    String? stripeRef;
-
-                    if (userId != null) {
-                      stripeRef = 'STRIPE_INIT_${DateTime.now().millisecondsSinceEpoch}';
-                      // Marcar payment_completed y activar paciente
-                      await SupabaseService.registerInitialPayment(
-                        profileId: userId,
-                        amount: AppConstants.depositoInicial.toDouble(),
-                        paymentReference: stripeRef,
-                      );
-                      // Guardar dirección principal
-                      await SupabaseService.savePatientAddress(
-                        profileId: userId,
-                        address: _addressCtrl.text.trim(),
-                        latitude: _selectedLocation.latitude,
-                        longitude: _selectedLocation.longitude,
-                      );
+                    if (userId == null) {
+                      setModal(() => processing = false);
+                      return;
                     }
+
+                    // Pago real con Stripe (o simulado si no hay clave configurada)
+                    final monto = AppConstants.depositoInicial.toDouble();
+                    final stripeRef = await procesarPagoStripe(
+                      monto: monto,
+                      concepto: 'CUOTA_INICIAL',
+                    );
+                    if (stripeRef == null) {
+                      // Pago cancelado o falló: permitir reintentar
+                      setModal(() => processing = false);
+                      return;
+                    }
+
+                    // Marcar payment_completed y activar paciente
+                    await sl<IPaymentsRepository>().registerInitialPayment(
+                      profileId: userId,
+                      amount: monto,
+                      paymentReference: stripeRef,
+                    );
+                    // Guardar dirección principal
+                    await SupabaseService.savePatientAddress(
+                      profileId: userId,
+                      address: _addressCtrl.text.trim(),
+                      latitude: _selectedLocation.latitude,
+                      longitude: _selectedLocation.longitude,
+                    );
 
                     _stripeModalOpen = false;
                     if (dialogCtx.mounted) Navigator.pop(dialogCtx);

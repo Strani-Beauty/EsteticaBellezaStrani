@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:esteticaybellezastrani/app/config/app_env.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
@@ -14,6 +15,11 @@ void main() async {
 
   // 2. Validar credenciales imprescindibles antes de continuar
   AppEnv.validate();
+
+  // 2.5 Configurar Stripe (publishable key) si está presente
+  if (AppEnv.stripePublishableKey.isNotEmpty) {
+    Stripe.publishableKey = AppEnv.stripePublishableKey;
+  }
 
   // 3. Inicializar Supabase
   await Supabase.initialize(

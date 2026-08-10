@@ -10,6 +10,9 @@ class CitaEjecucionModel {
   final String? fechaInicio;
   final String? fechaFinalizacion;
 
+  /// Id de la solicitud origen (join solicitudes.id).
+  final String? solicitudId;
+
   final String pacienteNombre;
   final String? pacienteTelefono;
   final String servicioNombre;
@@ -27,6 +30,7 @@ class CitaEjecucionModel {
     this.fechaAceptacion,
     this.fechaInicio,
     this.fechaFinalizacion,
+    this.solicitudId,
     this.pacienteNombre = 'Paciente',
     this.pacienteTelefono,
     this.servicioNombre = 'Servicio',
@@ -80,6 +84,9 @@ class CitaEjecucionModel {
       fechaAceptacion: json['fecha_aceptacion']?.toString(),
       fechaInicio: json['fecha_inicio']?.toString(),
       fechaFinalizacion: json['fecha_finalizacion']?.toString(),
+      solicitudId: solicitud is Map<String, dynamic>
+          ? solicitud['id'] as String?
+          : null,
       pacienteNombre: pacienteNombre ?? 'Paciente',
       pacienteTelefono: telefono,
       servicioNombre: servicio is Map<String, dynamic>
@@ -103,6 +110,7 @@ class CitaEjecucionModel {
       fechaAceptacion: _parseDate(fechaAceptacion),
       fechaInicio: _parseDate(fechaInicio),
       fechaFinalizacion: _parseDate(fechaFinalizacion),
+      solicitudId: solicitudId,
       pacienteNombre: pacienteNombre,
       pacienteTelefono: pacienteTelefono,
       servicioNombre: servicioNombre,

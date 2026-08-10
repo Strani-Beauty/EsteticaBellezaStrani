@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/cuestionario_entity.dart';
 
 /// Screen de Cuestionario Clínico Pre-Tratamiento (Previo a Consulta Qualify Modo Prueba).
@@ -220,7 +222,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                 } catch (_) {}
 
                 try {
-                  await SupabaseService.createSolicitudAndPayment(
+                  await sl<IPaymentsRepository>().createSolicitudAndPayment(
                     profileId: user.id,
                     stripePaymentRef: widget.stripePaymentRef
                         ?? 'STRIPE_SIM_${DateTime.now().millisecondsSinceEpoch}',

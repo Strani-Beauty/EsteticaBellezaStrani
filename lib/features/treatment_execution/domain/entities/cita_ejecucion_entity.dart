@@ -48,6 +48,9 @@ class CitaEjecucionEntity extends Equatable {
   final DateTime? fechaInicio;
   final DateTime? fechaFinalizacion;
 
+  /// Solicitud origen de la cita (para consultar el saldo pendiente).
+  final String? solicitudId;
+
   final String pacienteNombre;
   final String? pacienteTelefono;
   final String servicioNombre;
@@ -66,6 +69,7 @@ class CitaEjecucionEntity extends Equatable {
     this.fechaAceptacion,
     this.fechaInicio,
     this.fechaFinalizacion,
+    this.solicitudId,
     this.pacienteNombre = 'Paciente',
     this.pacienteTelefono,
     this.servicioNombre = 'Servicio',
@@ -84,6 +88,7 @@ class CitaEjecucionEntity extends Equatable {
       fechaAceptacion: fechaAceptacion,
       fechaInicio: fechaInicio,
       fechaFinalizacion: fechaFinalizacion,
+      solicitudId: solicitudId,
       pacienteNombre: pacienteNombre,
       pacienteTelefono: pacienteTelefono,
       servicioNombre: servicioNombre,
@@ -103,6 +108,7 @@ class CitaEjecucionEntity extends Equatable {
         fechaAceptacion,
         fechaInicio,
         fechaFinalizacion,
+        solicitudId,
         pacienteNombre,
         pacienteTelefono,
         servicioNombre,

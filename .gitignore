@@ -18,6 +18,9 @@ migrate_working_dir/
 !.env.example
 *openapi*.json
 
+# Supabase CLI
+supabase/.temp/
+
 # IntelliJ related
 *.iml
 *.ipr

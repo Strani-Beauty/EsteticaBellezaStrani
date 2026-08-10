@@ -20,8 +20,16 @@ import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecase
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/data/datasources/payments_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/data/repositories/payments_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/consultar_pago.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/crear_payment_intent.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/crear_solicitud_deposito.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/pagar_servicio.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/registrar_pago_inicial.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/registrar_saldo.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/payments_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/datasources/specialists_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/repositories/specialists_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/repositories/i_specialists_repository.dart';
@@ -233,8 +241,21 @@ void _registerTreatmentPhotos() {
 }
 
 void _registerPaymentsStripe() {
+  sl.registerLazySingleton<PaymentsSupabaseDataSource>(
+    () => PaymentsSupabaseDataSource(sl<SupabaseClient>()),
+  );
   sl.registerLazySingleton<IPaymentsRepository>(
-    () => const PaymentsRepositoryImpl(),
+    () => PaymentsRepositoryImpl(sl<PaymentsSupabaseDataSource>()),
+  );
+  sl.registerFactory<PaymentsCubit>(
+    () => PaymentsCubit(
+      crearPaymentIntent: CrearPaymentIntent(sl<IPaymentsRepository>()),
+      registrarPagoInicial: RegistrarPagoInicial(sl<IPaymentsRepository>()),
+      crearSolicitudDeposito: CrearSolicitudDeposito(sl<IPaymentsRepository>()),
+      pagarServicio: PagarServicio(sl<IPaymentsRepository>()),
+      registrarSaldo: RegistrarSaldo(sl<IPaymentsRepository>()),
+      consultarPago: ConsultarPago(sl<IPaymentsRepository>()),
+    ),
   );
 }
 void _registerAdminConfig() {}

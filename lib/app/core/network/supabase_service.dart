@@ -994,54 +994,67 @@ class SupabaseService {
   // FACE MAPS & INYECTABLES QUESTIONNAIRE
   // ══════════════════════════════════════════════════════════════
 
-  /// Guarda la constancia del cuestionario Face Maps en la tabla `face_maps`
-  /// de Supabase, vinculando los datos del paciente y el id del tratamiento.
+  /// Guarda el Face Map del paciente en la tabla `face_maps` y sus puntos en
+  /// `face_map_puntos`, alineado al esquema real de Supabase.
+  ///
+  /// Al seleccionar un servicio facial/inyectable (antes de que exista un
+  /// tratamiento) el mapa se vincula a `paciente_id`; `tratamiento_id` queda
+  /// opcional para los mapas generados durante la ejecución clínica.
+  ///
+  /// [puntos] es una lista de mapas `{ 'zona_anatomica', 'coordenada_x',
+  /// 'coordenada_y' }` con coordenadas normalizadas (0.0..1.0) por vista.
   static Future<bool> saveFaceMapRecord({
     required String profileId,
     String? tratamientoId,
-    required List<String> zonasSeleccionadas,
-    List<String>? zonasProhibidasIntentadas,
+    required List<Map<String, dynamic>> puntos,
     String? notas,
   }) async {
-    debugPrint('📍 [saveFaceMapRecord] profileId=$profileId, tratamientoId=$tratamientoId, zonas=${zonasSeleccionadas.length}');
+    debugPrint('📍 [saveFaceMapRecord] profileId=$profileId, tratamientoId=$tratamientoId, puntos=${puntos.length}');
 
     final pacienteId = await _ensurePaciente(profileId);
-    final finalPacienteId = pacienteId ?? profileId;
-    final effectiveTratamientoId = tratamientoId ?? 'TRAT-${DateTime.now().millisecondsSinceEpoch}';
+    if (pacienteId == null) {
+      debugPrint('❌ [saveFaceMapRecord] No se pudo obtener pacienteId');
+      return false;
+    }
 
-    final payload = {
-      'paciente_id': finalPacienteId,
-      'tratamiento_id': effectiveTratamientoId,
-      'id_tratamiento': effectiveTratamientoId,
-      'profile_id': profileId,
-      'zonas_seleccionadas': zonasSeleccionadas,
-      'zonas_prohibidas_intentadas': zonasProhibidasIntentadas ?? [],
-      'notas': notas ?? '',
-      'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
+    final notasLimpio = notas?.trim();
+    final payload = <String, dynamic>{
+      'paciente_id': pacienteId,
+      'tipo_mapa': 'ROSTRO',
+      'imagen_base_url': '',
+      if (tratamientoId != null && tratamientoId.isNotEmpty)
+        'tratamiento_id': tratamientoId,
+      if (notasLimpio != null && notasLimpio.isNotEmpty)
+        'observaciones': notasLimpio,
     };
 
     try {
-      await _client.from('face_maps').insert(payload);
-      debugPrint('✅ [saveFaceMapRecord] Registro guardado con éxito en face_maps');
-      return true;
-    } catch (e) {
-      debugPrint('⚠️ [saveFaceMapRecord] Error en insert directo, intentando fallback: $e');
-      try {
-        final fallbackPayload = {
-          'paciente_id': finalPacienteId,
-          'tratamiento_id': effectiveTratamientoId,
-          'zonas_seleccionadas': jsonEncode(zonasSeleccionadas),
-          'notas': notas ?? '',
-          'created_at': DateTime.now().toIso8601String(),
-        };
-        await _client.from('face_maps').insert(fallbackPayload);
-        debugPrint('✅ [saveFaceMapRecord] Fallback guardado en face_maps');
-        return true;
-      } catch (e2) {
-        debugPrint('❌ [saveFaceMapRecord] Error final guardando en face_maps: $e2');
+      final res = await _client
+          .from('face_maps')
+          .insert(payload)
+          .select('id')
+          .maybeSingle();
+      final faceMapId = res?['id'] as String?;
+      if (faceMapId == null) {
+        debugPrint('❌ [saveFaceMapRecord] No se obtuvo id del face_maps insertado');
         return false;
       }
+
+      for (final punto in puntos) {
+        await _client.from('face_map_puntos').insert({
+          'face_map_id': faceMapId,
+          'zona_anatomica': punto['zona_anatomica'] as String? ?? '',
+          'coordenada_x': punto['coordenada_x'],
+          'coordenada_y': punto['coordenada_y'],
+          'cantidad': 1,
+          'unidad_medida': 'unidad',
+        });
+      }
+      debugPrint('✅ [saveFaceMapRecord] Face map $faceMapId con ${puntos.length} puntos guardado');
+      return true;
+    } catch (e) {
+      debugPrint('❌ [saveFaceMapRecord] Error guardando face map: $e');
+      rethrow;
     }
   }
 

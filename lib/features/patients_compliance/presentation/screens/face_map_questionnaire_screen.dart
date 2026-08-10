@@ -409,56 +409,73 @@ class _FaceMapQuestionnaireScreenState
 
     setState(() => _isSaving = true);
 
-    final selectedLabels = _selectedPoints.map((p) => p.label).toList();
+    // Una fila por (punto × vista) con coordenadas normalizadas (0..1).
+    final puntos = <Map<String, dynamic>>[
+      for (final p in _selectedPoints)
+        for (final entry in p.offsets.entries)
+          {
+            'zona_anatomica': p.label,
+            'coordenada_x': double.parse(entry.value.dx.toStringAsFixed(3)),
+            'coordenada_y': double.parse(entry.value.dy.toStringAsFixed(3)),
+          },
+    ];
 
     try {
       final success = await SupabaseService.saveFaceMapRecord(
         profileId: profileId,
-        tratamientoId: _effectiveTratamientoId,
-        zonasSeleccionadas: selectedLabels,
-        zonasProhibidasIntentadas: _attemptedForbiddenZones,
+        tratamientoId: widget.tratamientoId,
+        puntos: puntos,
         notas: _notasController.text.trim(),
       );
 
       if (!mounted) return;
       setState(() => _isSaving = false);
 
-      if (success) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-            ),
-            title: const Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
-                SizedBox(width: 10),
-                Text('Mapeo Registrado'),
-              ],
-            ),
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text(
-              'Se han guardado correctamente ${_selectedPoints.length} puntos de inyección en la tabla face_maps de Supabase para el Tratamiento ID: $_effectiveTratamientoId.',
-              style: const TextStyle(fontSize: 14),
-            ),
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/services');
-                  }
-                },
-                child: const Text('Aceptar', style: TextStyle(color: Colors.white)),
-              ),
-            ],
+                'No se pudo guardar el mapeo: no se encontró el registro del paciente.'),
+            backgroundColor: Colors.red,
           ),
         );
+        return;
       }
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+              SizedBox(width: 10),
+              Text('Mapeo Registrado'),
+            ],
+          ),
+          content: Text(
+            'Se han guardado correctamente ${_selectedPoints.length} puntos de inyección para el paciente.',
+            style: const TextStyle(fontSize: 14),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/services');
+                }
+              },
+              child: const Text('Aceptar', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);

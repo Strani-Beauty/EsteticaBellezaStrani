@@ -90,8 +90,12 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       }
     }
 
-    // ── 2. Si el servicio requiere Face Map, disparar Cuestionario Face Maps & Torso Silhouette ──
-    if (service.requiereFaceMap || title.toLowerCase().contains('inyectable')) {
+    // ── 2. Si el servicio es facial/inyectable, disparar Cuestionario Face Maps & Torso Silhouette ──
+    final esFacialOInyectable = service.requiereFaceMap ||
+        title.toLowerCase().contains('inyectable') ||
+        const {'Inyectables', 'Rejuvenecimiento Facial'}
+            .contains(service.nombreCategoria);
+    if (esFacialOInyectable) {
       context.push(AppRoutes.faceMapQuestionnaire);
       return;
     }

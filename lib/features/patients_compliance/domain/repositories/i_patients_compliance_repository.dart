@@ -29,12 +29,13 @@ abstract class IPatientsComplianceRepository {
     String proveedor = 'Telemedicina',
   });
 
-  /// Guarda el registro de zonas del Face Map.
+  /// Guarda el Face Map del paciente (cabecera en `face_maps` + puntos en
+  /// `face_map_puntos`). [puntos] es una lista de mapas
+  /// `{ 'zona_anatomica', 'coordenada_x', 'coordenada_y' }`.
   Future<bool> saveFaceMapRecord({
     required String profileId,
     String? tratamientoId,
-    required List<String> zonasSeleccionadas,
-    List<String>? zonasProhibidasIntentadas,
+    required List<Map<String, dynamic>> puntos,
     String? notas,
   });
 

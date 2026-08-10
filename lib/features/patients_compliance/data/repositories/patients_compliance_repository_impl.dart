@@ -54,15 +54,13 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
   Future<bool> saveFaceMapRecord({
     required String profileId,
     String? tratamientoId,
-    required List<String> zonasSeleccionadas,
-    List<String>? zonasProhibidasIntentadas,
+    required List<Map<String, dynamic>> puntos,
     String? notas,
   }) =>
       SupabaseService.saveFaceMapRecord(
         profileId: profileId,
         tratamientoId: tratamientoId,
-        zonasSeleccionadas: zonasSeleccionadas,
-        zonasProhibidasIntentadas: zonasProhibidasIntentadas,
+        puntos: puntos,
         notas: notas,
       );
 

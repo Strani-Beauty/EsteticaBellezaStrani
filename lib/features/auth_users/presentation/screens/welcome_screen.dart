@@ -102,7 +102,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             vertical: wide ? 0 : 32,
           ),
           child: wide
-              ? Center(child: _buildContent(context, wide: true))
+              ? Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: _buildContent(context, wide: true),
+                  ),
+                )
               : _buildContent(context, wide: false),
         ),
       ),

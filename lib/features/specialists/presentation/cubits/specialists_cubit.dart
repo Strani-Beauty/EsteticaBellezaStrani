@@ -206,28 +206,42 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   }
 
   /// Crea el registro de especialista (solicitud de verificación).
+  /// Conserva el especialista recién creado en el estado (evita que la UI
+  /// vuelva a mostrar el formulario de licencia) y, si la inserción falla por
+  /// unicidad de `usuario_id` (el registro ya existe en BD), recupera el
+  /// especialista existente en vez de quedarse bloqueado en un error.
   Future<void> createSpecialist({
     required String usuarioId,
     String? numeroLicencia,
     String? medicoRegenteId,
   }) async {
+    final prior = state is SpecialistsLoaded ? state as SpecialistsLoaded : null;
     emit(const SpecialistsLoading());
+
     final result = await _createEspecialista(CreateEspecialistaParams(
       usuarioId: usuarioId,
       numeroLicencia: numeroLicencia,
       medicoRegenteId: medicoRegenteId,
     ));
+
     result.fold(
-      (f) => emit(SpecialistsError(f.message)),
-      (s) {
-        final current = state;
-        if (current is SpecialistsLoaded) {
-          emit(current.copyWith(especialista: s));
+      (f) {
+        if (_esUnicidadViolada(f.message)) {
+          loadDashboard(usuarioId: usuarioId);
         } else {
-          emit(const SpecialistsLoaded());
+          emit(SpecialistsError(f.message));
         }
       },
+      (s) => emit((prior ?? const SpecialistsLoaded()).copyWith(especialista: s)),
     );
+  }
+
+  bool _esUnicidadViolada(String message) {
+    final m = message.toLowerCase();
+    return m.contains('23505') ||
+        m.contains('duplicate key') ||
+        m.contains('unique constraint') ||
+        m.contains('unicidad');
   }
 
   /// Alterna la disponibilidad del especialista.

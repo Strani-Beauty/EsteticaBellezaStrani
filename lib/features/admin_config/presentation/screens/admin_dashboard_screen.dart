@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/documento_especialista_entity.dart';
@@ -201,6 +203,36 @@ class _VerificacionDeLicencias extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Card(
+            elevation: 0,
+            color: AppTheme.cSurface,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              side: const BorderSide(color: Colors.black12),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppTheme.cPastelPurple,
+                child: const Icon(Icons.people_outline_rounded,
+                    color: AppTheme.cDeepAccent),
+              ),
+              title: const Text(
+                'Usuarios del Sistema',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.cDarkText,
+                ),
+              ),
+              subtitle: const Text(
+                'Consultar y activar/desactivar cuentas',
+                style: TextStyle(color: AppTheme.cMutedText, fontSize: 12),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.go(AppRoutes.adminUsuarios),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text('Verificación de Licencias',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),

@@ -132,6 +132,11 @@ class AuthSupabaseDataSource {
 
     debugPrint('📝 [createProfile] Creando perfil para id=$id role=$role');
 
+    // El Paciente nace inactivo (debe completar dirección + cuota + evaluación);
+    // Especialista y Administrador nacen activos (su habilitación de especialista
+    // se gobierna aparte con `especialistas.estado_verificacion`).
+    final bool activo = role != 'Paciente';
+
     // 1. UPSERT en profiles
     final profilePayload = {
       'id': id,
@@ -139,7 +144,7 @@ class AuthSupabaseDataSource {
       'full_name': fullName,
       'role': role,
       'phone': phone ?? '',
-      'activo': false,
+      'activo': activo,
       'payment_completed': false,
       'evaluation_passed': false,
       'created_at': DateTime.now().toIso8601String(),
@@ -296,20 +301,21 @@ class AuthSupabaseDataSource {
     required String profileId,
     required String fcmToken,
     String? plataforma,
+    String? modeloDispositivo,
   }) async {
     await _client.from('dispositivos_usuario').upsert({
-      'profile_id': profileId,
-      'fcm_token':  fcmToken,
+      'usuario_id': profileId,
+      'token_fcm':  fcmToken,
       'plataforma': plataforma,
+      'modelo_dispositivo': modeloDispositivo,
       'activo':     true,
-      'last_seen_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'fcm_token');
+    }, onConflict: 'token_fcm');
   }
 
   Future<void> deactivateFcmToken(String token) async {
     await _client
         .from('dispositivos_usuario')
         .update({'activo': false})
-        .eq('fcm_token', token);
+        .eq('token_fcm', token);
   }
 }

@@ -1,5 +1,11 @@
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:esteticaybellezastrani/features/admin_users/data/datasources/admin_users_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/admin_users/data/repositories/admin_users_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/admin_users/domain/repositories/i_admin_users_repository.dart';
+import 'package:esteticaybellezastrani/features/admin_users/domain/usecases/get_usuarios.dart';
+import 'package:esteticaybellezastrani/features/admin_users/domain/usecases/set_usuario_activo.dart';
+import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_users_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/repositories/auth_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/auth_users/domain/repositories/i_auth_repository.dart';
@@ -104,6 +110,9 @@ void setupDependencies() {
 
   // ── Features: Treatment Photos ───────────────────────────
   _registerTreatmentPhotos();
+
+  // ── Features: Admin Users ──────────────────────────────────
+  _registerAdminUsers();
 
   // ── Features: Payments Stripe ─────────────────────────────
   _registerPaymentsStripe();
@@ -273,5 +282,20 @@ void _registerPaymentsStripe() {
     ),
   );
 }
+void _registerAdminUsers() {
+  sl.registerLazySingleton<AdminUsersSupabaseDataSource>(
+    () => AdminUsersSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IAdminUsersRepository>(
+    () => AdminUsersRepositoryImpl(sl<AdminUsersSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<AdminUsersCubit>(
+    () => AdminUsersCubit(
+      GetUsuarios(sl<IAdminUsersRepository>()),
+      SetUsuarioActivo(sl<IAdminUsersRepository>()),
+    ),
+  );
+}
+
 void _registerAdminConfig() {}
 void _registerReportsDashboards() {}

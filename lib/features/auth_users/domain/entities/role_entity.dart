@@ -28,23 +28,26 @@ class RoleEntity extends Equatable {
 /// Registro de FCM tokens para notificaciones push (RN-006, RN-007)
 class DispositivoUsuarioEntity extends Equatable {
   final String id;          // UUID
-  final String profileId;   // FK profiles.id
-  final String fcmToken;
+  final String usuarioId;   // FK profiles.id
+  final String tokenFcm;
   final String? plataforma; // 'android' | 'ios' | 'web'
+  final String? modeloDispositivo;
   final bool activo;
   final DateTime createdAt;
-  final DateTime? lastSeenAt;
+  final DateTime? updatedAt;
 
   const DispositivoUsuarioEntity({
     required this.id,
-    required this.profileId,
-    required this.fcmToken,
+    required this.usuarioId,
+    required this.tokenFcm,
     this.plataforma,
+    this.modeloDispositivo,
     required this.activo,
     required this.createdAt,
-    this.lastSeenAt,
+    this.updatedAt,
   });
 
   @override
-  List<Object?> get props => [id, profileId, fcmToken, plataforma, activo];
+  List<Object?> get props =>
+      [id, usuarioId, tokenFcm, plataforma, modeloDispositivo, activo];
 }

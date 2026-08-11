@@ -101,15 +101,56 @@ class SpecialistsSupabaseDataSource {
 
   // ── Médicos Regentes ─────────────────────────────────────────
 
-  Future<List<MedicoRegenteModel>> fetchMedicosRegentes() async {
-    final res = await _client
-        .from('medicos_regentes')
-        .select()
-        .eq('activo', true)
-        .order('nombre');
+  Future<List<MedicoRegenteModel>> fetchMedicosRegentes({
+    bool soloActivos = true,
+  }) async {
+    var query = _client.from('medicos_regentes').select();
+    if (soloActivos) {
+      query = query.eq('activo', true);
+    }
+    final res = await query.order('nombre');
     return res
         .map((json) => MedicoRegenteModel.fromJson(json))
         .toList();
+  }
+
+  /// Registra un médico regente. Queda en estado PENDIENTE (activo=false)
+  /// hasta que un administrador lo valide (ver [updateMedicoRegente]).
+  Future<MedicoRegenteModel> createMedicoRegente({
+    required String nombre,
+    String? numeroLicencia,
+    String? telefono,
+    String? correo,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final res = await _client.from('medicos_regentes').insert({
+      'nombre': nombre,
+      'numero_licencia': numeroLicencia,
+      'telefono': telefono,
+      'correo': correo,
+      'estado': 'PENDIENTE',
+      'activo': false,
+      'created_at': now,
+      'updated_at': now,
+    }).select().maybeSingle();
+    if (res == null) throw Exception('No se pudo registrar el médico regente');
+    return MedicoRegenteModel.fromJson(res);
+  }
+
+  Future<MedicoRegenteModel> updateMedicoRegente(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    final patch = Map<String, dynamic>.from(data);
+    patch['updated_at'] = DateTime.now().toIso8601String();
+    final res = await _client
+        .from('medicos_regentes')
+        .update(patch)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+    if (res == null) throw Exception('Médico regente $id no actualizado');
+    return MedicoRegenteModel.fromJson(res);
   }
 
   // ── Especialidades ───────────────────────────────────────────
@@ -133,6 +174,61 @@ class SpecialistsSupabaseDataSource {
     return res
         .map((json) => EspecialistaEspecialidadModel.fromJson(json))
         .toList();
+  }
+
+  /// Reemplaza el conjunto de especialidades del especialista
+  /// (borra las actuales e inserta la nueva selección).
+  Future<List<EspecialistaEspecialidadModel>> reemplazarEspecialidades(
+    String especialistaId,
+    List<int> especialidadIds,
+  ) async {
+    await _client
+        .from('especialista_especialidades')
+        .delete()
+        .eq('especialista_id', especialistaId);
+
+    if (especialidadIds.isEmpty) return [];
+
+    final now = DateTime.now().toIso8601String();
+    final payload = especialidadIds.map((id) => {
+          'especialista_id': especialistaId,
+          'especialidad_id': id,
+          'created_at': now,
+        }).toList();
+    final res = await _client
+        .from('especialista_especialidades')
+        .insert(payload)
+        .select();
+    return res
+        .map((json) => EspecialistaEspecialidadModel.fromJson(json))
+        .toList();
+  }
+
+  // ── Perfil (datos personales del especialista) ───────────────
+  // Actualiza SOLO columnas de `profiles` relevantes al especialista,
+  // sin tocar role/pacientes (a diferencia de updateProfileData de SupabaseService).
+
+  Future<void> updatePerfilEspecialista({
+    required String userId,
+    String? fullName,
+    String? phone,
+    String? address,
+    double? latitude,
+    double? longitude,
+    double? hourlyRate,
+    String? avatarUrl,
+  }) async {
+    final patch = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (fullName != null) patch['full_name'] = fullName;
+    if (phone != null) patch['phone'] = phone;
+    if (address != null) patch['address'] = address;
+    if (latitude != null) patch['latitude'] = latitude;
+    if (longitude != null) patch['longitude'] = longitude;
+    if (hourlyRate != null) patch['hourly_rate'] = hourlyRate;
+    if (avatarUrl != null) patch['avatar_url'] = avatarUrl;
+    await _client.from('profiles').update(patch).eq('id', userId);
   }
 
   // ── Documentos ───────────────────────────────────────────────

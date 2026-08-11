@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 /// Entidad de dominio: `especialidades`.
 class EspecialidadEntity extends Equatable {
-  final String id;              // uuid PK
+  final int id;                 // bigint PK (identity)
   final String nombre;
   final String? descripcion;
   final bool activo;
@@ -24,9 +24,9 @@ class EspecialidadEntity extends Equatable {
 
 /// Entidad de dominio: `especialista_especialidades` (relación M:N).
 class EspecialistaEspecialidadEntity extends Equatable {
-  final String id;               // uuid PK
-  final String especialistaId;   // FK especialistas.id
-  final String especialidadId;   // FK especialidades.id
+  final int id;                 // bigint PK (identity)
+  final String especialistaId;  // FK especialistas.id
+  final int especialidadId;     // FK especialidades.id (bigint)
   final DateTime createdAt;
 
   const EspecialistaEspecialidadEntity({

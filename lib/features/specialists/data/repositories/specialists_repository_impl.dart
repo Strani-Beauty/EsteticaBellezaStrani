@@ -81,10 +81,45 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
   }
 
   @override
-  Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes() async {
+  Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes({
+    bool soloActivos = true,
+  }) async {
     try {
-      final models = await _dataSource.fetchMedicosRegentes();
+      final models = await _dataSource.fetchMedicosRegentes(soloActivos: soloActivos);
       return Right(models.map((m) => m.toEntity()).toList());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MedicoRegenteEntity>> createMedicoRegente({
+    required String nombre,
+    String? numeroLicencia,
+    String? telefono,
+    String? correo,
+  }) async {
+    try {
+      final model = await _dataSource.createMedicoRegente(
+        nombre: nombre,
+        numeroLicencia: numeroLicencia,
+        telefono: telefono,
+        correo: correo,
+      );
+      return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MedicoRegenteEntity>> aprobarMedicoRegente(String id) async {
+    try {
+      final model = await _dataSource.updateMedicoRegente(id, {
+        'estado': 'ACTIVO',
+        'activo': true,
+      });
+      return Right(model.toEntity());
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -107,6 +142,51 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
       final models =
           await _dataSource.fetchEspecialistaEspecialidades(especialistaId);
       return Right(models.map((m) => m.toEntity()).toList());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<EspecialistaEspecialidadEntity>>>
+      reemplazarEspecialidades(
+    String especialistaId,
+    List<int> especialidadIds,
+  ) async {
+    try {
+      final models = await _dataSource.reemplazarEspecialidades(
+        especialistaId,
+        especialidadIds,
+      );
+      return Right(models.map((m) => m.toEntity()).toList());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updatePerfilEspecialista({
+    required String userId,
+    String? fullName,
+    String? phone,
+    String? address,
+    double? latitude,
+    double? longitude,
+    double? hourlyRate,
+    String? avatarUrl,
+  }) async {
+    try {
+      await _dataSource.updatePerfilEspecialista(
+        userId: userId,
+        fullName: fullName,
+        phone: phone,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+        hourlyRate: hourlyRate,
+        avatarUrl: avatarUrl,
+      );
+      return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

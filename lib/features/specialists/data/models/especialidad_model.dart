@@ -1,7 +1,7 @@
 import '../../domain/entities/especialidad_entity.dart';
 
 class EspecialidadModel {
-  final String id;
+  final int id;
   final String nombre;
   final String? descripcion;
   final bool activo;
@@ -19,7 +19,7 @@ class EspecialidadModel {
 
   factory EspecialidadModel.fromJson(Map<String, dynamic> json) {
     return EspecialidadModel(
-      id: json['id'] as String,
+      id: (json['id'] as num).toInt(),
       nombre: json['nombre'] as String,
       descripcion: json['descripcion'] as String?,
       activo: json['activo'] as bool? ?? false,
@@ -57,9 +57,9 @@ class EspecialidadModel {
 }
 
 class EspecialistaEspecialidadModel {
-  final String id;
+  final int id;
   final String especialistaId;
-  final String especialidadId;
+  final int especialidadId;
   final DateTime createdAt;
 
   const EspecialistaEspecialidadModel({
@@ -71,9 +71,9 @@ class EspecialistaEspecialidadModel {
 
   factory EspecialistaEspecialidadModel.fromJson(Map<String, dynamic> json) {
     return EspecialistaEspecialidadModel(
-      id: json['id'] as String,
+      id: (json['id'] as num).toInt(),
       especialistaId: json['especialista_id'] as String,
-      especialidadId: json['especialidad_id'] as String,
+      especialidadId: (json['especialidad_id'] as num).toInt(),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

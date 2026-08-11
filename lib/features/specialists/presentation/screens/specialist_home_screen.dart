@@ -21,6 +21,7 @@ class SpecialistHomeScreen extends StatefulWidget {
 }
 
 class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
+  bool _redirectedToOnboarding = false;
   bool _redirectedToDocuments = false;
 
   @override
@@ -51,12 +52,37 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
       ),
       body: BlocListener<SpecialistsCubit, SpecialistsState>(
         listener: (context, state) {
-          // Onboarding obligatorio: si el especialista existe pero aún no ha
-          // subido los documentos requeridos, se le lleva a esa pantalla.
-          if (state is SpecialistsLoaded &&
-              state.especialista != null &&
-              !_tieneDocumentosRequeridos(state) &&
-              !_redirectedToDocuments) {
+          if (state is! SpecialistsLoaded) return;
+
+          // Onboarding obligatorio:
+          // 1) Sin perfil de especialista aún → wizard completo.
+          // 2) Perfil creado pero sin datos profesionales mínimos (médico
+          //    regente + especialidades) → wizard en el paso profesional.
+          // 3) Faltan documentos requeridos → pantalla de documentos.
+          if (state.especialista == null) {
+            if (!_redirectedToOnboarding) {
+              _redirectedToOnboarding = true;
+              context.go(
+                AppRoutes.specialistOnboarding,
+                extra: '',
+              );
+            }
+            return;
+          }
+
+          final cubit = context.read<SpecialistsCubit>();
+          if (!cubit.tieneDatosProfesionales) {
+            if (!_redirectedToOnboarding) {
+              _redirectedToOnboarding = true;
+              context.go(
+                AppRoutes.specialistOnboarding,
+                extra: state.especialista!.id,
+              );
+            }
+            return;
+          }
+
+          if (!_tieneDocumentosRequeridos(state) && !_redirectedToDocuments) {
             _redirectedToDocuments = true;
             context.go(
               AppRoutes.specialistDocuments,

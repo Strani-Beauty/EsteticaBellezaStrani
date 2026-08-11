@@ -10,6 +10,7 @@ import 'package:esteticaybellezastrani/features/catalog_services/presentation/sc
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_documents_screen.dart';
+import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_onboarding_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String adminDashboard       = '/admin';
   static const String specialistHome       = '/specialist';
   static const String specialistDocuments  = '/specialist/documents';
+  static const String specialistOnboarding = '/specialist/onboarding';
   static const String profile              = '/profile';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
@@ -129,6 +131,16 @@ final GoRouter appRouter = GoRouter(
         child: SpecialistDocumentsScreen(
           especialistaId: state.extra as String? ?? '',
           isOnboarding: true,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.specialistOnboarding,
+      name: 'specialistOnboarding',
+      builder: (context, state) => BlocProvider<SpecialistsCubit>(
+        create: (_) => sl<SpecialistsCubit>(),
+        child: SpecialistOnboardingScreen(
+          especialistaId: state.extra as String? ?? '',
         ),
       ),
     ),

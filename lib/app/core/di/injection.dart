@@ -33,7 +33,10 @@ import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cub
 import 'package:esteticaybellezastrani/features/specialists/data/datasources/specialists_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/repositories/specialists_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/repositories/i_specialists_repository.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/aprobar_medico_regente.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/asignar_especialidades.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/create_especialista.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/create_medico_regente.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_all_especialistas.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_contrato.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_disponibilidad.dart';
@@ -44,6 +47,7 @@ import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/save_ubicacion.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/set_disponibilidad.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_especialista.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_perfil_especialista.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/datasources/treatment_photos_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/repositories/treatment_photos_repository_impl.dart';
@@ -144,6 +148,13 @@ void _registerSpecialists() {
       saveUbicacion: SaveUbicacion(sl<ISpecialistsRepository>()),
       updateEspecialista: UpdateEspecialista(sl<ISpecialistsRepository>()),
       getAllEspecialistas: GetAllEspecialistas(sl<ISpecialistsRepository>()),
+      asignarEspecialidades: AsignarEspecialidades(sl<ISpecialistsRepository>()),
+      createMedicoRegente: CreateMedicoRegente(sl<ISpecialistsRepository>()),
+      aprobarMedicoRegente: AprobarMedicoRegente(sl<ISpecialistsRepository>()),
+      updatePerfilEspecialista:
+          UpdatePerfilEspecialista(sl<ISpecialistsRepository>()),
+      getEspecialidadesDelEspecialista:
+          GetEspecialistaEspecialidades(sl<ISpecialistsRepository>()),
     ),
   );
 }

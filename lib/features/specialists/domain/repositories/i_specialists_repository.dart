@@ -32,13 +32,39 @@ abstract class ISpecialistsRepository {
   Future<Either<Failure, List<EspecialistaEntity>>> getEspecialistas();
 
   // ── Médicos Regentes ─────────────────────────────────────────
-  Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes();
+  Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes({
+    bool soloActivos = true,
+  });
+
+  Future<Either<Failure, MedicoRegenteEntity>> createMedicoRegente({
+    required String nombre,
+    String? numeroLicencia,
+    String? telefono,
+    String? correo,
+  });
+
+  Future<Either<Failure, MedicoRegenteEntity>> aprobarMedicoRegente(String id);
 
   // ── Especialidades ───────────────────────────────────────────
   Future<Either<Failure, List<EspecialidadEntity>>> getEspecialidades();
 
   Future<Either<Failure, List<EspecialistaEspecialidadEntity>>>
       getEspecialistaEspecialidades(String especialistaId);
+
+  Future<Either<Failure, List<EspecialistaEspecialidadEntity>>>
+      reemplazarEspecialidades(String especialistaId, List<int> especialidadIds);
+
+  // ── Perfil (datos personales del especialista) ───────────────
+  Future<Either<Failure, void>> updatePerfilEspecialista({
+    required String userId,
+    String? fullName,
+    String? phone,
+    String? address,
+    double? latitude,
+    double? longitude,
+    double? hourlyRate,
+    String? avatarUrl,
+  });
 
   // ── Documentos ───────────────────────────────────────────────
   Future<Either<Failure, List<DocumentoEspecialistaEntity>>> getDocumentos(String especialistaId);

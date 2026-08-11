@@ -12,7 +12,10 @@ import '../../domain/entities/especialidad_entity.dart';
 import '../../domain/entities/especialista_entity.dart';
 import '../../domain/entities/medico_regente_entity.dart';
 import '../../domain/entities/ubicacion_especialista_entity.dart';
+import '../../domain/usecases/aprobar_medico_regente.dart';
+import '../../domain/usecases/asignar_especialidades.dart';
 import '../../domain/usecases/create_especialista.dart';
+import '../../domain/usecases/create_medico_regente.dart';
 import '../../domain/usecases/get_all_especialistas.dart';
 import '../../domain/usecases/get_contrato.dart';
 import '../../domain/usecases/get_disponibilidad.dart';
@@ -23,6 +26,7 @@ import '../../domain/usecases/get_my_specialist.dart';
 import '../../domain/usecases/save_ubicacion.dart';
 import '../../domain/usecases/set_disponibilidad.dart';
 import '../../domain/usecases/update_especialista.dart';
+import '../../domain/usecases/update_perfil_especialista.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADOS
@@ -51,6 +55,7 @@ class SpecialistsLoaded extends SpecialistsState {
   final ContratoEntity? contrato;
   final UbicacionEspecialistaEntity? ubicacion;
   final List<EspecialistaEntity> especialistas;
+  final List<int> especialidadIds;
 
   const SpecialistsLoaded({
     this.especialista,
@@ -61,6 +66,7 @@ class SpecialistsLoaded extends SpecialistsState {
     this.contrato,
     this.ubicacion,
     this.especialistas = const [],
+    this.especialidadIds = const [],
   });
 
   SpecialistsLoaded copyWith({
@@ -72,6 +78,7 @@ class SpecialistsLoaded extends SpecialistsState {
     ContratoEntity? contrato,
     UbicacionEspecialistaEntity? ubicacion,
     List<EspecialistaEntity>? especialistas,
+    List<int>? especialidadIds,
   }) {
     return SpecialistsLoaded(
       especialista: especialista ?? this.especialista,
@@ -82,6 +89,7 @@ class SpecialistsLoaded extends SpecialistsState {
       contrato: contrato ?? this.contrato,
       ubicacion: ubicacion ?? this.ubicacion,
       especialistas: especialistas ?? this.especialistas,
+      especialidadIds: especialidadIds ?? this.especialidadIds,
     );
   }
 
@@ -95,6 +103,7 @@ class SpecialistsLoaded extends SpecialistsState {
         contrato,
         ubicacion,
         especialistas,
+        especialidadIds,
       ];
 }
 
@@ -124,6 +133,11 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final SaveUbicacion _saveUbicacion;
   final UpdateEspecialista _updateEspecialista;
   final GetAllEspecialistas _getAllEspecialistas;
+  final AsignarEspecialidades _asignarEspecialidades;
+  final CreateMedicoRegente _createMedicoRegente;
+  final AprobarMedicoRegente _aprobarMedicoRegente;
+  final UpdatePerfilEspecialista _updatePerfilEspecialista;
+  final GetEspecialistaEspecialidades _getEspecialidadesDelEspecialista;
 
   SpecialistsCubit({
     required GetMySpecialist getMySpecialist,
@@ -140,6 +154,11 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required SaveUbicacion saveUbicacion,
     required UpdateEspecialista updateEspecialista,
     required GetAllEspecialistas getAllEspecialistas,
+    required AsignarEspecialidades asignarEspecialidades,
+    required CreateMedicoRegente createMedicoRegente,
+    required AprobarMedicoRegente aprobarMedicoRegente,
+    required UpdatePerfilEspecialista updatePerfilEspecialista,
+    required GetEspecialistaEspecialidades getEspecialidadesDelEspecialista,
   })  : _getMySpecialist = getMySpecialist,
         _createEspecialista = createEspecialista,
         _getMedicosRegentes = getMedicosRegentes,
@@ -154,6 +173,11 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _saveUbicacion = saveUbicacion,
         _updateEspecialista = updateEspecialista,
         _getAllEspecialistas = getAllEspecialistas,
+        _asignarEspecialidades = asignarEspecialidades,
+        _createMedicoRegente = createMedicoRegente,
+        _aprobarMedicoRegente = aprobarMedicoRegente,
+        _updatePerfilEspecialista = updatePerfilEspecialista,
+        _getEspecialidadesDelEspecialista = getEspecialidadesDelEspecialista,
         super(const SpecialistsInitial());
 
   /// Carga el tablero completo del especialista.
@@ -169,12 +193,13 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       (s) => especialista = s,
     );
 
-    final medicos = await _getMedicosRegentes();
+    final medicos = await _getMedicosRegentes(const GetMedicosRegentesParams());
     final especialidades = await _getEspecialidades();
 
     List<DocumentoEspecialistaEntity> documentos = [];
     DisponibilidadEntity? disponibilidad;
     ContratoEntity? contrato;
+    List<int> especialidadIds = [];
     final esp = especialista;
     if (esp != null) {
       final docs = await _getDocumentos(GetDocumentosParams(esp.id));
@@ -183,6 +208,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       disp.fold((_) {}, (d) => disponibilidad = d);
       final con = await _getContrato(GetContratoParams(esp.id));
       con.fold((_) {}, (c) => contrato = c);
+      final rel = await _getEspecialidadesDelEspecialista(
+        GetEspecialistaEspecialidadesParams(esp.id),
+      );
+      rel.fold((_) {}, (r) => especialidadIds = r.map((e) => e.especialidadId).toList());
     }
 
     if (failure) {
@@ -202,6 +231,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       documentos: documentos,
       disponibilidad: disponibilidad,
       contrato: contrato,
+      especialidadIds: especialidadIds,
     ));
   }
 
@@ -242,6 +272,130 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         m.contains('duplicate key') ||
         m.contains('unique constraint') ||
         m.contains('unicidad');
+  }
+
+  /// Guarda los datos personales del especialista (columnas de `profiles`).
+  Future<void> guardarDatosPersonales({
+    required String userId,
+    String? fullName,
+    String? phone,
+    String? address,
+    double? latitude,
+    double? longitude,
+    double? hourlyRate,
+  }) async {
+    final current = state is SpecialistsLoaded ? state as SpecialistsLoaded : null;
+    emit(const SpecialistsLoading());
+
+    final result = await _updatePerfilEspecialista(UpdatePerfilEspecialistaParams(
+      userId: userId,
+      fullName: fullName,
+      phone: phone,
+      address: address,
+      latitude: latitude,
+      longitude: longitude,
+      hourlyRate: hourlyRate,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (_) => emit((current ?? const SpecialistsLoaded())),
+    );
+  }
+
+  /// Reemplaza las especialidades que ofrece el especialista.
+  Future<void> guardarEspecialidades({
+    required String especialistaId,
+    required List<int> especialidadIds,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _asignarEspecialidades(AsignarEspecialidadesParams(
+      especialistaId: especialistaId,
+      especialidadIds: especialidadIds,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (_) => emit(current.copyWith(especialidadIds: especialidadIds)),
+    );
+  }
+
+  /// Actualiza licencia y/o médico regente de un especialista ya existente.
+  Future<void> actualizarDatosProfesionales({
+    required String especialistaId,
+    String? numeroLicencia,
+    String? medicoRegenteId,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _updateEspecialista(UpdateEspecialistaParams(
+      id: especialistaId,
+      numeroLicencia: numeroLicencia,
+      medicoRegenteId: medicoRegenteId,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (actualizado) => emit(current.copyWith(especialista: actualizado)),
+    );
+  }
+
+  /// Registra un médico regente (queda PENDIENTE de validación).
+  Future<void> createMedicoRegente({
+    required String nombre,
+    String? numeroLicencia,
+    String? telefono,
+    String? correo,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _createMedicoRegente(CreateMedicoRegenteParams(
+      nombre: nombre,
+      numeroLicencia: numeroLicencia,
+      telefono: telefono,
+      correo: correo,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (medico) {
+        // Se agrega a la lista (PENDIENTE) para que el especialista lo vea.
+        emit(current.copyWith(
+          medicosRegentes: [...current.medicosRegentes, medico],
+        ));
+      },
+    );
+  }
+
+  /// Valida un médico regente (PENDIENTE -> ACTIVO) desde el panel de admin.
+  Future<void> aprobarMedicoRegente(String id) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _aprobarMedicoRegente(AprobarMedicoRegenteParams(id));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (medico) => emit(current.copyWith(
+        medicosRegentes: [
+          for (final m in current.medicosRegentes)
+            if (m.id == medico.id) medico else m,
+        ],
+      )),
+    );
+  }
+
+  /// Carga todos los médicos regentes (incluye PENDIENTES) — uso administrativo.
+  Future<void> loadMedicosRegentesAdmin() async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _getMedicosRegentes(
+      const GetMedicosRegentesParams(soloActivos: false),
+    );
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (medicos) => emit(current.copyWith(medicosRegentes: medicos)),
+    );
   }
 
   /// Alterna la disponibilidad del especialista.
@@ -349,13 +503,24 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     );
   }
 
-  /// Lista todos los especialistas (panel de administración).
+  /// Lista todos los especialistas (panel de administración) y los médicos
+  /// regentes (incluyendo los pendientes de validación).
   Future<void> loadAllEspecialistas() async {
     emit(const SpecialistsLoading());
     final result = await _getAllEspecialistas(const NoParams());
+    final medicos = await _getMedicosRegentes(
+      const GetMedicosRegentesParams(soloActivos: false),
+    );
+    List<MedicoRegenteEntity> medicosList = [];
+    medicos.fold((_) {}, (m) => medicosList = m);
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
-      (especialistas) => emit(SpecialistsLoaded(especialistas: especialistas)),
+      (especialistas) => emit(
+        SpecialistsLoaded(
+          especialistas: especialistas,
+          medicosRegentes: medicosList,
+        ),
+      ),
     );
   }
 
@@ -397,4 +562,18 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
 
   EspecialistaEntity? get especialista =>
       state is SpecialistsLoaded ? (state as SpecialistsLoaded).especialista : null;
+
+  /// IDs de especialidades ya asociadas al especialista (para preselección).
+  List<int> get especialidadIds =>
+      state is SpecialistsLoaded
+          ? (state as SpecialistsLoaded).especialidadIds
+          : const [];
+
+  /// true cuando el especialista ya tiene asociado un médico regente activo
+  /// y al menos una especialidad (datos profesionales mínimos).
+  bool get tieneDatosProfesionales {
+    final s = state;
+    if (s is! SpecialistsLoaded || s.especialista == null) return false;
+    return s.especialista!.medicoRegenteId != null && s.especialidadIds.isNotEmpty;
+  }
 }

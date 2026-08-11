@@ -23,8 +23,10 @@ import '../../domain/usecases/get_documentos.dart';
 import '../../domain/usecases/get_especialidades.dart';
 import '../../domain/usecases/get_medicos_regentes.dart';
 import '../../domain/usecases/get_my_specialist.dart';
+import '../../domain/usecases/revisar_documento.dart';
 import '../../domain/usecases/save_ubicacion.dart';
 import '../../domain/usecases/set_disponibilidad.dart';
+import '../../domain/usecases/solicitar_verificacion.dart';
 import '../../domain/usecases/update_especialista.dart';
 import '../../domain/usecases/update_perfil_especialista.dart';
 
@@ -56,6 +58,7 @@ class SpecialistsLoaded extends SpecialistsState {
   final UbicacionEspecialistaEntity? ubicacion;
   final List<EspecialistaEntity> especialistas;
   final List<int> especialidadIds;
+  final Map<String, List<DocumentoEspecialistaEntity>> documentosPorEspecialista;
 
   const SpecialistsLoaded({
     this.especialista,
@@ -67,6 +70,7 @@ class SpecialistsLoaded extends SpecialistsState {
     this.ubicacion,
     this.especialistas = const [],
     this.especialidadIds = const [],
+    this.documentosPorEspecialista = const {},
   });
 
   SpecialistsLoaded copyWith({
@@ -79,6 +83,7 @@ class SpecialistsLoaded extends SpecialistsState {
     UbicacionEspecialistaEntity? ubicacion,
     List<EspecialistaEntity>? especialistas,
     List<int>? especialidadIds,
+    Map<String, List<DocumentoEspecialistaEntity>>? documentosPorEspecialista,
   }) {
     return SpecialistsLoaded(
       especialista: especialista ?? this.especialista,
@@ -90,6 +95,8 @@ class SpecialistsLoaded extends SpecialistsState {
       ubicacion: ubicacion ?? this.ubicacion,
       especialistas: especialistas ?? this.especialistas,
       especialidadIds: especialidadIds ?? this.especialidadIds,
+      documentosPorEspecialista:
+          documentosPorEspecialista ?? this.documentosPorEspecialista,
     );
   }
 
@@ -104,6 +111,7 @@ class SpecialistsLoaded extends SpecialistsState {
         ubicacion,
         especialistas,
         especialidadIds,
+        documentosPorEspecialista,
       ];
 }
 
@@ -138,6 +146,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final AprobarMedicoRegente _aprobarMedicoRegente;
   final UpdatePerfilEspecialista _updatePerfilEspecialista;
   final GetEspecialistaEspecialidades _getEspecialidadesDelEspecialista;
+  final SolicitarVerificacion _solicitarVerificacion;
+  final RevisarDocumento _revisarDocumento;
 
   SpecialistsCubit({
     required GetMySpecialist getMySpecialist,
@@ -159,6 +169,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required AprobarMedicoRegente aprobarMedicoRegente,
     required UpdatePerfilEspecialista updatePerfilEspecialista,
     required GetEspecialistaEspecialidades getEspecialidadesDelEspecialista,
+    required SolicitarVerificacion solicitarVerificacion,
+    required RevisarDocumento revisarDocumento,
   })  : _getMySpecialist = getMySpecialist,
         _createEspecialista = createEspecialista,
         _getMedicosRegentes = getMedicosRegentes,
@@ -178,6 +190,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _aprobarMedicoRegente = aprobarMedicoRegente,
         _updatePerfilEspecialista = updatePerfilEspecialista,
         _getEspecialidadesDelEspecialista = getEspecialidadesDelEspecialista,
+        _solicitarVerificacion = solicitarVerificacion,
+        _revisarDocumento = revisarDocumento,
         super(const SpecialistsInitial());
 
   /// Carga el tablero completo del especialista.
@@ -232,6 +246,9 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       disponibilidad: disponibilidad,
       contrato: contrato,
       especialidadIds: especialidadIds,
+      documentosPorEspecialista: {
+        if (esp != null) esp.id: documentos,
+      },
     ));
   }
 
@@ -503,8 +520,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     );
   }
 
-  /// Lista todos los especialistas (panel de administración) y los médicos
-  /// regentes (incluyendo los pendientes de validación).
+  /// Lista todos los especialistas (panel de administración), sus documentos
+  /// y los médicos regentes (incluyendo los pendientes de validación).
   Future<void> loadAllEspecialistas() async {
     emit(const SpecialistsLoading());
     final result = await _getAllEspecialistas(const NoParams());
@@ -513,23 +530,38 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     );
     List<MedicoRegenteEntity> medicosList = [];
     medicos.fold((_) {}, (m) => medicosList = m);
-    result.fold(
-      (f) => emit(SpecialistsError(f.message)),
-      (especialistas) => emit(
-        SpecialistsLoaded(
-          especialistas: especialistas,
-          medicosRegentes: medicosList,
-        ),
-      ),
-    );
+
+    final List<EspecialistaEntity> especialistas = [];
+    var failure = '';
+    result.fold((f) => failure = f.message, (e) => especialistas.addAll(e));
+
+    final docsMap = <String, List<DocumentoEspecialistaEntity>>{};
+    for (final esp in especialistas) {
+      final docs = await _getDocumentos(GetDocumentosParams(esp.id));
+      docs.fold((_) {}, (d) => docsMap[esp.id] = d);
+    }
+
+    if (failure.isNotEmpty) {
+      emit(SpecialistsError(failure));
+      return;
+    }
+
+    emit(SpecialistsLoaded(
+      especialistas: especialistas,
+      medicosRegentes: medicosList,
+      documentosPorEspecialista: docsMap,
+    ));
   }
 
   /// Cambia el estado de verificación de la licencia de un especialista
   /// (aprobado/rechazado/bloqueado) desde el panel de administración.
+  /// `observacion` es el motivo visible para el especialista (rechazo/bloqueo);
+  /// al aprobar se limpia la observación previa.
   Future<void> updateVerificacion({
     required String especialistaId,
     required EstadoVerificacion estado,
     required String aprobadoPor,
+    String? observacion,
   }) async {
     final current = state;
     if (current is! SpecialistsLoaded) return;
@@ -542,6 +574,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       fechaVerificacion: now,
       fechaAprobacion: estado == EstadoVerificacion.aprobado ? now : null,
       aprobadoPor: aprobadoPor,
+      observacion: observacion,
+      limpiarObservacion: estado == EstadoVerificacion.aprobado,
     ));
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
@@ -557,6 +591,60 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
               e,
         ],
       )),
+    );
+  }
+
+  /// Marca la solicitud como EN_REVISION (especialista ya tiene datos
+  /// profesionales y documentos requeridos completos).
+  Future<void> solicitarVerificacion({required String especialistaId}) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _solicitarVerificacion(
+      SolicitarVerificacionParams(especialistaId),
+    );
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (actualizado) => emit(current.copyWith(especialista: actualizado)),
+    );
+  }
+
+  /// Aprueba o rechaza un documento del especialista (panel de administración).
+  Future<void> revisarDocumento({
+    required String documentoId,
+    required EstadoRevisionDocumento estado,
+    String? observacion,
+    required String revisadoPor,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _revisarDocumento(RevisarDocumentoParams(
+      documentoId: documentoId,
+      estado: estado,
+      observacion: observacion,
+      revisadoPor: revisadoPor,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (doc) {
+        final docs = [
+          for (final d in current.documentos) if (d.id == doc.id) doc else d,
+        ];
+        final docsPorEsp = Map<String, List<DocumentoEspecialistaEntity>>.from(
+          current.documentosPorEspecialista,
+        );
+        final listaEsp = docsPorEsp[doc.especialistaId];
+        if (listaEsp != null) {
+          docsPorEsp[doc.especialistaId] = [
+            for (final d in listaEsp) if (d.id == doc.id) doc else d,
+          ];
+        }
+        emit(current.copyWith(
+          documentos: docs,
+          documentosPorEspecialista: docsPorEsp,
+        ));
+      },
     );
   }
 

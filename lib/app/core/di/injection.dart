@@ -44,8 +44,10 @@ import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_especialidades.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_medicos_regentes.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_my_specialist.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/revisar_documento.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/save_ubicacion.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/set_disponibilidad.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/solicitar_verificacion.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_especialista.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_perfil_especialista.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
@@ -155,6 +157,8 @@ void _registerSpecialists() {
           UpdatePerfilEspecialista(sl<ISpecialistsRepository>()),
       getEspecialidadesDelEspecialista:
           GetEspecialistaEspecialidades(sl<ISpecialistsRepository>()),
+      solicitarVerificacion: SolicitarVerificacion(sl<ISpecialistsRepository>()),
+      revisarDocumento: RevisarDocumento(sl<ISpecialistsRepository>()),
     ),
   );
 }

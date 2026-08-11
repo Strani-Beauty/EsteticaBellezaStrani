@@ -172,6 +172,10 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
 
   void _continuar() {
     if (!_completo) return;
+    final cubit = context.read<SpecialistsCubit>();
+    // Al completar los documentos obligatorios se mueve la solicitud a
+    // EN_REVISION: el especialista queda a la espera de validación del admin.
+    cubit.solicitarVerificacion(especialistaId: widget.especialistaId);
     context.go(AppRoutes.specialistHome);
   }
 }

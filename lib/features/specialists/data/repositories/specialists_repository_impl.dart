@@ -71,6 +71,16 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
   }
 
   @override
+  Future<Either<Failure, EspecialistaEntity>> solicitarVerificacion(String especialistaId) async {
+    try {
+      final model = await _dataSource.marcarEnRevision(especialistaId);
+      return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<EspecialistaEntity>>> getEspecialistas() async {
     try {
       final models = await _dataSource.fetchEspecialistas();
@@ -240,6 +250,26 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
         bytes: bytes,
         nombreArchivo: nombreArchivo,
         versionDocumento: versionDocumento,
+      );
+      return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, DocumentoEspecialistaEntity>> revisarDocumento({
+    required String documentoId,
+    required EstadoRevisionDocumento estado,
+    String? observacion,
+    required String revisadoPor,
+  }) async {
+    try {
+      final model = await _dataSource.revisarDocumento(
+        documentoId: documentoId,
+        estado: estado,
+        observacion: observacion,
+        revisadoPor: revisadoPor,
       );
       return Right(model.toEntity());
     } catch (e) {

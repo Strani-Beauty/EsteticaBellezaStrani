@@ -43,23 +43,9 @@ class DocumentosSection extends StatelessWidget {
                     style: TextStyle(color: AppTheme.cMutedText)),
               )
             else
-              ...documentos.map((doc) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    leading: Icon(
-                      doc.isAprobado
-                          ? Icons.verified_rounded
-                          : Icons.description_outlined,
-                      color: doc.isAprobado
-                          ? AppTheme.cBrandGreen
-                          : AppTheme.cMutedText,
-                    ),
-                    title: Text(doc.tipoDocumento.toDb),
-                    subtitle: Text(
-                      doc.estadoRevision.toDb,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    trailing: Text('v${doc.versionDocumento}'),
+              ...documentos.map((doc) => Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: _DocumentoFila(documento: doc),
                   )),
           ],
         ),
@@ -86,5 +72,50 @@ class DocumentosSection extends StatelessWidget {
           especialistaId: especialistaId,
           tipoDocumento: tipo,
         );
+  }
+}
+
+class _DocumentoFila extends StatelessWidget {
+  final DocumentoEspecialistaEntity documento;
+  const _DocumentoFila({required this.documento});
+
+  @override
+  Widget build(BuildContext context) {
+    final aprobado = documento.isAprobado;
+    final rechazado =
+        documento.estadoRevision == EstadoRevisionDocumento.rechazado;
+    final color = aprobado
+        ? AppTheme.cBrandGreen
+        : rechazado
+            ? Colors.redAccent
+            : AppTheme.cMutedText;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      leading: Icon(
+        aprobado
+            ? Icons.verified_rounded
+            : rechazado
+                ? Icons.cancel_outlined
+                : Icons.description_outlined,
+        color: color,
+      ),
+      title: Text(documento.tipoDocumento.toDb),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            documento.estadoRevision.toDb,
+            style: TextStyle(fontSize: 12, color: color),
+          ),
+          if (rechazado && documento.observacionRevision != null)
+            Text(
+              'Motivo: ${documento.observacionRevision}',
+              style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+            ),
+        ],
+      ),
+      trailing: Text('v${documento.versionDocumento}'),
+    );
   }
 }

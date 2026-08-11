@@ -10,6 +10,7 @@ class EspecialistaModel {
   final DateTime? fechaVerificacion;
   final DateTime? fechaAprobacion;
   final String? aprobadoPor;
+  final String? observacion;
   final bool disponible;
   final bool activo;
   final DateTime createdAt;
@@ -27,6 +28,7 @@ class EspecialistaModel {
     this.fechaVerificacion,
     this.fechaAprobacion,
     this.aprobadoPor,
+    this.observacion,
     required this.disponible,
     required this.activo,
     required this.createdAt,
@@ -49,6 +51,7 @@ class EspecialistaModel {
       fechaVerificacion: _parseDate(json['fecha_verificacion']),
       fechaAprobacion: _parseDate(json['fecha_aprobacion']),
       aprobadoPor: json['aprobado_por'] as String?,
+      observacion: json['observacion'] as String?,
       disponible: json['disponible'] as bool? ?? false,
       activo: json['activo'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -69,6 +72,7 @@ class EspecialistaModel {
       'fecha_verificacion': _marshalDate(fechaVerificacion),
       'fecha_aprobacion': _marshalDate(fechaAprobacion),
       'aprobado_por': aprobadoPor,
+      'observacion': observacion,
       'disponible': disponible,
       'activo': activo,
       'created_at': createdAt.toIso8601String(),
@@ -87,6 +91,7 @@ class EspecialistaModel {
       fechaVerificacion: fechaVerificacion,
       fechaAprobacion: fechaAprobacion,
       aprobadoPor: aprobadoPor,
+      observacion: observacion,
       disponible: disponible,
       activo: activo,
       createdAt: createdAt,

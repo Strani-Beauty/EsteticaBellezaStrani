@@ -14,6 +14,8 @@ class UpdateEspecialistaParams {
   final DateTime? fechaVerificacion;
   final DateTime? fechaAprobacion;
   final String? aprobadoPor;
+  final String? observacion;
+  final bool? limpiarObservacion;
   const UpdateEspecialistaParams({
     required this.id,
     this.numeroLicencia,
@@ -24,6 +26,8 @@ class UpdateEspecialistaParams {
     this.fechaVerificacion,
     this.fechaAprobacion,
     this.aprobadoPor,
+    this.observacion,
+    this.limpiarObservacion,
   });
 }
 
@@ -48,6 +52,11 @@ class UpdateEspecialista
       data['fecha_aprobacion'] = params.fechaAprobacion!.toIso8601String();
     }
     if (params.aprobadoPor != null) data['aprobado_por'] = params.aprobadoPor;
+    if (params.limpiarObservacion == true) {
+      data['observacion'] = null;
+    } else if (params.observacion != null) {
+      data['observacion'] = params.observacion;
+    }
     return _repository.updateEspecialista(params.id, data);
   }
 }

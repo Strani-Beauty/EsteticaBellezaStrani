@@ -29,6 +29,9 @@ abstract class ISpecialistsRepository {
     Map<String, dynamic> data,
   );
 
+  /// Marca la solicitud de verificación del especialista como EN_REVISION.
+  Future<Either<Failure, EspecialistaEntity>> solicitarVerificacion(String especialistaId);
+
   Future<Either<Failure, List<EspecialistaEntity>>> getEspecialistas();
 
   // ── Médicos Regentes ─────────────────────────────────────────
@@ -83,6 +86,14 @@ abstract class ISpecialistsRepository {
     required Uint8List bytes,
     required String nombreArchivo,
     int versionDocumento,
+  });
+
+  /// Aprueba o rechaza un documento del especialista (uso administrativo).
+  Future<Either<Failure, DocumentoEspecialistaEntity>> revisarDocumento({
+    required String documentoId,
+    required EstadoRevisionDocumento estado,
+    String? observacion,
+    required String revisadoPor,
   });
 
   // ── Disponibilidad ───────────────────────────────────────────

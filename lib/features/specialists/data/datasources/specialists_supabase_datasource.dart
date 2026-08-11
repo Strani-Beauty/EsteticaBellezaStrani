@@ -89,6 +89,26 @@ class SpecialistsSupabaseDataSource {
     return EspecialistaModel.fromJson(res);
   }
 
+  /// Pasa la solicitud de verificación a EN_REVISION cuando el especialista
+  /// completa sus datos profesionales y documentos requeridos.
+  Future<EspecialistaModel> marcarEnRevision(String especialistaId) async {
+    final now = DateTime.now().toIso8601String();
+    final res = await _client
+        .from('especialistas')
+        .update({
+          'estado_verificacion': 'EN_REVISION',
+          'fecha_solicitud_verificacion': now,
+          'updated_at': now,
+        })
+        .eq('id', especialistaId)
+        .select()
+        .maybeSingle();
+    if (res == null) {
+      throw Exception('Especialista $especialistaId no encontrado');
+    }
+    return EspecialistaModel.fromJson(res);
+  }
+
   /// Lista todos los especialistas (uso administrativo).
   /// Incluye nombre/email del perfil vía join a `profiles` (usuario_id).
   Future<List<EspecialistaModel>> fetchEspecialistas() async {
@@ -293,6 +313,33 @@ class SpecialistsSupabaseDataSource {
       urlArchivo: publicUrl,
       versionDocumento: versionDocumento,
     );
+  }
+
+  /// Aprueba o rechaza un documento (uso administrativo). Al rechazar deja
+  /// `activo=false` para que el especialista vuelva a subirlo con la
+  /// observación visible como feedback.
+  Future<DocumentoEspecialistaModel> revisarDocumento({
+    required String documentoId,
+    required EstadoRevisionDocumento estado,
+    String? observacion,
+    required String revisadoPor,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final res = await _client
+        .from('documentos_especialista')
+        .update({
+          'estado_revision': estado.toDb,
+          'observacion_revision': observacion,
+          'revisado_por': revisadoPor,
+          'fecha_revision': now,
+          'activo': estado == EstadoRevisionDocumento.aprobado,
+          'updated_at': now,
+        })
+        .eq('id', documentoId)
+        .select()
+        .maybeSingle();
+    if (res == null) throw Exception('Documento $documentoId no encontrado');
+    return DocumentoEspecialistaModel.fromJson(res);
   }
 
   // ── Disponibilidad ───────────────────────────────────────────

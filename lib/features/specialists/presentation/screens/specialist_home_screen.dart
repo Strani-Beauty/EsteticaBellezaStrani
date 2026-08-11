@@ -82,7 +82,11 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
             return;
           }
 
-          if (!_tieneDocumentosRequeridos(state) && !_redirectedToDocuments) {
+          // Un especialista rechazado se queda en el panel para leer el motivo
+          // y desde ahí corregir/reenviar; el resto sin documentos va a subirlos.
+          final rechazado =
+              state.especialista!.estadoVerificacion == EstadoVerificacion.rechazado;
+          if (!rechazado && !_tieneDocumentosRequeridos(state) && !_redirectedToDocuments) {
             _redirectedToDocuments = true;
             context.go(
               AppRoutes.specialistDocuments,
@@ -229,19 +233,54 @@ class _VerificationCard extends StatelessWidget {
     }
 
     return Card(
-      child: ListTile(
-        leading: Icon(
-          s.isApproved ? Icons.verified_rounded : Icons.hourglass_top_rounded,
-          color: s.isApproved ? AppTheme.cBrandGreen : AppTheme.cDeepAccent,
-          size: 40,
-        ),
-        title: Text('Estado: ${_estadoLabel(s.estadoVerificacion)}'),
-        subtitle: s.numeroLicencia == null
-            ? null
-            : Text('Licencia: ${s.numeroLicencia}'),
-        trailing: _Badge(s.estadoVerificacion),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(
+              s.isApproved ? Icons.verified_rounded : Icons.hourglass_top_rounded,
+              color: s.isApproved ? AppTheme.cBrandGreen : AppTheme.cDeepAccent,
+              size: 40,
+            ),
+            title: Text('Estado: ${_estadoLabel(s.estadoVerificacion)}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (s.numeroLicencia != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('Licencia: ${s.numeroLicencia}'),
+                  ),
+                if (!s.isApproved && s.observacion != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Motivo: ${s.observacion}',
+                      style: const TextStyle(color: Colors.redAccent),
+                    ),
+                  ),
+              ],
+            ),
+            trailing: _Badge(s.estadoVerificacion),
+          ),
+          if (!s.isApproved && s.observacion != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _pedirVerificacion(context),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Corregir y reenviar'),
+                ),
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  void _pedirVerificacion(BuildContext context) {
+    context.go(AppRoutes.specialistDocuments, extra: especialista?.id ?? '');
   }
 
   String _estadoLabel(EstadoVerificacion e) => switch (e) {

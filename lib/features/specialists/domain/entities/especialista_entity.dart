@@ -38,6 +38,7 @@ class EspecialistaEntity extends Equatable {
   final DateTime? fechaVerificacion;
   final DateTime? fechaAprobacion;
   final String? aprobadoPor;             // uuid
+  final String? observacion;             // motivo de rechazo/bloqueo (admin)
   final bool disponible;
   final bool activo;
   final DateTime createdAt;
@@ -55,6 +56,7 @@ class EspecialistaEntity extends Equatable {
     this.fechaVerificacion,
     this.fechaAprobacion,
     this.aprobadoPor,
+    this.observacion,
     required this.disponible,
     required this.activo,
     required this.createdAt,
@@ -74,6 +76,7 @@ class EspecialistaEntity extends Equatable {
     DateTime? fechaVerificacion,
     DateTime? fechaAprobacion,
     String? aprobadoPor,
+    String? observacion,
     bool? disponible,
     bool? activo,
     DateTime? updatedAt,
@@ -91,6 +94,7 @@ class EspecialistaEntity extends Equatable {
       fechaVerificacion: fechaVerificacion ?? this.fechaVerificacion,
       fechaAprobacion: fechaAprobacion ?? this.fechaAprobacion,
       aprobadoPor: aprobadoPor ?? this.aprobadoPor,
+      observacion: observacion ?? this.observacion,
       disponible: disponible ?? this.disponible,
       activo: activo ?? this.activo,
       createdAt: createdAt,

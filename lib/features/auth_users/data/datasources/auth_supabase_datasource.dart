@@ -70,6 +70,11 @@ class AuthSupabaseDataSource {
     await _client.auth.resetPasswordForEmail(email);
   }
 
+  /// Cambia la contraseña del usuario autenticado (post-login).
+  Future<void> updatePassword(String newPassword) async {
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
   User? get currentUser => _client.auth.currentUser;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

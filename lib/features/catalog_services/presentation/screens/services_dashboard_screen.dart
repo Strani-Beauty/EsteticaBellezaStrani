@@ -5,6 +5,7 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
@@ -482,11 +483,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ],
           ),
           actions: [
-            IconButton(
-              onPressed: () => context.push(AppRoutes.completeProfile),
-              icon: const Icon(Icons.person_outline_rounded, color: AppTheme.cDeepAccent),
-              tooltip: 'Ver Perfil y Evaluación',
-            ),
+            const ProfileMenuButton(iconColor: AppTheme.cDeepAccent),
             IconButton(
               onPressed: () => context.read<AuthCubit>().signOut(),
               icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),

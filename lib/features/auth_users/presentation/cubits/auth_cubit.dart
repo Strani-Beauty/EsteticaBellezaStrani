@@ -182,6 +182,26 @@ class AuthCubit extends Cubit<AuthState> {
     await _authRepository.resetPassword(email);
   }
 
+  // ── Change Password (post-login) ────────────────────────────
+  Future<void> changePassword(String newPassword) async {
+    emit(const AuthLoading());
+    final result = await _authRepository.changePassword(newPassword);
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => _emitRefreshedProfile(),
+    );
+  }
+
+  /// Recarga el perfil tras una operación que cambia datos de sesión
+  /// sin mostrar spinner de pantalla completa.
+  Future<void> _emitRefreshedProfile() async {
+    final result = await _authRepository.getCurrentProfile();
+    result.fold(
+      (failure) => emit(const AuthUnauthenticated()),
+      (profile) => emit(AuthAuthenticated(profile)),
+    );
+  }
+
   // ── Getters de conveniencia ─────────────────────────────────
   ProfileEntity? get currentProfile =>
       state is AuthAuthenticated ? (state as AuthAuthenticated).profile : null;

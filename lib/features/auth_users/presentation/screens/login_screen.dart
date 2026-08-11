@@ -350,6 +350,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       : '¿Ya tienes cuenta? Inicia sesión'),
                 ),
               ),
+              if (isSignIn) ...[
+                const SizedBox(height: 4),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _showRecoveryDialog,
+                    icon: const Icon(Icons.lock_reset_rounded,
+                        color: AppTheme.cMutedText, size: 18),
+                    label: const Text('¿Olvidaste tu contraseña?',
+                        style: TextStyle(color: AppTheme.cMutedText)),
+                  ),
+                ),
+              ],
             ],
           ),
         );
@@ -446,6 +458,55 @@ class _LoginScreenState extends State<LoginScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  Future<void> _showRecoveryDialog() async {
+    final recoveryCtrl = TextEditingController();
+    final enviado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: const Row(
+          children: [
+            Icon(Icons.mark_email_read_outlined, color: AppTheme.cDeepAccent),
+            SizedBox(width: 10),
+            Expanded(child: Text('Recuperar contraseña')),
+          ],
+        ),
+        content: TextField(
+          controller: recoveryCtrl,
+          keyboardType: TextInputType.emailAddress,
+          autofocus: true,
+          decoration: AppTheme.fieldDecoration(
+            label: 'Correo Electrónico',
+            prefix: const Icon(Icons.email_outlined,
+                color: AppTheme.cDeepAccent),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final email = recoveryCtrl.text.trim();
+              if (!email.contains('@')) return;
+              context.read<AuthCubit>().resetPassword(email);
+              Navigator.pop(ctx, true);
+            },
+            child: const Text('Enviar enlace'),
+          ),
+        ],
+      ),
+    );
+    recoveryCtrl.dispose();
+    if (enviado == true) {
+      _showError(
+        'Revisa tu bandeja de correo para restablecer tu contraseña.',
+      );
+    }
   }
 
   void _showEmailConfirmation(String email) {

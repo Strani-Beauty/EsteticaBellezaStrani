@@ -5,6 +5,8 @@ import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/login_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/complete_profile_screen.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/profile_screen.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/change_password_screen.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
@@ -40,6 +42,7 @@ class AppRoutes {
   static const String specialistDocuments  = '/specialist/documents';
   static const String specialistOnboarding = '/specialist/onboarding';
   static const String profile              = '/profile';
+  static const String changePassword       = '/change-password';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
   static const String specialistPatientMap = '/specialist/map';
@@ -77,6 +80,17 @@ final GoRouter appRouter = GoRouter(
         return _redirectByRole(profile.rolNombre);
       }
 
+      // ── Guards por rol (cierran deep-links con sesión de otro rol) ──
+      if (_esRutaAdmin(location) && !profile.isAdmin) {
+        return _redirectByRole(profile.rolNombre);
+      }
+      if (_esRutaEspecialista(location) && !profile.isSpecialist) {
+        return _redirectByRole(profile.rolNombre);
+      }
+      if (location == AppRoutes.completeProfile && !profile.isPatient) {
+        return _redirectByRole(profile.rolNombre);
+      }
+
       // Si el perfil no está completo → completar perfil (solo pacientes).
       // El catálogo (/services) siempre queda accesible para que un paciente
       // recién registrado pueda elegir servicio antes de completar el onboarding.
@@ -106,6 +120,16 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.completeProfile,
       name: 'completeProfile',
       builder: (context, state) => const CompleteProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.profile,
+      name: 'profile',
+      builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.changePassword,
+      name: 'changePassword',
+      builder: (context, state) => const ChangePasswordScreen(),
     ),
     GoRoute(
       path: AppRoutes.services,
@@ -214,4 +238,21 @@ String _redirectByRole(String role) {
     default:
       return AppRoutes.services;
   }
+}
+
+bool _esRutaAdmin(String location) {
+  return location == AppRoutes.adminDashboard ||
+      location.startsWith('${AppRoutes.adminDashboard}/');
+}
+
+bool _esRutaEspecialista(String location) {
+  const rutas = [
+    AppRoutes.specialistHome,
+    AppRoutes.specialistOnboarding,
+    AppRoutes.specialistDocuments,
+    AppRoutes.specialistPatientMap,
+    AppRoutes.misCitas,
+    AppRoutes.misCitasDetalle,
+  ];
+  return rutas.contains(location) || location.startsWith(AppRoutes.specialistHome);
 }

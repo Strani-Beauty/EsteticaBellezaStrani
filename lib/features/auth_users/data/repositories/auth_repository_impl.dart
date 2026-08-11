@@ -111,6 +111,18 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> changePassword(String newPassword) async {
+    try {
+      await _dataSource.updatePassword(newPassword);
+      return const Right(null);
+    } on sb.AuthException catch (e) {
+      return Left(AuthFailure(e.message, code: e.code));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, ProfileEntity>> getCurrentProfile() async {
     try {
       final profile = await _dataSource.fetchCurrentProfile();

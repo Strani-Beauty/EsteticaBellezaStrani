@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/documento_especialista_entity.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/especialista_entity.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/medico_regente_entity.dart';
@@ -39,6 +40,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          const ProfileMenuButton(iconColor: Colors.white),
           IconButton(
             onPressed: () => context.read<AuthCubit>().signOut(),
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),

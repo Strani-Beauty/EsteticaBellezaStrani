@@ -27,6 +27,9 @@ abstract class IAuthRepository {
 
   Future<Either<Failure, void>> resetPassword(String email);
 
+  /// Cambia la contraseña del usuario autenticado.
+  Future<Either<Failure, void>> changePassword(String newPassword);
+
   // ── Profile ─────────────────────────────────────────────────
   Future<Either<Failure, ProfileEntity>> getCurrentProfile();
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
@@ -23,6 +24,12 @@ Future<String?> procesarPagoStripe({
   String? citaId,
 }) async {
   if (!stripeConfigurado()) {
+    return 'STRIPE_SIM_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  // PaymentSheet no está soportado en web (WebUnsupportedError). En web se
+  // devuelve una referencia simulada para no interrumpir el flujo.
+  if (kIsWeb) {
     return 'STRIPE_SIM_${DateTime.now().millisecondsSinceEpoch}';
   }
 

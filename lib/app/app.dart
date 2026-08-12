@@ -79,9 +79,6 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          // Al iniciar sesión (o refrescar sesión), registra el dispositivo
-          // FCM actual. `init()` ya se lanzó en initState; aquí solo captura
-          // el token si Firebase está disponible.
           sl<FcmTokenService>().registerCurrentDevice(state.profile.id);
         }
       },

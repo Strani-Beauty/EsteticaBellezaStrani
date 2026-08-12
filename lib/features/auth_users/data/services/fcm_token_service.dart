@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../../../../firebase_options.dart';
 import '../../domain/repositories/i_auth_repository.dart';
 
 /// Servicio defensivo de registro de devices/token FCM (item 11).
@@ -22,7 +23,9 @@ class FcmTokenService {
     if (_firebaseReady) return;
     try {
       // Si no hay config de Firebase (web/desktop), lanza y degradamos.
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       _messaging = FirebaseMessaging.instance;
       _firebaseReady = true;
       debugPrint('📱 [FCM] Firebase Messaging listo.');

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "462789521668",
+    "project_id": "esteticaybellezastrani",
+    "storage_bucket": "esteticaybellezastrani.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462789521668:android:78584bab30ecd11a7ca051",
+        "android_client_info": {
+          "package_name": "com.example.esteticaybellezastrani"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBALsHM4ekR3jNRrwrA-ren0NluqoeSvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

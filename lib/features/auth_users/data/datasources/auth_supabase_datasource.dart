@@ -67,7 +67,10 @@ class AuthSupabaseDataSource {
   }
 
   Future<void> resetPassword(String email) async {
-    await _client.auth.resetPasswordForEmail(email);
+    await _client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'com.example.esteticaybellezastrani://',
+    );
   }
 
   /// Cambia la contraseña del usuario autenticado (post-login).

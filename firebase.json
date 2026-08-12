@@ -1,16 +1,1 @@
-{
-  "hosting": {
-    "public": "build/web",
-    "ignore": [
-      "firebase.json",
-      "**/.last_build_id",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  }
-}
+{"hosting":{"public":"build/web","ignore":["firebase.json","**/.last_build_id","**/node_modules/**"],"rewrites":[{"source":"**","destination":"/index.html"}]},"flutter":{"platforms":{"android":{"default":{"projectId":"esteticaybellezastrani","appId":"1:462789521668:android:78584bab30ecd11a7ca051","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"esteticaybellezastrani","configurations":{"android":"1:462789521668:android:78584bab30ecd11a7ca051","web":"1:462789521668:web:5ba9ff512a0fece57ca051"}}}}}}

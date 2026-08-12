@@ -568,25 +568,27 @@ label: const Text('Reintentar'),
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    final isDesktop = constraints.maxWidth >= 1000;
-                    final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
-                    final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
-                    final childAspectRatio = isDesktop ? 0.92 : (isTablet ? 0.88 : 0.90);
+                    // Lista vertical: cada tarjeta ocupa el ancho disponible y
+                    // crece en altura para mostrar la descripción completa.
+                    final maxCardWidth =
+                        constraints.maxWidth >= 1000 ? 900.0 : constraints.maxWidth;
 
                     return Stack(
                       children: [
-                        GridView.builder(
+                        ListView.builder(
                           padding: EdgeInsets.zero,
                           itemCount: servicios.length,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 18,
-                            mainAxisSpacing: 18,
-                            childAspectRatio: childAspectRatio,
-                          ),
-                          itemBuilder: (context, i) => _ServiceCard(
-                            service: servicios[i],
-                            onTap: () => _onServiceSelected(servicios[i]),
+                          itemBuilder: (context, i) => Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: maxCardWidth),
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 18),
+                                child: _ServiceCard(
+                                  service: servicios[i],
+                                  onTap: () => _onServiceSelected(servicios[i]),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         if (state.loadingServicios)
@@ -796,7 +798,7 @@ class _ServiceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildHero()),
+          SizedBox(height: 200, child: _buildHero()),
           Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
@@ -822,8 +824,6 @@ class _ServiceCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   service.descripcion ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, height: 1.3),
                 ),
                 const SizedBox(height: 14),

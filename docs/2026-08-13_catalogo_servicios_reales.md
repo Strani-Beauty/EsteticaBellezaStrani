@@ -87,3 +87,64 @@ Cada servicio en el Excel incluye una ficha estructurada: **¿Qué es?**, **¿Qu
 - **`tipo_precio`**: "por sección"/"x sesión" → `POR_SESION`; "la uni"/"25 +" → `POR_UNIDAD`; resto → `PRECIO_FIJO`.
 - **`requiere_face_map`**: `true` para Inyectables y Faciales y Piel (dispara el cuestionario Face Map); `false` para Contorno Corporal.
 - Los demás flags (`requiere_telemedicina`, `requiere_fotos`, `requiere_consentimiento`) quedan en `false` por defecto.
+
+**Limpieza de seed de prueba**: `supabase/migrations/20260813040000_limpiar_servicios_prueba.sql` desactiva (`activo=false`) los 14 servicios y 8 categorías del seed anterior. Se usó soft-delete en vez de `DELETE` porque están referenciados por solicitudes/citas de prueba (FK).
+
+---
+
+## Diseño de la tarjeta del catálogo (UI)
+
+Archivo: `lib/features/catalog_services/presentation/screens/services_dashboard_screen.dart` (clase privada `_ServiceCard`).
+
+### Layout (de arriba hacia abajo)
+1. **Título** del servicio — prominente (17px, `FontWeight.w700`, hasta 2 líneas) + **precio** a la derecha (`_formatPrice`).
+2. Chip de **categoría** (10px, `AppTheme.cPastelPurple`).
+3. **Descripción** — fuente pequeña (11px, `height 1.35`), completa (sin truncar).
+4. **Imagen** — al pie, en `AspectRatio(1:1)` con `BoxFit.cover`.
+
+### Estructura de la tarjeta
+```
+Column(
+  Expanded(SingleChildScrollView( título + precio + categoría + descripción )), // crece sin recortar
+  AspectRatio(1:1, imagen),                                                     // cuadrado fijo al pie
+)
+```
+El bloque de texto va dentro de `SingleChildScrollView` para que nunca se recorte si la descripción es larga.
+
+### Grilla (en `_buildCatalog`)
+- `GridView.builder` con `SliverGridDelegateWithFixedCrossAxisCount`.
+- Columnas: **3** desktop (≥1000px), **2** tablet (≥600px), **1** móvil.
+- `childAspectRatio`: desktop `0.60` · tablet `0.55` · móvil `0.68` (cuanto menor, más altas las tarjetas).
+
+---
+
+## Convención de imágenes
+
+- Ruta: `assets/images/service_<slug>.png` (carpeta ya registrada en `pubspec.yaml`).
+- `slug` = `_slugify(nombre)` (minúsculas, sin acentos, espacios → `_`, se eliminan paréntesis/símbolos). Está implementado en el mismo archivo.
+- **Tamaño uniforme: 900×900 px (cuadrado, recorte centrado)**. Se normalizaron con `System.Drawing` (PowerShell): recorte centrado a cuadrado + redimensionado.
+- Extensión soportada por `_ServiceHeroImage` (prueba en orden): `.jpg`, `.jfif`, `.png`, `.webp`. Si no existe ninguna, muestra un gradiente + ícono (`_iconForServicio`).
+
+---
+
+## Guía de mantenimiento (próximos cambios)
+
+### Agregar un servicio nuevo
+1. Crear migración idempotente (patrón `INSERT ... SELECT ... WHERE NOT EXISTS` de `20260813030000_seed_servicios_reales.sql`), con su `categoria_id` (por nombre), `nombre`, `descripcion`, `precio_base`, `tipo_precio::public.tipo_precio_enum` y `requiere_face_map`.
+2. Colocar la imagen normalizada (900×900) en `assets/images/service_<slug>.png`.
+3. `supabase db push`.
+
+### Modificar un servicio existente
+- **Datos/precios/descripción**: migración `UPDATE public.servicios ... WHERE lower(nombre) = ...`.
+- **Imagen**: reemplazar `assets/images/service_<slug>.png` (mantener 900×900).
+
+### Cambiar el diseño de la tarjeta
+- Todo el markup está en `_ServiceCard` y `_buildHero` / `_ServiceHeroImage` de `services_dashboard_screen.dart`.
+- Ajustar tamaños/alturas desde `_buildCatalog` (columnas y `childAspectRatio`).
+
+### Quitar un servicio del catálogo
+- Soft-delete: `UPDATE public.servicios SET activo = false WHERE lower(nombre) = ...` (el catálogo filtra `activo=true`). Evita `DELETE` si puede estar referenciado por `solicitudes`.
+
+### Nota sobre `tipo_precio` (enum)
+- `PRECIO_FIJO`, `POR_UNIDAD`, `POR_JERINGA`, `POR_SESION`, `POR_PLAN` (`servicio_entity.dart`).
+- En SQL siempre castear: `'POR_SESION'::public.tipo_precio_enum`.

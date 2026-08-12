@@ -568,27 +568,27 @@ label: const Text('Reintentar'),
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
-                    // Lista vertical: cada tarjeta ocupa el ancho disponible y
-                    // crece en altura para mostrar la descripción completa.
-                    final maxCardWidth =
-                        constraints.maxWidth >= 1000 ? 900.0 : constraints.maxWidth;
+                    final isDesktop = constraints.maxWidth >= 1000;
+                    final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
+                    final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
+                    // Aspecto más alto para que quepan la imagen completa y la
+                    // descripción completa sin recortar.
+                    final childAspectRatio = isDesktop ? 0.60 : (isTablet ? 0.55 : 0.68);
 
                     return Stack(
                       children: [
-                        ListView.builder(
+                        GridView.builder(
                           padding: EdgeInsets.zero,
                           itemCount: servicios.length,
-                          itemBuilder: (context, i) => Center(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: maxCardWidth),
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 18),
-                                child: _ServiceCard(
-                                  service: servicios[i],
-                                  onTap: () => _onServiceSelected(servicios[i]),
-                                ),
-                              ),
-                            ),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: crossAxisCount,
+                            crossAxisSpacing: 18,
+                            mainAxisSpacing: 18,
+                            childAspectRatio: childAspectRatio,
+                          ),
+                          itemBuilder: (context, i) => _ServiceCard(
+                            service: servicios[i],
+                            onTap: () => _onServiceSelected(servicios[i]),
                           ),
                         ),
                         if (state.loadingServicios)
@@ -796,68 +796,70 @@ class _ServiceCard extends StatelessWidget {
           boxShadow: AppTheme.cardShadow,
         ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(height: 200, child: _buildHero()),
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        service.nombre,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      _formatPrice(service),
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  service.descripcion ?? '',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, height: 1.3),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    if (service.nombreCategoria != null) ...[
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppTheme.cPastelPurple,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            service.nombreCategoria!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
-                          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          service.nombre,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
+                              ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                    ],
-                    if (service.requiereFotos)
-                      const Tooltip(
-                        message: 'Este servicio requiere evidencia fotográfica',
-                        child: Icon(Icons.photo_camera_outlined, size: 16, color: AppTheme.cDeepAccent),
+                      Text(
+                        _formatPrice(service),
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.cDeepAccent),
                       ),
-                    const Spacer(),
-                    const Icon(Icons.chevron_right_rounded, color: AppTheme.cMutedText, size: 20),
+                    ],
+                  ),
+                  if (service.nombreCategoria != null) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cPastelPurple,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        service.nombreCategoria!,
+                        style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.cDeepAccent),
+                      ),
+                    ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    service.descripcion ?? '',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(fontSize: 11, height: 1.35),
+                  ),
+                ],
+              ),
             ),
+          ),
+          AspectRatio(
+            aspectRatio: 1,
+            child: _buildHero(),
           ),
         ],
       ),
@@ -870,9 +872,11 @@ class _ServiceCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
+      height: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
+        borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(AppTheme.radiusLg)),
       ),
       child: _ServiceHeroImage(
         basePath: 'assets/images/service_$slug',

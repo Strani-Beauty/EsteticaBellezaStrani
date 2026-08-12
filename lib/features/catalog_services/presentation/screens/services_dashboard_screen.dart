@@ -65,7 +65,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     final user = SupabaseService.currentUser;
 
     if (user == null) {
-      context.go(AppRoutes.login);
+      _showRegisterPrompt();
       return;
     }
 
@@ -106,6 +106,44 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
 
     // ── 3. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
     _showPaymentOptionsModal(service);
+  }
+
+  /// Aviso para visitantes sin cuenta: para seleccionar un servicio deben
+  /// registrarse como pacientes. Ofrece "Registrar" (va al alta de paciente) o
+  /// "Seguir explorando" (permanece en el catálogo).
+  void _showRegisterPrompt() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: const Row(
+          children: [
+            Icon(Icons.person_add_alt_rounded, color: AppTheme.cDeepAccent),
+            SizedBox(width: 10),
+            Expanded(child: Text('Regístrate como paciente')),
+          ],
+        ),
+        content: const Text(
+          'Debes registrarte como paciente para seleccionar cualquier servicio.',
+          style: TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Seguir explorando'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go('${AppRoutes.login}?registro=paciente');
+            },
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            label: const Text('Registrar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showBlockedReservationModal({

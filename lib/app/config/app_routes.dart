@@ -78,7 +78,9 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.login,
       name: 'login',
-      builder: (context, state) => const LoginScreen(),
+      builder: (context, state) => LoginScreen(
+        registroPaciente: state.uri.queryParameters['registro'] == 'paciente',
+      ),
     ),
     GoRoute(
       path: AppRoutes.resetPassword,

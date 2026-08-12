@@ -11,7 +11,10 @@ import '../widgets/auth_form_section.dart';
 /// Pantalla de autenticación — Login + Registro por rol.
 /// Migrado del _LoginScreenState original, preservando la UI pastel.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  /// Si es true, arranca directamente en el formulario de alta de paciente
+  /// (deep-link `?registro=paciente` desde el catálogo de servicios).
+  final bool registroPaciente;
+  const LoginScreen({super.key, this.registroPaciente = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -30,6 +33,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Deep-link desde el catálogo: abre el alta de paciente directamente.
+    if (widget.registroPaciente) {
+      _selectedType = _UserType.client;
+      _mode = _AuthMode.signUp;
+    }
+  }
 
   @override
   void dispose() {

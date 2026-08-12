@@ -167,6 +167,12 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
             aceptandoId: null,
             feedback: 'Esta solicitud expiró. Ya no está disponible.',
           ));
+        } else if (resultado.noAprobado) {
+          emit(base.copyWith(
+            aceptandoId: null,
+            feedback:
+                'Solo los especialistas verificados y activos pueden aceptar solicitudes.',
+          ));
         } else {
           emit(base.copyWith(
             aceptandoId: null,

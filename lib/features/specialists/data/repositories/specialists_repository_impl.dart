@@ -329,6 +329,26 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
   }
 
   @override
+  Future<Either<Failure, DisponibilidadEntity>> upsertDisponibilidad(
+    String especialistaId,
+    EstadoDisponibilidad estado, {
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  }) async {
+    try {
+      final model = await _dataSource.upsertDisponibilidad(
+        especialistaId,
+        estado,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+      );
+      return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, ContratoEntity?>> getContrato(String especialistaId) async {
     try {
       final model = await _dataSource.fetchContrato(especialistaId);
@@ -353,6 +373,22 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
         versionContrato: versionContrato,
       );
       return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> subirFirmaContrato({
+    required String especialistaId,
+    required Uint8List bytes,
+  }) async {
+    try {
+      final url = await _dataSource.subirFirmaContrato(
+        especialistaId: especialistaId,
+        bytes: bytes,
+      );
+      return Right(url);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

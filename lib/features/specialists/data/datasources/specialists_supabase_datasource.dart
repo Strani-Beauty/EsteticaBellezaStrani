@@ -389,6 +389,23 @@ class SpecialistsSupabaseDataSource {
     return DisponibilidadModel.fromJson(res);
   }
 
+  /// Upsert lógico de disponibilidad: inserta si no existe, actualiza si existe.
+  /// Mantiene una única fila vigente por especialista.
+  Future<DisponibilidadModel> upsertDisponibilidad(
+    String especialistaId,
+    EstadoDisponibilidad estado, {
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  }) async {
+    final existente = await fetchDisponibilidad(especialistaId);
+    if (existente == null) {
+      return setDisponibilidad(especialistaId, estado,
+          fechaInicio: fechaInicio, fechaFin: fechaFin);
+    }
+    return updateDisponibilidad(existente.id, estado,
+        fechaInicio: fechaInicio, fechaFin: fechaFin);
+  }
+
   // ── Contrato ─────────────────────────────────────────────────
 
   Future<ContratoModel?> fetchContrato(String especialistaId) async {
@@ -422,6 +439,22 @@ class SpecialistsSupabaseDataSource {
     }).select().maybeSingle();
     if (res == null) throw Exception('No se pudo registrar la firma');
     return ContratoModel.fromJson(res);
+  }
+
+  /// Sube la imagen de la firma manuscrita del contrato al bucket `contratos`
+  /// y devuelve la URL pública.
+  Future<String> subirFirmaContrato({
+    required String especialistaId,
+    required Uint8List bytes,
+  }) async {
+    final path =
+        '$especialistaId/firma_${DateTime.now().millisecondsSinceEpoch}.png';
+    final upload = await _client.storage
+        .from(AppConstants.bucketContratos)
+        .uploadBinary(path, bytes);
+    return _client.storage
+        .from(AppConstants.bucketContratos)
+        .getPublicUrl(upload);
   }
 
   // ── Ubicación ────────────────────────────────────────────────

@@ -113,6 +113,14 @@ abstract class ISpecialistsRepository {
     DateTime? fechaFin,
   });
 
+  /// Upsert lógico: inserta o actualiza la fila vigente de disponibilidad.
+  Future<Either<Failure, DisponibilidadEntity>> upsertDisponibilidad(
+    String especialistaId,
+    EstadoDisponibilidad estado, {
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+  });
+
   // ── Contrato ─────────────────────────────────────────────────
   Future<Either<Failure, ContratoEntity?>> getContrato(String especialistaId);
 
@@ -121,6 +129,12 @@ abstract class ISpecialistsRepository {
     required MetodoFirma metodoFirma,
     String? urlDocumento,
     int versionContrato,
+  });
+
+  /// Sube la imagen de la firma manuscrita del contrato y devuelve su URL.
+  Future<Either<Failure, String>> subirFirmaContrato({
+    required String especialistaId,
+    required Uint8List bytes,
   });
 
   // ── Ubicación ────────────────────────────────────────────────

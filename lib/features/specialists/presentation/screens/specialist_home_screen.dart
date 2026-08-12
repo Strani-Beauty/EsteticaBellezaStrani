@@ -160,7 +160,10 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
               documentos: state.documentos,
             ),
             const SizedBox(height: 16),
-            _ContratoCard(contrato: state.contrato),
+            _ContratoCard(
+              contrato: state.contrato,
+              especialistaId: especialista.id,
+            ),
             if (especialista.isApproved && (state.disponibilidad?.isAvailable ?? false)) ...[
               const SizedBox(height: 16),
               _MapaPacientesCard(
@@ -321,24 +324,47 @@ class _Badge extends StatelessWidget {
 
 class _ContratoCard extends StatelessWidget {
   final ContratoEntity? contrato;
-  const _ContratoCard({required this.contrato});
+  final String especialistaId;
+  const _ContratoCard({required this.contrato, required this.especialistaId});
 
   @override
   Widget build(BuildContext context) {
     final firmado = contrato != null && contrato!.firmado == true;
     return Card(
-      child: ListTile(
-        leading: Icon(
-          firmado ? Icons.task_alt : Icons.assignment_outlined,
-          color: firmado ? AppTheme.cBrandGreen : AppTheme.cMutedText,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                firmado ? Icons.task_alt : Icons.assignment_outlined,
+                color: firmado ? AppTheme.cBrandGreen : AppTheme.cMutedText,
+              ),
+              title: Text(firmado ? 'Contrato firmado' : 'Contrato pendiente'),
+              subtitle: Text(
+                firmado
+                    ? 'Versión ${contrato!.versionContrato}'
+                    : 'Aún no has firmado tu contrato.',
+              ),
+              trailing: firmado
+                  ? const Icon(Icons.check_circle, color: AppTheme.cBrandGreen)
+                  : null,
+            ),
+            if (!firmado) ...[
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: () => context.push(
+                  AppRoutes.specialistContract,
+                  extra: especialistaId,
+                ),
+                icon: const Icon(Icons.draw_rounded),
+                label: const Text('Firmar contrato'),
+              ),
+            ],
+          ],
         ),
-        title: Text(firmado ? 'Contrato firmado' : 'Contrato pendiente'),
-        subtitle: Text(
-          firmado
-              ? 'Versión ${contrato!.versionContrato}'
-              : 'Aún no has firmado tu contrato.',
-        ),
-        trailing: firmado ? const Icon(Icons.check_circle, color: AppTheme.cBrandGreen) : null,
       ),
     );
   }

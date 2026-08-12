@@ -16,6 +16,7 @@ import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_documents_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_onboarding_screen.dart';
+import 'package:esteticaybellezastrani/features/specialists/presentation/screens/contract_signature_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/route_guard.dart';
@@ -45,6 +46,7 @@ class AppRoutes {
   static const String adminUsuarios        = '/admin/usuarios';
   static const String specialistHome       = '/specialist';
   static const String specialistDocuments  = '/specialist/documents';
+  static const String specialistContract   = '/specialist/contract';
   static const String specialistOnboarding = '/specialist/onboarding';
   static const String profile              = '/profile';
   static const String changePassword       = '/change-password';
@@ -122,6 +124,16 @@ final GoRouter appRouter = GoRouter(
         child: SpecialistDocumentsScreen(
           especialistaId: state.extra as String? ?? '',
           isOnboarding: true,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.specialistContract,
+      name: 'specialistContract',
+      builder: (context, state) => BlocProvider<SpecialistsCubit>(
+        create: (_) => sl<SpecialistsCubit>(),
+        child: ContractSignatureScreen(
+          especialistaId: state.extra as String? ?? '',
         ),
       ),
     ),

@@ -135,9 +135,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final GetDocumentos _getDocumentos;
   final RegisterDocumento _registerDocumento;
   final SubirDocumento _subirDocumento;
-  final SetDisponibilidad _setDisponibilidad;
+  final UpsertDisponibilidad _upsertDisponibilidad;
   final GetContrato _getContrato;
   final FirmarContrato _firmarContrato;
+  final SubirFirmaContrato _subirFirmaContrato;
   final SaveUbicacion _saveUbicacion;
   final UpdateEspecialista _updateEspecialista;
   final GetAllEspecialistas _getAllEspecialistas;
@@ -158,9 +159,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required GetDocumentos getDocumentos,
     required RegisterDocumento registerDocumento,
     required SubirDocumento subirDocumento,
-    required SetDisponibilidad setDisponibilidad,
+    required UpsertDisponibilidad upsertDisponibilidad,
     required GetContrato getContrato,
     required FirmarContrato firmarContrato,
+    required SubirFirmaContrato subirFirmaContrato,
     required SaveUbicacion saveUbicacion,
     required UpdateEspecialista updateEspecialista,
     required GetAllEspecialistas getAllEspecialistas,
@@ -179,9 +181,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _getDocumentos = getDocumentos,
         _registerDocumento = registerDocumento,
         _subirDocumento = subirDocumento,
-        _setDisponibilidad = setDisponibilidad,
+        _upsertDisponibilidad = upsertDisponibilidad,
         _getContrato = getContrato,
         _firmarContrato = firmarContrato,
+        _subirFirmaContrato = subirFirmaContrato,
         _saveUbicacion = saveUbicacion,
         _updateEspecialista = updateEspecialista,
         _getAllEspecialistas = getAllEspecialistas,
@@ -415,7 +418,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     );
   }
 
-  /// Alterna la disponibilidad del especialista.
+  /// Alterna la disponibilidad del especialista (upsert + sincroniza
+  /// `especialistas.disponible`).
   Future<void> toggleDisponibilidad({required String especialistaId}) async {
     final current = state;
     if (current is! SpecialistsLoaded) return;
@@ -423,14 +427,29 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     final next = current.disponibilidad?.isAvailable == true
         ? EstadoDisponibilidad.noDisponible
         : EstadoDisponibilidad.disponible;
+    final disponible = next == EstadoDisponibilidad.disponible;
 
-    final result = await _setDisponibilidad(SetDisponibilidadParams(
+    final result = await _upsertDisponibilidad(SetDisponibilidadParams(
       especialistaId: especialistaId,
       estado: next,
     ));
+
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
-      (d) => emit(current.copyWith(disponibilidad: d)),
+      (d) async {
+        final base = state is SpecialistsLoaded
+            ? state as SpecialistsLoaded
+            : current;
+        // Sincroniza el flag `disponible` del especialista.
+        final espRes = await _updateEspecialista(UpdateEspecialistaParams(
+          id: especialistaId,
+          disponible: disponible,
+        ));
+        espRes.fold(
+          (f) => emit(base.copyWith(disponibilidad: d)),
+          (esp) => emit(base.copyWith(disponibilidad: d, especialista: esp)),
+        );
+      },
     );
   }
 
@@ -495,6 +514,41 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
       (c) => emit(current.copyWith(contrato: c)),
+    );
+  }
+
+  /// Sube la firma manuscrita del contrato y registra el contrato como firmado
+  /// (metodo_firma=TOUCH, url_documento=imagen subida).
+  Future<void> firmarContratoConFirma({
+    required String especialistaId,
+    required Uint8List bytesFirma,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final urlRes = await _subirFirmaContrato(SubirFirmaContratoParams(
+      especialistaId: especialistaId,
+      bytes: bytesFirma,
+    ));
+
+    urlRes.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (url) async {
+        final firmaRes = await _firmarContrato(FirmarContratoParams(
+          especialistaId: especialistaId,
+          metodoFirma: MetodoFirma.touch,
+          urlDocumento: url,
+        ));
+        firmaRes.fold(
+          (f) => emit(SpecialistsError(f.message)),
+          (c) {
+            final base = state is SpecialistsLoaded
+                ? state as SpecialistsLoaded
+                : current;
+            emit(base.copyWith(contrato: c));
+          },
+        );
+      },
     );
   }
 

@@ -85,8 +85,6 @@ class AppConstants {
   static const String bucketAvatars = 'avatars';
 
   // ── Supabase RPCs ──────────────────────────────────────────
-  static const String rpcEspecialistasCercanos = 'especialistas_disponibles_cercanos';
-  static const String rpcValidarDisponibilidad = 'validar_disponibilidad_especialista';
   static const String rpcAceptarSolicitud = 'aceptar_solicitud';
 
   // ── Durations ──────────────────────────────────────────────

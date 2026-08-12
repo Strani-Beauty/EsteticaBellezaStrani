@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import 'package:esteticaybellezastrani/app/core/usecases/use_case.dart';
@@ -45,6 +47,30 @@ class FirmarContrato extends UseCase<ContratoEntity, FirmarContratoParams> {
       metodoFirma: params.metodoFirma,
       urlDocumento: params.urlDocumento,
       versionContrato: params.versionContrato,
+    );
+  }
+}
+
+class SubirFirmaContratoParams {
+  final String especialistaId;
+  final Uint8List bytes;
+  const SubirFirmaContratoParams({
+    required this.especialistaId,
+    required this.bytes,
+  });
+}
+
+/// Sube la imagen de la firma manuscrita del contrato al storage y devuelve la URL.
+class SubirFirmaContrato
+    extends UseCase<String, SubirFirmaContratoParams> {
+  final ISpecialistsRepository _repository;
+  SubirFirmaContrato(this._repository);
+
+  @override
+  Future<Either<Failure, String>> call(SubirFirmaContratoParams params) {
+    return _repository.subirFirmaContrato(
+      especialistaId: params.especialistaId,
+      bytes: params.bytes,
     );
   }
 }

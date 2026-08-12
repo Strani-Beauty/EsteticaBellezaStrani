@@ -21,6 +21,9 @@ migrate_working_dir/
 # Supabase CLI
 supabase/.temp/
 
+# Firebase CLI deploy cache
+.firebase/hosting.*.cache
+
 # IntelliJ related
 *.iml
 *.ipr

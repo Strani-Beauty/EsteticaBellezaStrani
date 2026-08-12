@@ -44,7 +44,8 @@ class MarketplaceSupabaseDataSource {
           'ubicaciones_especialista(id, latitud, longitud, order=created_at.desc, limit=1)',
         )
         .eq('estado_verificacion', AppConstants.estadoAprobado)
-        .eq('activo', true);
+        .eq('activo', true)
+        .eq('disponible', true);
     return res
         .map((json) => EspecialistaMapaModel.fromJson(json))
         .toList();

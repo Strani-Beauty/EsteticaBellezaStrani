@@ -14,6 +14,7 @@ class ResultadoAceptacionEntity extends Equatable {
 
   bool get yaAsignada => !aceptada && motivo == 'ASIGNADA';
   bool get expirada => !aceptada && motivo == 'EXPIRADA';
+  bool get noAprobado => !aceptada && motivo == 'NO_APROBADO';
 
   @override
   List<Object?> get props => [aceptada, citaId, motivo];

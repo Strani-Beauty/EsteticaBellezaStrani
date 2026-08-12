@@ -33,3 +33,20 @@ class SetDisponibilidad
     );
   }
 }
+
+/// Upsert lógico de disponibilidad: inserta o actualiza la fila vigente.
+class UpsertDisponibilidad
+    extends UseCase<DisponibilidadEntity, SetDisponibilidadParams> {
+  final ISpecialistsRepository _repository;
+  UpsertDisponibilidad(this._repository);
+
+  @override
+  Future<Either<Failure, DisponibilidadEntity>> call(SetDisponibilidadParams params) {
+    return _repository.upsertDisponibilidad(
+      params.especialistaId,
+      params.estado,
+      fechaInicio: params.fechaInicio,
+      fechaFin: params.fechaFin,
+    );
+  }
+}

@@ -7,6 +7,7 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/complete_profile_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/profile_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/change_password_screen.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/reset_password_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/screens/admin_users_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_users_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
@@ -34,6 +35,7 @@ class AppRoutes {
 
   static const String welcome              = '/';
   static const String login                = '/login';
+  static const String resetPassword        = '/auth/reset-password';
   static const String completeProfile      = '/complete-profile';
   static const String services             = '/services';
   static const String appointments         = '/appointments';
@@ -75,6 +77,11 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.login,
       name: 'login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.resetPassword,
+      name: 'resetPassword',
+      builder: (context, state) => const ResetPasswordScreen(),
     ),
     GoRoute(
       path: AppRoutes.completeProfile,

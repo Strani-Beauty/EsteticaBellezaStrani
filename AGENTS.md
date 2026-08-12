@@ -49,6 +49,14 @@ Módulos implementados de punta a punta (usar como referencia de patrón): `spec
 
 - Mensajes de commit en **español**, imperativo/descriptivo corto (ej.: `Fija logout offline y panel admin de verificación de licencias con join a profiles`, `Módulo specialists (Clean Architecture alineado a BD real)`).
 - **Regla del proyecto: preguntar antes de crear cualquier commit.** No commitear sin confirmación del usuario.
+
+## Planes y cortes de electricidad
+
+- **Antes de implementar un plan aprobado**, persistirlo en `docs/plans/<YYYY-MM-DD>_<slug>.md` (nunca empezar a tocar código sin el plan escrito en disco).
+- El plan usa checkpoints visibles: `[x]` hecho / `[ ]` pendiente. Al terminar cada sub-tarea, actualizar el archivo del plan en el mismo ciclo de trabajo.
+- Si la sesión se interrumpe (corte de luz, cierre de terminal), retomar con `opencode --continue` y **leer el archivo del plan activo** en `docs/plans/` para reconstruir contexto antes de seguir.
+- No borrar ni reescribir planes pasados; solo crear nuevos (historial inmutable).
+
 - Enums mapeados a strings de BD: p.ej. `EstadoVerificacion` (`PENDIENTE|EN_REVISION|APROBADO|RECHAZADO|BLOQUEADO`) y `TipoDocumento` (`IDENTIFICACION|LICENCIA|DIPLOMA|CERTIFICACION|OTRO`) viven en la entidad de dominio con `toDb`/`fromDb`; usar esos mapeos, no strings crudos. La app solo puede autosolicitar (`→ EN_REVISION`); aprobar/rechazar/bloquear lo dispara el admin.
 - Joins a Supabase se hacen con select embebido, p.ej. `select('*, profiles (full_name, email)')`; el modelo parsea `json['profiles']` como `Map<String, dynamic>?`.
 - Storage buckets definidos en `app_constants.dart` (`bucketDocumentos`, `bucketFotografias`, etc.); subir con `uploadBinary` + `getPublicUrl`.

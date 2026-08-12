@@ -15,6 +15,7 @@ String? resolveAuthRedirect({
     AppRoutes.welcome,
     AppRoutes.services,
     AppRoutes.faceMapQuestionnaire,
+    AppRoutes.resetPassword,
   ];
 
   // Si está cargando (incluido un signOut en curso), no redirigir.
@@ -46,7 +47,8 @@ String? resolveAuthRedirect({
       if (profile.isPatient &&
           location != AppRoutes.completeProfile &&
           location != AppRoutes.faceMapQuestionnaire &&
-          location != AppRoutes.services) {
+          location != AppRoutes.services &&
+          location != AppRoutes.resetPassword) {
         return AppRoutes.completeProfile;
       }
     }

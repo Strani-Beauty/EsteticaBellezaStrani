@@ -48,6 +48,11 @@ class AuthEmailConfirmationSent extends AuthState {
   List<Object?> get props => [email];
 }
 
+/// Contraseña restablecida con éxito desde el flujo de recovery (deep link).
+class AuthPasswordChanged extends AuthState {
+  const AuthPasswordChanged();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CUBIT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,6 +185,21 @@ class AuthCubit extends Cubit<AuthState> {
   // ── Reset Password ──────────────────────────────────────────
   Future<void> resetPassword(String email) async {
     await _authRepository.resetPassword(email);
+  }
+
+  /// Completa el flujo de recovery: el usuario puso su nueva contraseña
+  /// tras abrir el deep link de Supabase. La del recovery es una sesión
+  /// temporal: tras `updatePassword` se cierra para volver a iniciar sesión.
+  Future<void> completePasswordReset(String newPassword) async {
+    emit(const AuthLoading());
+    final result = await _authRepository.changePassword(newPassword);
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) async {
+        await _authRepository.signOut();
+        emit(const AuthPasswordChanged());
+      },
+    );
   }
 
   // ── Change Password (post-login) ────────────────────────────

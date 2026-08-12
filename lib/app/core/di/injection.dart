@@ -8,7 +8,9 @@ import 'package:esteticaybellezastrani/features/admin_users/domain/usecases/set_
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_users_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/repositories/auth_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/auth_users/data/services/fcm_token_service.dart';
 import 'package:esteticaybellezastrani/features/auth_users/domain/repositories/i_auth_repository.dart';
+import 'package:esteticaybellezastrani/features/auth_users/domain/usecases/register_fcm_token.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/data/datasources/catalog_services_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/data/repositories/catalog_repository_impl.dart';
@@ -133,6 +135,12 @@ void _registerAuthUsers() {
   );
   sl.registerLazySingleton<AuthCubit>(
     () => AuthCubit(sl<IAuthRepository>()),
+  );
+  sl.registerLazySingleton<RegisterFcmToken>(
+    () => RegisterFcmToken(sl<IAuthRepository>()),
+  );
+  sl.registerLazySingleton<FcmTokenService>(
+    () => FcmTokenService(sl<IAuthRepository>()),
   );
 }
 

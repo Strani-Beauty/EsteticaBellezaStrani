@@ -8,7 +8,7 @@ import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/app.dart';
 
 /// Bootstrap — carga de entorno, inicialización de Supabase y arranque de la app.
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {

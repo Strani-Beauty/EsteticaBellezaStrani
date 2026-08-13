@@ -27,14 +27,34 @@ Cubrir con pruebas las 8 funcionalidades del checklist de especialistas:
 - [x] **Fase 2 — Tests del Cubit** (`SpecialistsCubit`): 8 tests nuevos
 - [x] **Fase 3 — Widget tests**: 7 tests nuevos (`DisponibilidadCard`, `EspecialidadesSelector`)
 - [x] **Fase 4 — Tests de mapeo de modelos** (capa de datos): 11 tests nuevos
+- [x] **Fase 5 — E2E configurado**: `integration_test/app_test.dart` (smoke test de arranque + navegación)
 
 ## Nota sobre E2E en dispositivo
 
-El flujo E2E real (registro → verificación) requiere un emulador/dispositivo y una
-BD de prueba (`integration_test` + Supabase), no disponibles en este entorno. En su
-lugar, la Fase 4 valida el mapeo `fromJson → toEntity` de los modelos contra el
-esquema real de Supabase (columnas), que es donde típicamente se rompe la
-integración. El E2E en dispositivo queda documentado como pendiente.
+El test de humo E2E quedó **configurado** (`integration_test/app_test.dart`): arranque
+real de la app + navegación bienvenida → login. Requiere un emulador/dispositivo y el
+`.env` bundlado para **ejecutarse**:
+
+```powershell
+flutter test integration_test/app_test.dart -d DEVICE_ID
+```
+
+Los flujos E2E completos (registro → verificación → mapa) requieren una BD de prueba
+separada y credenciales; no se incluyen para no tocar producción.
+
+### Estado del dispositivo (bloqueado)
+
+El smoke test **no se ha podido ejecutar** por falta de dispositivo:
+
+- **Emulador Pixel 10 Pro**: no arranca. `emulator -accel-check` → código 6
+  ("Android Emulator hypervisor driver is not installed"). CPU Intel con
+  virtualización habilitada, Hyper-V apagado, sin Docker/WSL2. AEHD no descargado y
+  `sdkmanager` no instala.
+- **POCO X3**: `DELETE_FAILED_INTERNAL_ERROR` al desinstalar (restricción MIUI).
+
+Solución prioritaria: habilitar **WHPX** (Windows 10 Pro) en "Activar o desactivar
+características de Windows" → reiniciar. Detalle completo en
+`docs/pruebas/2026-08-13_e2e_setup.md`.
 
 ## Corrección de producción (Fase 3)
 
@@ -110,9 +130,9 @@ test/features/specialists/
 
 ## Fases pendientes
 
-### E2E en dispositivo (pendiente)
+### E2E completo (flujo de registro/verificación)
 
-- Flujo E2E de registro/verificación con `integration_test` + BD de prueba (requiere emulador).
+- Requiere emulador + BD de prueba; el smoke test base ya está configurado.
 
 ---
 
@@ -121,4 +141,10 @@ test/features/specialists/
 ```powershell
 flutter analyze   # sin issues
 flutter test      # 80/80 (13 route_guard + 1 placeholder + 66 especialistas)
+```
+
+## E2E (configurado, requiere dispositivo)
+
+```powershell
+flutter test integration_test/app_test.dart -d DEVICE_ID
 ```

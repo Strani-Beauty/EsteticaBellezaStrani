@@ -116,9 +116,19 @@ class EspecialistaEntity extends Equatable {
   List<Object?> get props => [
         id,
         usuarioId,
+        medicoRegenteId,
+        numeroLicencia,
         estadoVerificacion,
+        fechaSolicitudVerificacion,
+        fechaVerificacion,
+        fechaAprobacion,
+        aprobadoPor,
+        observacion,
         disponible,
         activo,
         enLinea,
+        ultimaConexion,
+        nombreUsuario,
+        emailUsuario,
       ];
 }

@@ -6,6 +6,7 @@ class EspecialistaMapaModel {
   final double? latitud;
   final double? longitud;
   final bool disponible;
+  final bool enLinea;
 
   const EspecialistaMapaModel({
     required this.id,
@@ -13,6 +14,7 @@ class EspecialistaMapaModel {
     this.latitud,
     this.longitud,
     required this.disponible,
+    this.enLinea = false,
   });
 
   factory EspecialistaMapaModel.fromJson(Map<String, dynamic> json) {
@@ -40,6 +42,7 @@ class EspecialistaMapaModel {
       latitud: latitud,
       longitud: longitud,
       disponible: json['disponible'] as bool? ?? false,
+      enLinea: json['en_linea'] as bool? ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class EspecialistaMapaModel {
       latitud: latitud,
       longitud: longitud,
       disponible: disponible,
+      enLinea: enLinea,
     );
   }
 }

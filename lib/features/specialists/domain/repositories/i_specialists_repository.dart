@@ -96,6 +96,13 @@ abstract class ISpecialistsRepository {
     required String revisadoPor,
   });
 
+  // ── Presencia (online/offline) ───────────────────────────────
+  /// Marca el estado de presencia (heartbeat) del especialista.
+  Future<Either<Failure, void>> marcarPresencia(
+    String especialistaId, {
+    required bool enLinea,
+  });
+
   // ── Disponibilidad ───────────────────────────────────────────
   Future<Either<Failure, DisponibilidadEntity?>> getDisponibilidad(String especialistaId);
 

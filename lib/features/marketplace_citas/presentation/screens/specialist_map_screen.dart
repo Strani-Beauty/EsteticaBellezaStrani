@@ -517,9 +517,13 @@ class _PatientDetailSheet extends StatelessWidget {
               label: 'Distancia',
               value: distanciaKm != null ? '${distanciaKm!.toStringAsFixed(1)} km' : 'No disponible',
             ),
-            if (solicitud.direccion != null) ...[
+            if (solicitud.ciudad != null) ...[
               const SizedBox(height: 8),
-              _DetailRow(icon: Icons.place_outlined, label: 'Dirección', value: solicitud.direccion!),
+              _DetailRow(
+                icon: Icons.location_city_outlined,
+                label: 'Área',
+                value: solicitud.ciudad!,
+              ),
             ],
             const SizedBox(height: 16),
             SizedBox(

@@ -7,6 +7,7 @@ class EspecialistaMapaEntity extends Equatable {
   final double? latitud;
   final double? longitud;
   final bool disponible;
+  final bool enLinea;
 
   const EspecialistaMapaEntity({
     required this.id,
@@ -14,8 +15,9 @@ class EspecialistaMapaEntity extends Equatable {
     this.latitud,
     this.longitud,
     required this.disponible,
+    this.enLinea = false,
   });
 
   @override
-  List<Object?> get props => [id, nombre, latitud, longitud, disponible];
+  List<Object?> get props => [id, nombre, latitud, longitud, disponible, enLinea];
 }

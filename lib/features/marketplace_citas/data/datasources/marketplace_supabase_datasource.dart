@@ -14,38 +14,39 @@ class MarketplaceSupabaseDataSource {
 
   // ── Solicitudes pendientes ─────────────────────────────────
 
+  /// Obtiene las solicitudes publicadas con ubicación APROXIMADA del paciente
+  /// (RN-018): el RPC `obtener_solicitudes_publicadas_geo` trunca las
+  /// coordenadas a 3 decimales (~110 m) y no devuelve la dirección exacta.
   Future<List<SolicitudPendienteModel>> fetchSolicitudesPendientes() async {
-    final res = await _client
-        .from('solicitudes')
-        .select(
-          '*, '
-          'direcciones_paciente(latitud, longitud, direccion, ciudad), '
-          'servicios(nombre, precio_base), '
-          'pacientes(profiles(full_name))',
-        )
-        .inFilter('estado', [
-          AppConstants.solicitudPublicada,
-          AppConstants.solicitudBuscandoEspecialista,
-        ])
-        .order('fecha_solicitud', ascending: true);
-    return res
-        .map((json) => SolicitudPendienteModel.fromJson(json))
+    final res = await _client.rpc(
+      AppConstants.rpcObtenerSolicitudesPublicadasGeo,
+    );
+    if (res == null) return [];
+    return (res as List)
+        .map((json) => SolicitudPendienteModel.fromJson(
+            Map<String, dynamic>.from(json as Map)))
         .toList();
   }
 
   // ── Especialistas aprobados ────────────────────────────────
 
   Future<List<EspecialistaMapaModel>> fetchEspecialistasAprobados() async {
+    final cutoff = DateTime.now()
+        .subtract(const Duration(seconds: AppConstants.umbralOnlineSegundos))
+        .toUtc()
+        .toIso8601String();
     final res = await _client
         .from('especialistas')
         .select(
-          'id, disponible, activo, '
+          'id, disponible, activo, en_linea, '
           'profiles(full_name), '
           'ubicaciones_especialista(id, latitud, longitud, order=created_at.desc, limit=1)',
         )
         .eq('estado_verificacion', AppConstants.estadoAprobado)
         .eq('activo', true)
-        .eq('disponible', true);
+        .eq('disponible', true)
+        .eq('en_linea', true)
+        .gt('ultima_conexion', cutoff);
     return res
         .map((json) => EspecialistaMapaModel.fromJson(json))
         .toList();

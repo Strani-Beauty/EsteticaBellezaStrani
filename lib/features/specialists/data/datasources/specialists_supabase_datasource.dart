@@ -342,6 +342,20 @@ class SpecialistsSupabaseDataSource {
     return DocumentoEspecialistaModel.fromJson(res);
   }
 
+  // ── Presencia (online/offline) ───────────────────────────────
+
+  /// Marca el estado de presencia del especialista. Update ligero sin tocar
+  /// `updated_at` (el heartbeat escribe con frecuencia).
+  Future<void> marcarPresencia(
+    String especialistaId, {
+    required bool enLinea,
+  }) async {
+    await _client.from('especialistas').update({
+      'en_linea': enLinea,
+      'ultima_conexion': DateTime.now().toIso8601String(),
+    }).eq('id', especialistaId);
+  }
+
   // ── Disponibilidad ───────────────────────────────────────────
 
   Future<DisponibilidadModel?> fetchDisponibilidad(String especialistaId) async {

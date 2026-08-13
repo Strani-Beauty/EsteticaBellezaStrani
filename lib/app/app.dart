@@ -10,6 +10,7 @@ import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/services/fcm_token_service.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/specialists/data/services/presence_service.dart';
 
 /// Punto de entrada de la aplicación.
 /// Provee AuthCubit globalmente (inyectado vía GetIt) y conecta GoRouter.
@@ -69,8 +70,20 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      context.read<AuthCubit>().clearLocalSession();
+    final presence = sl<PresenceService>();
+    switch (state) {
+      case AppLifecycleState.resumed:
+        presence.markOnline();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        presence.markOffline();
+        break;
+      case AppLifecycleState.detached:
+        presence.markOffline();
+        context.read<AuthCubit>().clearLocalSession();
+        break;
     }
   }
 
@@ -80,6 +93,11 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
       listener: (context, state) {
         if (state is AuthAuthenticated) {
           sl<FcmTokenService>().registerCurrentDevice(state.profile.id);
+          if (state.profile.isSpecialist) {
+            sl<PresenceService>().start(state.profile.id);
+          }
+        } else if (state is AuthUnauthenticated) {
+          sl<PresenceService>().markOffline();
         }
       },
       child: MaterialApp.router(

@@ -86,6 +86,18 @@ class AppConstants {
 
   // ── Supabase RPCs ──────────────────────────────────────────
   static const String rpcAceptarSolicitud = 'aceptar_solicitud';
+  static const String rpcBuscarEspecialistasCercanos =
+      'buscar_especialistas_cercanos';
+  static const String rpcObtenerSolicitudesPublicadasGeo =
+      'obtener_solicitudes_publicadas_geo';
+
+  // ── Presencia (online/offline) ─────────────────────────────
+  /// Intervalo del heartbeat de presencia mientras la app está en foreground.
+  static const Duration heartbeatPresencia = Duration(seconds: 60);
+
+  /// Un especialista se considera online si su último heartbeat es más reciente
+  /// que este umbral (espejo del `interval '3 minutes'` del SQL).
+  static const int umbralOnlineSegundos = 180;
 
   // ── Durations ──────────────────────────────────────────────
   static const Duration debounceDuration = Duration(milliseconds: 500);

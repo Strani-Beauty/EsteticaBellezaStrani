@@ -196,6 +196,17 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
       );
     }
 
+    // Registra la ubicación base en `ubicaciones_especialista` (geography
+    // PostGIS) para el mapa y futuras búsquedas por proximidad.
+    if (especialistaId.isNotEmpty &&
+        isValidMapCoordinate(_selectedLocation.latitude, _selectedLocation.longitude)) {
+      await cubit.saveLocation(
+        especialistaId: especialistaId,
+        latitud: _selectedLocation.latitude,
+        longitud: _selectedLocation.longitude,
+      );
+    }
+
     if (!mounted) return;
     setState(() => _guardando = false);
     if (especialistaId.isNotEmpty) {

@@ -13,6 +13,8 @@ class EspecialistaModel {
   final String? observacion;
   final bool disponible;
   final bool activo;
+  final bool enLinea;
+  final DateTime? ultimaConexion;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String? nombreUsuario;
@@ -31,6 +33,8 @@ class EspecialistaModel {
     this.observacion,
     required this.disponible,
     required this.activo,
+    this.enLinea = false,
+    this.ultimaConexion,
     required this.createdAt,
     this.updatedAt,
     this.nombreUsuario,
@@ -54,6 +58,8 @@ class EspecialistaModel {
       observacion: json['observacion'] as String?,
       disponible: json['disponible'] as bool? ?? false,
       activo: json['activo'] as bool? ?? false,
+      enLinea: json['en_linea'] as bool? ?? false,
+      ultimaConexion: _parseDate(json['ultima_conexion']),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: _parseDate(json['updated_at']),
       nombreUsuario: profile?['full_name'] as String?,
@@ -75,6 +81,8 @@ class EspecialistaModel {
       'observacion': observacion,
       'disponible': disponible,
       'activo': activo,
+      'en_linea': enLinea,
+      'ultima_conexion': _marshalDate(ultimaConexion),
       'created_at': createdAt.toIso8601String(),
       'updated_at': _marshalDate(updatedAt),
     };
@@ -94,6 +102,8 @@ class EspecialistaModel {
       observacion: observacion,
       disponible: disponible,
       activo: activo,
+      enLinea: enLinea,
+      ultimaConexion: ultimaConexion,
       createdAt: createdAt,
       updatedAt: updatedAt,
       nombreUsuario: nombreUsuario,

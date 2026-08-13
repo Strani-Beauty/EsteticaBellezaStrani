@@ -41,6 +41,8 @@ class EspecialistaEntity extends Equatable {
   final String? observacion;             // motivo de rechazo/bloqueo (admin)
   final bool disponible;
   final bool activo;
+  final bool enLinea;                    // presencia: app en foreground
+  final DateTime? ultimaConexion;        // último heartbeat
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String? nombreUsuario;           // join con profiles.full_name
@@ -59,6 +61,8 @@ class EspecialistaEntity extends Equatable {
     this.observacion,
     required this.disponible,
     required this.activo,
+    this.enLinea = false,
+    this.ultimaConexion,
     required this.createdAt,
     this.updatedAt,
     this.nombreUsuario,
@@ -79,6 +83,8 @@ class EspecialistaEntity extends Equatable {
     String? observacion,
     bool? disponible,
     bool? activo,
+    bool? enLinea,
+    DateTime? ultimaConexion,
     DateTime? updatedAt,
     String? nombreUsuario,
     String? emailUsuario,
@@ -97,6 +103,8 @@ class EspecialistaEntity extends Equatable {
       observacion: observacion ?? this.observacion,
       disponible: disponible ?? this.disponible,
       activo: activo ?? this.activo,
+      enLinea: enLinea ?? this.enLinea,
+      ultimaConexion: ultimaConexion ?? this.ultimaConexion,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       nombreUsuario: nombreUsuario ?? this.nombreUsuario,
@@ -105,5 +113,12 @@ class EspecialistaEntity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, usuarioId, estadoVerificacion, disponible, activo];
+  List<Object?> get props => [
+        id,
+        usuarioId,
+        estadoVerificacion,
+        disponible,
+        activo,
+        enLinea,
+      ];
 }

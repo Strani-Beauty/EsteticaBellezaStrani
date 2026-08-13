@@ -28,32 +28,17 @@ class SolicitudPendienteModel {
   });
 
   factory SolicitudPendienteModel.fromJson(Map<String, dynamic> json) {
-    final direccionRaw = json['direcciones_paciente'];
-    final servicioRaw = json['servicios'];
-    final pacienteRaw = json['pacientes'];
-
-    String? pacienteNombre;
-    if (pacienteRaw is Map<String, dynamic>) {
-      final profile = pacienteRaw['profiles'];
-      if (profile is Map<String, dynamic>) {
-        pacienteNombre = profile['full_name'] as String?;
-      }
-      pacienteNombre ??= pacienteRaw['nombre'] as String?;
-    }
-
-    final dir = direccionRaw is Map<String, dynamic> ? direccionRaw : null;
-    final servicio =
-        servicioRaw is Map<String, dynamic> ? servicioRaw : null;
-
     return SolicitudPendienteModel(
-      id: json['id'] as String? ?? '',
-      pacienteNombre: pacienteNombre ?? 'Paciente',
-      servicioNombre: servicio?['nombre'] as String? ?? 'Servicio',
-      precio: (servicio?['precio_base'] as num?)?.toDouble() ?? 0,
-      direccion: dir?['direccion'] as String?,
-      ciudad: dir?['ciudad'] as String?,
-      latitud: (dir?['latitud'] as num?)?.toDouble(),
-      longitud: (dir?['longitud'] as num?)?.toDouble(),
+      id: json['solicitud_id'] as String? ?? '',
+      pacienteNombre: json['paciente_nombre'] as String? ?? 'Paciente',
+      servicioNombre: json['servicio_nombre'] as String? ?? 'Servicio',
+      precio: (json['precio'] as num?)?.toDouble() ?? 0,
+      // La dirección exacta NO se expone a especialistas no asignados (RN-018):
+      // el RPC devuelve solo ubicación aproximada + ciudad.
+      direccion: null,
+      ciudad: json['ciudad'] as String?,
+      latitud: (json['latitud_aprox'] as num?)?.toDouble(),
+      longitud: (json['longitud_aprox'] as num?)?.toDouble(),
       fechaExpiracion: _parseDate(json['fecha_expiracion']),
       estado: json['estado'] as String? ?? '',
       radioBusqueda: (json['radio_busqueda'] as num?)?.toDouble(),

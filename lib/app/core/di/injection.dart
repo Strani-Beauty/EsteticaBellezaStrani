@@ -40,6 +40,7 @@ import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/payments_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/datasources/specialists_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/repositories/specialists_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/specialists/data/services/presence_service.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/repositories/i_specialists_repository.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/aprobar_medico_regente.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/asignar_especialidades.dart';
@@ -150,6 +151,9 @@ void _registerSpecialists() {
   );
   sl.registerLazySingleton<ISpecialistsRepository>(
     () => SpecialistsRepositoryImpl(sl<SpecialistsSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<PresenceService>(
+    () => PresenceService(sl<ISpecialistsRepository>()),
   );
   sl.registerLazySingleton<SpecialistsCubit>(
     () => SpecialistsCubit(

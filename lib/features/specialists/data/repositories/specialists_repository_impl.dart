@@ -277,6 +277,20 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
     }
   }
 
+  // ── Presencia (online/offline) ───────────────────────────────
+  @override
+  Future<Either<Failure, void>> marcarPresencia(
+    String especialistaId, {
+    required bool enLinea,
+  }) async {
+    try {
+      await _dataSource.marcarPresencia(especialistaId, enLinea: enLinea);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   @override
   Future<Either<Failure, DisponibilidadEntity?>> getDisponibilidad(
       String especialistaId) async {

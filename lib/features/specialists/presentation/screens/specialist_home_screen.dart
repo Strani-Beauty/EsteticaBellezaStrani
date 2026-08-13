@@ -149,6 +149,9 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
             },
           ),
           const SizedBox(height: 16),
+          _MiPerfilCard(
+            onTap: () => context.push(AppRoutes.specialistProfile),
+          ),
           if (especialista != null) ...[
             DisponibilidadCard(
               especialistaId: especialista.id,
@@ -392,6 +395,36 @@ class _MapaPacientesCard extends StatelessWidget {
         ),
         subtitle: const Text(
           'Visualiza pacientes que buscan especialista y asigna por cercanía (primer aviso gana).',
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _MiPerfilCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MiPerfilCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: const BoxDecoration(
+            color: AppTheme.cDeepAccent,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.account_circle_rounded, color: Colors.white, size: 26),
+        ),
+        title: const Text(
+          'Mi información',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text(
+          'Consulta y actualiza tus datos personales, licencia, médico regente y especialidades.',
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: onTap,

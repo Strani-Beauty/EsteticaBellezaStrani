@@ -81,6 +81,7 @@ bool _esRutaAdmin(String location) {
 bool _esRutaEspecialista(String location) {
   const rutas = [
     AppRoutes.specialistHome,
+    AppRoutes.specialistProfile,
     AppRoutes.specialistOnboarding,
     AppRoutes.specialistDocuments,
     AppRoutes.specialistPatientMap,

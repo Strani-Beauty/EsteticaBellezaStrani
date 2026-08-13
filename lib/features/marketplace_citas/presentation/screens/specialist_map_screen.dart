@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import '../../domain/entities/solicitud_pendiente_entity.dart';
 import '../cubits/marketplace_cubit.dart';
 
@@ -22,12 +24,18 @@ class SpecialistMapScreen extends StatefulWidget {
 
 class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
   final MapController _mapController = MapController();
+  bool _marketplaceRequested = false;
 
   @override
   void initState() {
     super.initState();
+    // Carga primero el especialista para validar su verificación antes de
+    // exponer el Marketplace (RN: solo APROBADOS ven/reciben solicitudes).
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MarketplaceCubit>().load(widget.especialistaId);
+      final usuarioId = context.read<AuthCubit>().currentProfile?.id;
+      if (usuarioId != null && usuarioId.isNotEmpty) {
+        context.read<SpecialistsCubit>().loadDashboard(usuarioId: usuarioId);
+      }
     });
   }
 
@@ -132,51 +140,83 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: BlocConsumer<MarketplaceCubit, MarketplaceState>(
-        listener: (context, state) {
-          if (state is MarketplaceError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-          if (state is MarketplaceLoaded && state.feedback != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.feedback!)),
-            );
-            context.read<MarketplaceCubit>().clearFeedback();
-          }
-        },
-        builder: (context, state) {
-          if (state is MarketplaceLoading) {
+      body: BlocBuilder<SpecialistsCubit, SpecialistsState>(
+        builder: (context, specialistsState) {
+          // Bloqueo por verificación: solo especialistas APROBADOS acceden.
+          if (specialistsState is SpecialistsLoading) {
             return const Center(
               child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
             );
           }
-          if (state is MarketplaceError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
-                  const SizedBox(height: 12),
-                  const Text('No pudimos cargar el mapa.', style: TextStyle(color: AppTheme.cMutedText)),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-                    onPressed: () => context.read<MarketplaceCubit>().load(widget.especialistaId),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Reintentar'),
-                  ),
-                ],
-              ),
-            );
+          if (specialistsState is SpecialistsError) {
+            return _AccesoRestringido(message: specialistsState.message);
           }
-          if (state is! MarketplaceLoaded) {
-            return const SizedBox.shrink();
+          if (specialistsState is! SpecialistsLoaded ||
+              specialistsState.especialista?.isApproved != true) {
+            return const _AccesoRestringido();
           }
-          return _buildMap(state);
+
+          // Dispara la carga del Marketplace una única vez ya validado.
+          if (!_marketplaceRequested) {
+            _marketplaceRequested = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                context.read<MarketplaceCubit>().load(widget.especialistaId);
+              }
+            });
+          }
+
+          return _buildMarketplace();
         },
       ),
+    );
+  }
+
+  Widget _buildMarketplace() {
+    return BlocConsumer<MarketplaceCubit, MarketplaceState>(
+      listener: (context, state) {
+        if (state is MarketplaceError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message)),
+          );
+        }
+        if (state is MarketplaceLoaded && state.feedback != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.feedback!)),
+          );
+          context.read<MarketplaceCubit>().clearFeedback();
+        }
+      },
+      builder: (context, state) {
+        if (state is MarketplaceLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+          );
+        }
+        if (state is MarketplaceError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+                const SizedBox(height: 12),
+                const Text('No pudimos cargar el mapa.', style: TextStyle(color: AppTheme.cMutedText)),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+                  onPressed: () => context.read<MarketplaceCubit>().load(widget.especialistaId),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
+        if (state is! MarketplaceLoaded) {
+          return const SizedBox.shrink();
+        }
+        return _buildMap(state);
+      },
     );
   }
 
@@ -637,6 +677,46 @@ class _PatientListSheet extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+}
+
+class _AccesoRestringido extends StatelessWidget {
+  final String? message;
+  const _AccesoRestringido({this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline_rounded,
+                color: AppTheme.cDeepAccent, size: 48),
+            const SizedBox(height: 12),
+            const Text(
+              'No tienes acceso al Marketplace',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message ??
+                  'Tu perfil de especialista debe estar verificado y activo '
+                      'para visualizar o recibir solicitudes de pacientes.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.cMutedText),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Volver'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

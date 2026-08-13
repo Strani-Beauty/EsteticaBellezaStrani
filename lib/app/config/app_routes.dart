@@ -16,6 +16,7 @@ import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_documents_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_onboarding_screen.dart';
+import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_profile_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/contract_signature_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
@@ -45,6 +46,7 @@ class AppRoutes {
   static const String adminDashboard       = '/admin';
   static const String adminUsuarios        = '/admin/usuarios';
   static const String specialistHome       = '/specialist';
+  static const String specialistProfile    = '/specialist/profile';
   static const String specialistDocuments  = '/specialist/documents';
   static const String specialistContract   = '/specialist/contract';
   static const String specialistOnboarding = '/specialist/onboarding';
@@ -119,6 +121,14 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: AppRoutes.specialistProfile,
+      name: 'specialistProfile',
+      builder: (context, state) => BlocProvider<SpecialistsCubit>(
+        create: (_) => sl<SpecialistsCubit>(),
+        child: const SpecialistProfileScreen(),
+      ),
+    ),
+    GoRoute(
       path: AppRoutes.specialistDocuments,
       name: 'specialistDocuments',
       builder: (context, state) => BlocProvider<SpecialistsCubit>(
@@ -187,8 +197,15 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.specialistPatientMap,
       name: 'specialistPatientMap',
-      builder: (context, state) => BlocProvider<MarketplaceCubit>(
-        create: (_) => sl<MarketplaceCubit>(),
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider<SpecialistsCubit>(
+            create: (_) => sl<SpecialistsCubit>(),
+          ),
+          BlocProvider<MarketplaceCubit>(
+            create: (_) => sl<MarketplaceCubit>(),
+          ),
+        ],
         child: SpecialistMapScreen(
           especialistaId: state.extra as String? ?? '',
         ),

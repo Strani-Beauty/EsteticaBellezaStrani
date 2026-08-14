@@ -192,7 +192,7 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
 
 // ── Estados de verificación ─────────────────────────────────────
 
-class _VerificationCard extends StatelessWidget {
+class _VerificationCard extends StatefulWidget {
   final EspecialistaEntity? especialista;
   final List especialidades;
   final void Function(String licencia) onCreate;
@@ -204,8 +204,35 @@ class _VerificationCard extends StatelessWidget {
   });
 
   @override
+  State<_VerificationCard> createState() => _VerificationCardState();
+}
+
+class _VerificationCardState extends State<_VerificationCard> {
+  final _licenciaCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _licenciaCtrl.dispose();
+    super.dispose();
+  }
+
+  void _enviar([String? texto]) {
+    final licencia = (texto ?? _licenciaCtrl.text).trim();
+    if (licencia.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Ingresa el número de licencia para solicitar la verificación.'),
+        ),
+      );
+      return;
+    }
+    widget.onCreate(licencia);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final s = especialista;
+    final s = widget.especialista;
     if (s == null) {
       return Card(
         child: Padding(
@@ -221,16 +248,16 @@ class _VerificationCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: TextEditingController(),
+                controller: _licenciaCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Número de licencia',
                   border: OutlineInputBorder(),
                 ),
-                onSubmitted: onCreate,
+                onSubmitted: _enviar,
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
-                onPressed: () => onCreate(''),
+                onPressed: _enviar,
                 icon: const Icon(Icons.verified_user_rounded),
                 label: const Text('Solicitar verificación'),
               ),
@@ -288,7 +315,10 @@ class _VerificationCard extends StatelessWidget {
   }
 
   void _pedirVerificacion(BuildContext context) {
-    context.go(AppRoutes.specialistDocuments, extra: especialista?.id ?? '');
+    context.go(
+      AppRoutes.specialistDocuments,
+      extra: widget.especialista?.id ?? '',
+    );
   }
 
   String _estadoLabel(EstadoVerificacion e) => switch (e) {

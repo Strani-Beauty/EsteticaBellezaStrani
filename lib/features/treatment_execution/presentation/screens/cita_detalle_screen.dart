@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/pago_entity.dart';
@@ -121,6 +123,28 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                   _FirmaSection(
                     tratamiento: tratamiento,
                     consentimiento: state.consentimiento,
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.cPastelPurple,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.photo_library_outlined,
+                            color: AppTheme.cDeepAccent, size: 24),
+                      ),
+                      title: const Text('Fotografías del tratamiento',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: const Text(
+                          'Registra y consulta evidencia PRE/POST del tratamiento.'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push(
+                        AppRoutes.fotografiasTratamientoDe(tratamiento.id),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _AccionButton(

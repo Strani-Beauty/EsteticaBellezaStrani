@@ -60,9 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (_editing) {
                 setState(() => _editing = false);
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('La sesión se cerró.')),
-                );
+                context.read<AuthCubit>().signOut();
               }
             },
             tooltip: _editing ? 'Cancelar edición' : 'Cerrar sesión',

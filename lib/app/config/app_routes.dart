@@ -54,9 +54,16 @@ class AppRoutes {
   static const String changePassword       = '/change-password';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
+
+  /// Ruta concreta de fotografías de un tratamiento (sustituye `:id`).
+  static String fotografiasTratamientoDe(String tratamientoId) =>
+      '/tratamiento/$tratamientoId/fotos';
   static const String specialistPatientMap = '/specialist/map';
   static const String misCitas = '/specialist/mis-citas';
   static const String misCitasDetalle = '/specialist/mis-citas/:id';
+
+  /// Ruta concreta del detalle de una cita (sustituye el parámetro `:id`).
+  static String misCitasDetalleDe(String citaId) => '$misCitas/$citaId';
 }
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit

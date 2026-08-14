@@ -86,8 +86,7 @@ class _CitaCard extends StatelessWidget {
         ),
         trailing: EstadoChip(estado: cita.estado),
         onTap: () => context.push(
-          AppRoutes.misCitasDetalle,
-          extra: cita.id,
+          AppRoutes.misCitasDetalleDe(cita.id),
         ),
       ),
     );

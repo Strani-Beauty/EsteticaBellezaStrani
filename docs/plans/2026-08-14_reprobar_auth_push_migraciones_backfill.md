@@ -95,6 +95,6 @@ Nota: el embed `especialistas/profiles` es ambiguo (2 FKs) — la app usa `profi
 - [x] Migraciones `20260814000200_backfill_metadata_auth_users.sql` y `20260814000050_corregir_fk_medico_regente.sql` creadas.
 - [x] `supabase db push` aplicado (14000000 + 14000050 + 14000100 + 14000200).
 - [x] Verificación post-push (perfiles + matriz especialistas) — vía REST en esta PC (sin SQL Editor): login OK de las 12 cuentas matriz; `profiles`/`pacientes` sin recursión 42P17 tras los fixes 14000600/14000700.
-- [ ] SMTP Gmail/Workspace configurado en el dashboard o alternativa Logs (`docs/2026-08-14_config_email_smtp.md`).
-- [ ] Re-pruebas doc 01 + Excel actualizado.
+- [x] SMTP Gmail/Workspace configurado en el dashboard (confirmado por el usuario el 2026-08-14; guía en `docs/2026-08-14_config_email_smtp.md`).
+- [ ] Re-pruebas doc 01 + Excel actualizado — **previstas para 2026-08-15**.
 - [ ] Commit + push (mensaje en español, confirmado por el usuario).

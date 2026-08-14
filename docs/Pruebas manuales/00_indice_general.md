@@ -47,6 +47,7 @@
 - `.env` con `SUPABASE_URL` y `SUPABASE_ANON_KEY` válidos (sin ellos la app muestra pantalla de error al arrancar — caso intencional en 01).
 - **Stripe**: sin publishable key o en plataforma web → modo simulado (referencias `STRIPE_SIM_<ts>`). Los casos de pago indican si aplican en modo simulado, real o ambos.
 - Edge function `geocode-address` desplegada (geocodificación de direcciones).
+- **Email/confirmación**: Supabase requiere SMTP para entregar correos de confirmación y recuperación. Config con Gmail/Workspace en `../2026-08-14_config_email_smtp.md`; alternativa de prueba sin SMTP: Authentication → Logs / Emails → enlace generado.
 - Firebase FCM opcional: la app degrada sin crash si no está configurada.
 - Dos dispositivos/sesiones para casos de concurrencia y desactivación remota (marcados con ⚑).
 

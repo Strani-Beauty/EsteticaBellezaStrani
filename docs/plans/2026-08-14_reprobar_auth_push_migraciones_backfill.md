@@ -73,7 +73,7 @@ Nota: el embed `especialistas/profiles` es ambiguo (2 FKs) — la app usa `profi
 
 ## Fase 2 — Config dashboard (manual, en la otra PC)
 
-1. Authentication → Email: mantener **Confirm email ON** y **configurar SMTP** (Resend/SendGrid/Mailgun). Sin SMTP, los correos no se entregan (bloquea AU-H-03).
+1. Authentication → Email: mantener **Confirm email ON** y **configurar SMTP con Gmail/Google Workspace** (host `smtp.gmail.com`, puerto 465/587, App Password). Guía completa en `docs/2026-08-14_config_email_smtp.md`. Sin SMTP, los correos no se entregan (bloquea AU-H-03).
    - Alternativa de prueba sin SMTP: Authentication → Logs / Emails → copiar el enlace de confirmación generado.
 2. Authentication → URL Configuration: Site URL y Redirect URLs correctos (`http://localhost` para web, deep link `com.example.esteticaybellezastrani://`).
 
@@ -95,6 +95,6 @@ Nota: el embed `especialistas/profiles` es ambiguo (2 FKs) — la app usa `profi
 - [x] Migraciones `20260814000200_backfill_metadata_auth_users.sql` y `20260814000050_corregir_fk_medico_regente.sql` creadas.
 - [x] `supabase db push` aplicado (14000000 + 14000050 + 14000100 + 14000200).
 - [x] Verificación post-push (perfiles + matriz especialistas) — vía REST en esta PC (sin SQL Editor): login OK de las 12 cuentas matriz; `profiles`/`pacientes` sin recursión 42P17 tras los fixes 14000600/14000700.
-- [ ] SMTP configurado o alternativa Logs.
+- [ ] SMTP Gmail/Workspace configurado en el dashboard o alternativa Logs (`docs/2026-08-14_config_email_smtp.md`).
 - [ ] Re-pruebas doc 01 + Excel actualizado.
 - [ ] Commit + push (mensaje en español, confirmado por el usuario).

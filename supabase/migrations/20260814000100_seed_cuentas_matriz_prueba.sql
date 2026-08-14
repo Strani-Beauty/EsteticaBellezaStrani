@@ -12,65 +12,88 @@
 -- =============================================================================
 
 -- 0. Extensión pgcrypto (crypt/gen_salt) si no está ------------------------------
+-- El search_path de la conexión de `supabase db push` no incluye el esquema de la
+-- extensión por defecto; se añade explícitamente para que crypt/gen_salt resuelvan.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+SET search_path = public, extensions;
+
+-- Los triggers de verificación/revisión tratan la sesión de migración como
+-- no-admin (auth.uid() = NULL) y bloquearían insertar los estados finales de la
+-- matriz (EN_REVISION/APROBADO/RECHAZADO/BLOQUEADO en especialistas y APROBADO
+-- en documentos). Se desactivan solo durante el seed y se reactivan al final.
+ALTER TABLE public.especialistas DISABLE TRIGGER trg_proteger_verificacion_especialista;
+ALTER TABLE public.documentos_especialista DISABLE TRIGGER trg_proteger_revision_documento;
 
 -- 1. Usuarios auth ---------------------------------------------------------------
 INSERT INTO auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+  confirmation_token, recovery_token, email_change, email_change_token_new,
   created_at, updated_at
 )
 SELECT * FROM (VALUES
  ('00000000-0000-0000-0000-000000000000'::uuid, '90000000-0000-0000-0000-000000000001'::uuid, 'authenticated', 'authenticated',
   'admin@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
-  '{"role":"Administrador","full_name":"Administrador Test","phone":"+1 555 0100"}'::jsonb, now(), now()),
+  '{"role":"Administrador","full_name":"Administrador Test","phone":"+1 555 0100"}'::jsonb, '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000002',
   'authenticated', 'authenticated', 'esp.nuevo@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Especialista Nuevo","phone":"+1 555 0101"}', now(), now()),
+  '{"role":"Especialista","full_name":"Especialista Nuevo","phone":"+1 555 0101"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000003',
   'authenticated', 'authenticated', 'esp.revision@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. En Revisión","phone":"+1 555 0102"}', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. En Revisión","phone":"+1 555 0102"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000004',
   'authenticated', 'authenticated', 'esp.aprobado@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Dra. Aprobada Test","phone":"+1 555 0103"}', now(), now()),
+  '{"role":"Especialista","full_name":"Dra. Aprobada Test","phone":"+1 555 0103"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000005',
   'authenticated', 'authenticated', 'esp.rechazado@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. Rechazado","phone":"+1 555 0104"}', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. Rechazado","phone":"+1 555 0104"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000006',
   'authenticated', 'authenticated', 'esp.bloqueado@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. Bloqueado","phone":"+1 555 0105"}', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. Bloqueado","phone":"+1 555 0105"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000007',
   'authenticated', 'authenticated', 'esp.desactivado@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. Desactivado","phone":"+1 555 0106"}', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. Desactivado","phone":"+1 555 0106"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000008',
   'authenticated', 'authenticated', 'pac.nuevo@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Nuevo","phone":"+1 555 0107"}', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Nuevo","phone":"+1 555 0107"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000009',
   'authenticated', 'authenticated', 'pac.activo@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Activo","phone":"+1 555 0108"}', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Activo","phone":"+1 555 0108"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-00000000000A',
   'authenticated', 'authenticated', 'pac.vencido@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Vencido","phone":"+1 555 0109"}', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Vencido","phone":"+1 555 0109"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-00000000000B',
   'authenticated', 'authenticated', 'pac.rechazado@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Rechazado","phone":"+1 555 0110"}', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Rechazado","phone":"+1 555 0110"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-00000000000C',
   'authenticated', 'authenticated', 'pac.desactivado@test', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Desactivado","phone":"+1 555 0111"}', now(), now())
+  '{"role":"Paciente","full_name":"Paciente Desactivado","phone":"+1 555 0111"}', '', '', '', '', now(), now())
 ) AS v(instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 WHERE NOT EXISTS (SELECT 1 FROM auth.users u WHERE u.email = v.email);
+
+-- 1b. Identidades auth (obligatorias para el login con contraseña en gotrue v2) -----
+INSERT INTO auth.identities (
+  id, provider_id, user_id, identity_data, provider,
+  last_sign_in_at, created_at, updated_at
+)
+SELECT gen_random_uuid(), u.id::text, u.id,
+       jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', TRUE, 'phone_verified', FALSE),
+       'email', now(), now(), now()
+FROM auth.users u
+WHERE u.email LIKE '%@test'
+  AND NOT EXISTS (SELECT 1 FROM auth.identities i WHERE i.user_id = u.id);
 
 -- 2. Estados de profiles ---------------------------------------------------------
 UPDATE public.profiles p SET activo = TRUE, updated_at = now()
@@ -245,5 +268,9 @@ WHERE p.email = 'esp.aprobado@test'
   AND NOT EXISTS (SELECT 1 FROM public.documentos_especialista d
                   WHERE d.especialista_id = esp.id AND d.tipo_documento = 'LICENCIA');
 
--- 8. Resumen ------------------------------------------------------------------------
+-- 8. Reactivar triggers de verificación/revisión ---------------------------------
+ALTER TABLE public.especialistas ENABLE TRIGGER trg_proteger_verificacion_especialista;
+ALTER TABLE public.documentos_especialista ENABLE TRIGGER trg_proteger_revision_documento;
+
+-- 9. Resumen ------------------------------------------------------------------------
 SELECT 'Usuarios matriz' AS seccion, count(*) FROM public.profiles WHERE email LIKE '%@test';

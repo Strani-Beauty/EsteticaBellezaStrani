@@ -56,6 +56,19 @@
 - **Resultado**: `Pasa` / `Falla` / `Bloqueado` / pendiente (celda vacía).
 - Cada documento termina con una tabla de resumen de ejecución.
 
+## Cómo evaluar los resultados
+
+- **Regla central**: cada caso define su criterio en la columna "Resultado esperado". `Pasa` solo si lo observado coincide (UI + BD); `Falla` si difiere; `Bloqueado` si no pudo ejecutarse por precondiciones/entorno. Evaluar es comparar, no decidir "si parece que funcionó".
+- **Verifica en Supabase** (SQL Editor / Table Editor) los estados que el caso espera (`estado_verificacion`, `solicitudes.estado`, `pagos.saldo`, `historial_estados`, buckets de Storage). No basta con ver la UI.
+- **Severidad de un fallo**: Crítica = bloquea un flujo principal, pierde datos/dinero o fuga de RLS; Alta = función importante degradada; Media = fricción o caso poco frecuente; Baja = cosmético. Un fallo crítico pesa más que varios pases medios → decide si bloquea el release.
+- **Casos "Sospechosos de código"**: si se reproduce el comportamiento descrito → bug confirmado (marca `Falla` y crea el reporte); si no se reproduce → sospecha descartada (anótalo en Notas).
+- **Evidencia**: por cada caso ejecutado, registrar resultado observado + captura/log/fila de BD + pasos de reproducción. Sin evidencia, un `Falla` no es trazable.
+- **Casos ⚑ (dos dispositivos / concurrencia)**: evaluar en ambos lados y además el estado final en BD.
+- **Bloqueado ≠ Falla**: si falta una cuenta, un estado (p. ej. un especialista `EN_REVISION`) o una solicitud publicada, prodúcela primero con los flujos E2E del doc 11 y luego reejecuta.
+- **Cierre por documento**: totales por prioridad y resultado, % de pase y lista de fallas que bloquean el release.
+
+Esta misma guía está disponible en la hoja `Como_evaluar` del libro Excel `Pruebas_manuales_01-04.xlsx`.
+
 ### Plantilla de reporte de bug
 
 ```

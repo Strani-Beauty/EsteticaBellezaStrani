@@ -537,6 +537,20 @@ class _LoginScreenState extends State<LoginScreen> {
         ]),
         content: Text('Revisa tu bandeja de $email para confirmar la cuenta.'),
         actions: [
+          TextButton(
+            onPressed: () {
+              context.read<AuthCubit>().resendConfirmationEmail(email);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Correo de confirmación reenviado. Revisa tu bandeja.',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('Reenviar correo'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);

@@ -48,6 +48,11 @@ class AuthEmailConfirmationSent extends AuthState {
   List<Object?> get props => [email];
 }
 
+/// Correo de confirmación reenviado por el usuario (AU-V-07).
+class AuthConfirmationResent extends AuthState {
+  const AuthConfirmationResent();
+}
+
 /// Contraseña restablecida con éxito desde el flujo de recovery (deep link).
 class AuthPasswordChanged extends AuthState {
   const AuthPasswordChanged();
@@ -185,6 +190,15 @@ class AuthCubit extends Cubit<AuthState> {
   // ── Reset Password ──────────────────────────────────────────
   Future<void> resetPassword(String email) async {
     await _authRepository.resetPassword(email);
+  }
+
+  /// Reenvía el correo de confirmación de cuenta (OTP de registro).
+  Future<void> resendConfirmationEmail(String email) async {
+    final result = await _authRepository.resendConfirmationEmail(email);
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(const AuthConfirmationResent()),
+    );
   }
 
   /// Completa el flujo de recovery: el usuario puso su nueva contraseña

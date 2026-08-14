@@ -111,6 +111,18 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> resendConfirmationEmail(String email) async {
+    try {
+      await _dataSource.resendConfirmationEmail(email);
+      return const Right(null);
+    } on sb.AuthException catch (e) {
+      return Left(AuthFailure(e.message, code: e.code));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> changePassword(String newPassword) async {
     try {
       await _dataSource.updatePassword(newPassword);

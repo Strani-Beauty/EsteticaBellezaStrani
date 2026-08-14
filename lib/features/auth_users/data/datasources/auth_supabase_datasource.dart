@@ -40,10 +40,16 @@ class AuthSupabaseDataSource {
       data: {
         'full_name': fullName,
         'role': role,
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
       },
     );
 
     return response;
+  }
+
+  /// Reenvía el correo de confirmación de cuenta (OTP de registro).
+  Future<void> resendConfirmationEmail(String email) async {
+    await _client.auth.resend(email: email, type: OtpType.signup);
   }
 
   Future<void> signOut() async {
@@ -146,7 +152,7 @@ class AuthSupabaseDataSource {
       'email': email,
       'full_name': fullName,
       'role': role,
-      'phone': phone ?? '',
+      'phone': phone,
       'activo': activo,
       'payment_completed': false,
       'evaluation_passed': false,
@@ -164,7 +170,7 @@ class AuthSupabaseDataSource {
         await _client.from('profiles').update({
           'full_name': fullName,
           'role': role,
-          'phone': phone ?? '',
+          'phone': phone,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', id);
         debugPrint('✅ [createProfile] profiles.update fallback ok');

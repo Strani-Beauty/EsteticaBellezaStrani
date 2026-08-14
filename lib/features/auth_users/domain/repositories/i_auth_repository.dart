@@ -27,6 +27,9 @@ abstract class IAuthRepository {
 
   Future<Either<Failure, void>> resetPassword(String email);
 
+  /// Reenvía el correo de confirmación de cuenta (OTP de registro).
+  Future<Either<Failure, void>> resendConfirmationEmail(String email);
+
   /// Cambia la contraseña del usuario autenticado.
   Future<Either<Failure, void>> changePassword(String newPassword);
 

@@ -74,7 +74,7 @@ class AuthRepositoryImpl implements IAuthRepository {
       );
       return Right(profile.toEntity());
     } on sb.AuthException catch (e) {
-      return Left(AuthFailure(e.message, code: e.code));
+      return Left(_authFailureFrom(e));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -116,7 +116,7 @@ class AuthRepositoryImpl implements IAuthRepository {
       await _dataSource.resendConfirmationEmail(email);
       return const Right(null);
     } on sb.AuthException catch (e) {
-      return Left(AuthFailure(e.message, code: e.code));
+      return Left(_authFailureFrom(e));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -222,5 +222,29 @@ class AuthRepositoryImpl implements IAuthRepository {
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
+  }
+
+  /// Mapea una [sb.AuthException] a [AuthFailure] con mensaje amigable.
+  /// Cuando GoTrue no puede entregar el correo de confirmación/recovery por SMTP
+  /// responde con `code = unexpected_failure` y "Error sending confirmation email";
+  /// en ese caso se traduce a un texto en español que orienta al usuario
+  /// (botón "Reenviar correo" / alternativa Logs → Emails del dashboard).
+  AuthFailure _authFailureFrom(sb.AuthException e) {
+    final msg = e.message.toLowerCase();
+    final isEmailDeliveryFailure =
+        e.code == 'unexpected_failure' &&
+        (msg.contains('sending confirmation email') ||
+            msg.contains('send email') ||
+            msg.contains('smtp') ||
+            msg.contains('error sending'));
+    if (isEmailDeliveryFailure) {
+      return AuthFailure(
+        'No se pudo enviar el correo de confirmación en este momento. '
+        'Intenta de nuevo con "Reenviar correo" o, si persiste, revisa la '
+        'configuración de correo en el panel de administración.',
+        code: e.code,
+      );
+    }
+    return AuthFailure(e.message, code: e.code);
   }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import '../cubits/auth_cubit.dart';
+import '../widgets/avatar_selector.dart';
 
 /// Pantalla del perfil del usuario autenticado.
 /// Permite consultar la información básica y actualizar nombre/teléfono.
@@ -104,16 +105,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Center(
                     child: CircleAvatar(
                       radius: 44,
-                      backgroundColor: AppTheme.cPastelPurple,
-                      child: Icon(
-                        profile.isAdmin
-                            ? Icons.admin_panel_settings_rounded
-                            : profile.isSpecialist
-                                ? Icons.medical_services_rounded
-                                : Icons.person_rounded,
-                        size: 48,
-                        color: AppTheme.cDeepAccent,
-                      ),
+                      backgroundColor:
+                          AvatarSelector.presetColor(profile.avatarUrl) ??
+                          AppTheme.cPastelPurple,
+                      child: _AvatarContent(profile: profile),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -244,5 +239,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fullName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
           phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         );
+  }
+}
+
+/// Contenido del avatar del perfil: preset, foto subida o ícono por rol.
+class _AvatarContent extends StatelessWidget {
+  final dynamic profile;
+  const _AvatarContent({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final presetIcon = AvatarSelector.presetIcon(profile.avatarUrl);
+    if (presetIcon != null) {
+      return Icon(presetIcon, size: 48, color: AppTheme.cDeepAccent);
+    }
+    final avatarUrl = profile.avatarUrl as String?;
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(
+          avatarUrl,
+          width: 88,
+          height: 88,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const Icon(
+            Icons.person_rounded,
+            size: 48,
+            color: AppTheme.cDeepAccent,
+          ),
+        ),
+      );
+    }
+    return Icon(
+      profile.isAdmin
+          ? Icons.admin_panel_settings_rounded
+          : profile.isSpecialist
+              ? Icons.medical_services_rounded
+              : Icons.person_rounded,
+      size: 48,
+      color: AppTheme.cDeepAccent,
+    );
   }
 }

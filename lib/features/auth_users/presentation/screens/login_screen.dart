@@ -535,7 +535,12 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Text('Confirma tu correo'),
           ),
         ]),
-        content: Text('Revisa tu bandeja de $email para confirmar la cuenta.'),
+        content: Text(
+          'Revisa la bandeja de $email para confirmar la cuenta. '
+          'Si ya te habías registrado con este correo, puedes usar '
+          '"Iniciar sesión" con tu contraseña. ¿No llegó el mensaje? '
+          'Revisa también la carpeta de spam o reenvía el correo.',
+        ),
         actions: [
           TextButton(
             onPressed: () {

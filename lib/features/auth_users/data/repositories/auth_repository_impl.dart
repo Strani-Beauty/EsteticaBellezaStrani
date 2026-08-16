@@ -28,7 +28,7 @@ class AuthRepositoryImpl implements IAuthRepository {
       }
       return Right(profile.toEntity());
     } on sb.AuthException catch (e) {
-      return Left(AuthFailure(e.message, code: e.code));
+      return Left(_authFailureFrom(e));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -128,7 +128,7 @@ class AuthRepositoryImpl implements IAuthRepository {
       await _dataSource.updatePassword(newPassword);
       return const Right(null);
     } on sb.AuthException catch (e) {
-      return Left(AuthFailure(e.message, code: e.code));
+      return Left(_authFailureFrom(e));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
@@ -224,15 +224,16 @@ class AuthRepositoryImpl implements IAuthRepository {
     }
   }
 
-  /// Mapea una [sb.AuthException] a [AuthFailure] con mensaje amigable.
-  /// Cuando GoTrue no puede entregar el correo de confirmación/recovery por SMTP
-  /// responde con `code = unexpected_failure` y "Error sending confirmation email";
-  /// en ese caso se traduce a un texto en español que orienta al usuario
-  /// (botón "Reenviar correo" / alternativa Logs → Emails del dashboard).
+  /// Mapea una [sb.AuthException] a [AuthFailure] con mensaje amigable en
+  /// español, usando el `code` de GoTrue cuando está disponible (fallback al
+  /// mensaje crudo). Los códigos comunes (credenciales, email duplicado,
+  /// contraseña débil, recovery, SMTP) se traducen según la región de la app.
   AuthFailure _authFailureFrom(sb.AuthException e) {
     final msg = e.message.toLowerCase();
-    final isEmailDeliveryFailure =
-        e.code == 'unexpected_failure' &&
+    final code = e.code?.toLowerCase() ?? '';
+
+    // ── SMTP: GoTrue no pudo entregar el correo de confirmación/recovery ──
+    final isEmailDeliveryFailure = code.contains('unexpected_failure') &&
         (msg.contains('sending confirmation email') ||
             msg.contains('send email') ||
             msg.contains('smtp') ||
@@ -245,6 +246,44 @@ class AuthRepositoryImpl implements IAuthRepository {
         code: e.code,
       );
     }
+
+    final map = <String, String>{
+      'invalid_credentials': 'Credenciales inválidas. Verifica tu correo y contraseña.',
+      'email_not_confirmed': 'Debes confirmar tu correo para activar tu cuenta. Revisa tu bandeja de entrada.',
+      'user_already_exists': 'Este correo ya está registrado. Inicia sesión o usa "Recuperar contraseña".',
+      'weak_password': 'La contraseña es demasiado débil. Usa al menos 6 caracteres con mayúsculas, minúsculas y números.',
+      'email_address_invalid': 'El correo electrónico ingresado no es válido.',
+      'same_password': 'La nueva contraseña debe ser distinta a la contraseña actual.',
+      'new_password_should_be_different': 'La nueva contraseña debe ser distinta a la contraseña actual.',
+      'over_email_send_rate_limit': 'Hemos enviado demasiados correos a esta cuenta. Espera unos minutos e inténtalo de nuevo.',
+      'over_request_rate_limit': 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+      'user_not_found': 'No existe una cuenta con este correo.',
+      'email_change_token_invalid': 'El enlace de confirmación no es válido o ya fue usado.',
+      'recovery_token_invalid': 'El enlace de recuperación no es válido o ya fue usado.',
+      'otp_expired': 'El código de confirmación expiró. Solicita uno nuevo.',
+      'otp_disabled': 'La verificación por código está deshabilitada en esta cuenta.',
+      'phone_already_exists': 'Este número de teléfono ya está registrado.',
+      'phone_not_confirmed': 'Debes confirmar tu número de teléfono para continuar.',
+      'provider_not_found': 'El proveedor de acceso seleccionado no está disponible.',
+      'mfa_verification_rejected': 'La verificación de seguridad falló. Inténtalo de nuevo.',
+    };
+
+    final translated = map[code];
+    if (translated != null) {
+      return AuthFailure(translated, code: e.code);
+    }
+
+    // Fallback: si el mensaje crudo contiene patrones reconocibles sin code.
+    if (msg.contains('invalid login credentials')) {
+      return const AuthFailure('Credenciales inválidas. Verifica tu correo y contraseña.');
+    }
+    if (msg.contains('already registered') || msg.contains('already been registered')) {
+      return const AuthFailure('Este correo ya está registrado. Inicia sesión o usa "Recuperar contraseña".');
+    }
+    if (msg.contains('password should be at least')) {
+      return const AuthFailure('La contraseña es demasiado débil. Usa al menos 6 caracteres.');
+    }
+
     return AuthFailure(e.message, code: e.code);
   }
 }

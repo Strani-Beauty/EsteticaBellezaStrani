@@ -423,6 +423,7 @@ class SupabaseService {
     required String address,
     required double latitude,
     required double longitude,
+    String? avatarUrl,
     bool? activo,
     bool? paymentCompleted,
     bool? evaluationPassed,
@@ -440,6 +441,7 @@ class SupabaseService {
       'role_id': 1,
       'updated_at': DateTime.now().toIso8601String(),
     };
+    if (avatarUrl != null) profileUpdate['avatar_url'] = avatarUrl;
     if (activo != null) profileUpdate['activo'] = activo;
     if (paymentCompleted != null) profileUpdate['payment_completed'] = paymentCompleted;
     if (evaluationPassed != null) profileUpdate['evaluation_passed'] = evaluationPassed;

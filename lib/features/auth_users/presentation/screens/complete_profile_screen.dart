@@ -14,6 +14,7 @@ import 'package:esteticaybellezastrani/features/patients_compliance/presentation
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 import '../cubits/auth_cubit.dart';
+import '../widgets/avatar_selector.dart';
 
 /// Pantalla para completar o editar el perfil del paciente.
 /// Carga datos previos de Supabase y ofrece mapa en ventana emergente cuadrada (~1/4 pantalla).
@@ -34,6 +35,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool _searchingLocation = false;
   bool _isLoadingInitialData = true;
   String? _addressError;
+  String? _avatarUrl;
 
   @override
   void initState() {
@@ -61,6 +63,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final address = profile?.address ?? userProfileMap?['address']?.toString();
     final lat = profile?.latitude ?? (userProfileMap?['latitude'] as num?)?.toDouble();
     final lng = profile?.longitude ?? (userProfileMap?['longitude'] as num?)?.toDouble();
+    final avatar = profile?.avatarUrl ?? userProfileMap?['avatar_url']?.toString();
 
     setState(() {
       if (phone != null && phone.isNotEmpty) {
@@ -72,6 +75,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       if (isValidMapCoordinate(lat, lng)) {
         _selectedLocation = LatLng(lat!, lng!);
       }
+      _avatarUrl = avatar;
       _isLoadingInitialData = false;
     });
   }
@@ -232,6 +236,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       address: _addressCtrl.text.trim(),
       latitude: _selectedLocation.latitude,
       longitude: _selectedLocation.longitude,
+      avatarUrl: _avatarUrl,
     );
 
     if (!mounted) return;
@@ -553,7 +558,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   Widget build(BuildContext context) {
     final cubit = context.watch<AuthCubit>();
     final isLoading = cubit.state is AuthLoading;
-    final profile = cubit.currentProfile;
 
     if (_isLoadingInitialData) {
       return const Scaffold(
@@ -587,28 +591,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Badge Paciente
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(children: [
-                  const Icon(Icons.person_pin_rounded, size: 18, color: AppTheme.cDeepAccent),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'ID del Paciente: ${profile?.id ?? SupabaseService.currentUser?.id ?? '...'}',
-                      style: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ]),
+              const SizedBox(height: 8),
+
+              // Avatar
+              AvatarSelector(
+                avatarUrl: _avatarUrl,
+                onChanged: (value) => setState(() => _avatarUrl = value),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
               // Teléfono
               TextFormField(

@@ -75,7 +75,9 @@ class AuthSupabaseDataSource {
   Future<void> resetPassword(String email) async {
     await _client.auth.resetPasswordForEmail(
       email,
-      redirectTo: 'com.example.esteticaybellezastrani://',
+      redirectTo: kIsWeb
+          ? 'https://esteticaybellezastrani.web.app/auth/reset-password'
+          : 'com.example.esteticaybellezastrani://',
     );
   }
 

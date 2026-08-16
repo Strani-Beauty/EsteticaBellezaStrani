@@ -130,13 +130,36 @@ class _UserTile extends StatelessWidget {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 2),
-          child: Text(
-            '${user.role}${esAuto ? ' · tú' : ''}',
-            style: TextStyle(
-              fontSize: 12,
-              color: _esAdmin ? AppTheme.cDeepAccent : AppTheme.cMutedText,
-              fontWeight: _esAdmin ? FontWeight.w600 : FontWeight.w400,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${user.role}${esAuto ? ' · tú' : ''}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _esAdmin ? AppTheme.cDeepAccent : AppTheme.cMutedText,
+                  fontWeight: _esAdmin ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+              if (user.phone != null && user.phone!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.phone_outlined,
+                          size: 12, color: AppTheme.cMutedText),
+                      const SizedBox(width: 4),
+                      Text(
+                        user.phone!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.cMutedText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ),
         trailing: canToggle

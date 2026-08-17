@@ -27,7 +27,7 @@ Flujo clínico del paciente (cuestionario/evaluación → doc 07), pagos del onb
 |---|---|---|---|---|---|---|---|
 | AU-H-01 | Landing pública | Sin sesión | 1. Abrir la app | WelcomeScreen con "Agendar Cita", "Especialistas", "Explorar Servicios" | Media | | |
 | AU-H-02 | Registro de paciente | Sin sesión | 1. "Agendar Cita" → `/login` 2. Rol Paciente → registro 3. Nombre, email válido, contraseña ≥6 4. Enviar | Diálogo de confirmación de correo (`AuthEmailConfirmationSent`); perfil creado con `activo=false`, rol Paciente | Crítica | | |
-| AU-H-03 | Confirmación de correo | Registro recién hecho | 1. Abrir el correo 2. Confirmar | Cuenta confirmada; login posible | Crítica | | |
+| AU-H-03 | Confirmación de correo | Registro recién hecho | 1. Abrir el correo 2. Confirmar | Cuenta confirmada; login posible. **Nota (2026-08-17)**: el link usa PKCE y el code verifier queda en el mismo browser donde se registró; ya no se borra al cerrar la pestaña, así que confirma aunque haya una sesión previa. Si el enlace se abre desde otro browser/dispositivo no se puede usar: la app lo avisa y sugiere iniciar sesión o reenviar. | Crítica | | |
 | AU-H-04 | Login de paciente confirmado | Cuenta confirmada | 1. `/login` 2. Paciente → signIn 3. Email + contraseña correctos | `AuthAuthenticated`; redirección por rol (paciente sin perfil completo → `/complete-profile`; completo → `/services`) | Crítica | | |
 | AU-H-05 | Login de especialista | `esp.aprobado` | 1. Login con credenciales de especialista | Redirección a `/specialist` | Crítica | | |
 | AU-H-06 | Login de admin | `admin@test` | 1. Login con credenciales de admin | Redirección a `/admin` | Crítica | | |
@@ -79,7 +79,7 @@ Flujo clínico del paciente (cuestionario/evaluación → doc 07), pagos del onb
 | AU-E-02 | `refreshProfile` tras edición | Sesión activa | 1. `updateProfile` | Perfil recargado sin pantalla de loading completa | Baja | | |
 | AU-E-03 | Aviso de cuenta pendiente | Perfil con `activo=false` | 1. Abrir `/profile` | Aviso "Cuenta pendiente de activación" visible | Media | | |
 | AU-E-04 | `AuthPasswordChanged` tras reset | Deep link recovery | 1. Completar reset | Estado emitido; sesión temporal cerrada; navegación a login | Alta | | |
-| AU-E-05 | `detached` limpia sesión local | Sesión activa | 1. Cerrar app hasta `detached` | Sesión local limpiada según ciclo de vida | Media | | |
+| AU-E-05 | `detached` limpia sesión local | Sesión activa | 1. Cerrar app hasta `detached` | **Cambiado (2026-08-17)**: web elimina solo el token de sesión (localStorage) y conserva el code verifier PKCE para enlaces pendientes; mobile conserva el signOut local de gotrue (sesión + verifier) | Media | | |
 
 ## 5. Red y edge cases
 

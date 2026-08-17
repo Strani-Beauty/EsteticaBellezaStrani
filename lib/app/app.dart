@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
+import 'package:esteticaybellezastrani/app/core/session_storage_cleaner.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/services/fcm_token_service.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
@@ -15,13 +17,16 @@ import 'package:esteticaybellezastrani/features/specialists/data/services/presen
 /// Punto de entrada de la aplicación.
 /// Provee AuthCubit globalmente (inyectado vía GetIt) y conecta GoRouter.
 class App extends StatelessWidget {
-  const App({super.key});
+  const App({super.key, this.startupNotice});
+
+  /// Aviso de arranque (p.ej. un enlace de auth que no pudo completarse).
+  final String? startupNotice;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AuthCubit>(
       create: (_) => sl<AuthCubit>()..checkCurrentSession(),
-      child: const _SessionLifecycleGate(),
+      child: _SessionLifecycleGate(startupNotice: startupNotice),
     );
   }
 }
@@ -29,7 +34,9 @@ class App extends StatelessWidget {
 /// Limpia la sesión local cuando la app/web se cierra o queda en segundo plano
 /// durante mucho tiempo, para no dejar un "usuario activo" en caché.
 class _SessionLifecycleGate extends StatefulWidget {
-  const _SessionLifecycleGate();
+  const _SessionLifecycleGate({this.startupNotice});
+
+  final String? startupNotice;
 
   @override
   State<_SessionLifecycleGate> createState() => _SessionLifecycleGateState();
@@ -45,6 +52,22 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
     WidgetsBinding.instance.addObserver(this);
     _listenRecoveryLink();
     sl<FcmTokenService>().init();
+    _showStartupNotice();
+  }
+
+  /// Muestra el aviso de arranque (enlace de auth fallido) tras el primer frame.
+  void _showStartupNotice() {
+    final notice = widget.startupNotice;
+    if (notice == null || notice.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(notice),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
   }
 
   /// Detecta el deep link de recovery de Supabase (email "¿Olvidaste tu
@@ -82,7 +105,17 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
         break;
       case AppLifecycleState.detached:
         presence.markOffline();
-        context.read<AuthCubit>().clearLocalSession();
+        // Cerrar la pestaña (web) no debe dejar un "usuario activo" en caché
+        // (siempre quedaba logueado al volver al login), pero tampoco debe
+        // borrar el code verifier de PKCE: un link de confirmación/recovery
+        // pendiente en ese browser necesita el verifier intacto. En web se
+        // elimina solo el token de sesión; en mobile se conserva el signOut
+        // local previo de gotrue.
+        if (kIsWeb) {
+          clearPersistedSessionKeepingPkceVerifier();
+        } else {
+          context.read<AuthCubit>().clearLocalSession();
+        }
         break;
     }
   }

@@ -12,15 +12,15 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await _bootstrap();
-    runApp(const App());
+    final startupNotice = await _bootstrap();
+    runApp(App(startupNotice: startupNotice));
   } catch (e, st) {
     debugPrint('FATAL: $e\n$st');
     runApp(_ErrorApp('$e'));
   }
 }
 
-Future<void> _bootstrap() async {
+Future<String?> _bootstrap() async {
   // 1. Cargar variables de entorno
   await dotenv.load(fileName: '.env').catchError((_) {});
 
@@ -50,6 +50,37 @@ Future<void> _bootstrap() async {
 
   // 4. Registrar dependencias (GetIt)
   setupDependencies();
+
+  // 5. Surfear un enlace de auth (confirmación/recovery) que falló en silencio
+  //    durante el intercambio PKCE de `Supabase.initialize`.
+  return _authCallbackNotice();
+}
+
+/// Devuelve un aviso amigable si la URL inicial es un callback de Supabase Auth
+/// (PKCE `code` o redirect con error) que no pudo completarse. `null` si no
+/// aplica o si la sesión se estableció correctamente.
+String? _authCallbackNotice() {
+  final uri = Uri.base;
+  final isAuthCallback = uri.queryParameters.containsKey('code') ||
+      uri.queryParameters.containsKey('error') ||
+      uri.queryParameters.containsKey('error_code') ||
+      uri.queryParameters.containsKey('error_description');
+  if (!isAuthCallback) return null;
+
+  final errorDescription =
+      uri.queryParameters['error_description'] ?? uri.queryParameters['error'];
+  if (errorDescription != null && errorDescription.trim().isNotEmpty) {
+    return 'No se pudo completar el enlace: $errorDescription';
+  }
+
+  // Con `code` presente y sin sesión tras initialize, el intercambio PKCE falló
+  // (verifier ausente, expirado o ya usado).
+  if (Supabase.instance.client.auth.currentUser == null) {
+    return 'El enlace de confirmación no se pudo usar (expiró, ya fue usado '
+        'o fue enviado desde otro navegador). Iniciá sesión o solicitá un '
+        'correo nuevo.';
+  }
+  return null;
 }
 
 /// Widget de fallback visible si la inicialización falla (en vez de pantalla blanca).

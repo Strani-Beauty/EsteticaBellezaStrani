@@ -23,15 +23,16 @@ class AvatarSelector extends StatelessWidget {
   });
 
   /// Avatares predefinidos (íconos pastel de la paleta Strani).
+  /// Cada preset identifica un perfil por edad y género (clave `avatar_N`).
   static const List<Map<String, dynamic>> presets = [
-    {'key': 'avatar_1', 'icon': Icons.face_rounded, 'color': Color(0xFFF7D6E0)},
-    {'key': 'avatar_2', 'icon': Icons.face_2_rounded, 'color': Color(0xFFBEE1E6)},
-    {'key': 'avatar_3', 'icon': Icons.face_3_rounded, 'color': Color(0xFFE2ECE9)},
-    {'key': 'avatar_4', 'icon': Icons.face_4_rounded, 'color': Color(0xFFFFF3CD)},
-    {'key': 'avatar_5', 'icon': Icons.face_5_rounded, 'color': Color(0xFFF7D6E0)},
-    {'key': 'avatar_6', 'icon': Icons.face_6_rounded, 'color': Color(0xFFBEE1E6)},
-    {'key': 'avatar_7', 'icon': Icons.sentiment_satisfied_alt, 'color': Color(0xFFE2ECE9)},
-    {'key': 'avatar_8', 'icon': Icons.emoji_emotions_rounded, 'color': Color(0xFFFFF3CD)},
+    {'key': 'avatar_1', 'label': 'Hombre joven', 'icon': Icons.face_3_rounded, 'color': Color(0xFFF7D6E0)},
+    {'key': 'avatar_2', 'label': 'Hombre adulto', 'icon': Icons.face_5_rounded, 'color': Color(0xFFBEE1E6)},
+    {'key': 'avatar_3', 'label': 'Mujer joven', 'icon': Icons.face_2_rounded, 'color': Color(0xFFE2ECE9)},
+    {'key': 'avatar_4', 'label': 'Mujer adulta', 'icon': Icons.face_6_rounded, 'color': Color(0xFFFFF3CD)},
+    {'key': 'avatar_5', 'label': 'Tercera edad hombre', 'icon': Icons.face_4_rounded, 'color': Color(0xFFF7D6E0)},
+    {'key': 'avatar_6', 'label': 'Tercera edad mujer', 'icon': Icons.face_rounded, 'color': Color(0xFFBEE1E6)},
+    {'key': 'avatar_7', 'label': 'Adulto mayor hombre', 'icon': Icons.emoji_emotions_rounded, 'color': Color(0xFFE2ECE9)},
+    {'key': 'avatar_8', 'label': 'Adulto mayor mujer', 'icon': Icons.sentiment_satisfied_alt, 'color': Color(0xFFFFF3CD)},
   ];
 
   /// Indica si `avatarUrl` es una clave de avatar predefinido.
@@ -81,19 +82,17 @@ class AvatarSelector extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        // Grid de predefinidos
-        GridView.count(
-          crossAxisCount: 4,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
+        // Fila única de predefinidos (tiles compactos con etiqueta)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final preset in presets)
-              _PresetTile(
-                preset: preset,
-                selected: avatarUrl == preset['key'],
-                onTap: () => onChanged(preset['key'] as String),
+              Expanded(
+                child: _PresetTile(
+                  preset: preset,
+                  selected: avatarUrl == preset['key'],
+                  onTap: () => onChanged(preset['key'] as String),
+                ),
               ),
           ],
         ),
@@ -192,7 +191,7 @@ class _Preview extends StatelessWidget {
   }
 }
 
-/// Tile de un avatar predefinido.
+/// Tile de un avatar predefinido (avatar circular pequeño + etiqueta).
 class _PresetTile extends StatelessWidget {
   final Map<String, dynamic> preset;
   final bool selected;
@@ -210,24 +209,46 @@ class _PresetTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          border: Border.all(
-            color: selected
-                ? AppTheme.cDeepAccent
-                : Colors.transparent,
-            width: 3,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border: Border.all(
+                color: selected
+                    ? AppTheme.cDeepAccent
+                    : Colors.transparent,
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                preset['icon'] as IconData,
+                size: 20,
+                color: AppTheme.cDeepAccent,
+              ),
+            ),
           ),
-        ),
-        child: Center(
-          child: Icon(
-            preset['icon'] as IconData,
-            size: 26,
-            color: AppTheme.cDeepAccent,
+          const SizedBox(height: 4),
+          Text(
+            preset['label'] as String,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 8,
+              height: 1.1,
+              color: selected
+                  ? AppTheme.cDeepAccent
+                  : AppTheme.cMutedText,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

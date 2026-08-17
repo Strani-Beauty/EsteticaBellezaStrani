@@ -91,3 +91,20 @@ class SubirDocumento
     );
   }
 }
+
+class GenerarUrlFirmadaDocumentoParams {
+  final String path;
+  const GenerarUrlFirmadaDocumentoParams(this.path);
+}
+
+/// Genera una URL firmada de expiración corta para leer un documento privado.
+class GenerarUrlFirmadaDocumento
+    extends UseCase<String, GenerarUrlFirmadaDocumentoParams> {
+  final ISpecialistsRepository _repository;
+  GenerarUrlFirmadaDocumento(this._repository);
+
+  @override
+  Future<Either<Failure, String>> call(GenerarUrlFirmadaDocumentoParams params) {
+    return _repository.generarUrlFirmadaDocumento(params.path);
+  }
+}

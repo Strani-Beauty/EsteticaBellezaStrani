@@ -1,10 +1,15 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
 import '../cubits/specialists_cubit.dart';
 
-/// Sección de documentos del especialista con registro para revisión.
+/// Sección de documentos del especialista: subida de archivos para revisión
+/// y vista de cada documento vía URL firmada (bucket privado).
 class DocumentosSection extends StatelessWidget {
   final String especialistaId;
   final List<DocumentoEspecialistaEntity> documentos;
@@ -30,7 +35,7 @@ class DocumentosSection extends StatelessWidget {
                       style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 TextButton.icon(
-                  onPressed: () => _showRegisterDialog(context),
+                  onPressed: () => _showSubirDialog(context),
                   icon: const Icon(Icons.upload_file_rounded, size: 18),
                   label: const Text('Subir'),
                 ),
@@ -39,13 +44,16 @@ class DocumentosSection extends StatelessWidget {
             if (documentos.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('No has registrado documentos todavía.',
+                child: Text('No has subido documentos todavía.',
                     style: TextStyle(color: AppTheme.cMutedText)),
               )
             else
               ...documentos.map((doc) => Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: _DocumentoFila(documento: doc),
+                    child: _DocumentoFila(
+                      documento: doc,
+                      onVer: () => _abrirDocumento(context, doc),
+                    ),
                   )),
           ],
         ),
@@ -53,7 +61,7 @@ class DocumentosSection extends StatelessWidget {
     );
   }
 
-  Future<void> _showRegisterDialog(BuildContext context) async {
+  Future<void> _showSubirDialog(BuildContext context) async {
     final tipo = await showDialog<TipoDocumento>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -61,23 +69,61 @@ class DocumentosSection extends StatelessWidget {
         children: TipoDocumento.values
             .map((t) => SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, t),
-                  child: Text(t.toDb),
+                  child: Text(_labels[t] ?? t.toDb),
                 ))
             .toList(),
       ),
     );
     if (tipo == null || !context.mounted) return;
 
-    context.read<SpecialistsCubit>().registerDocument(
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.any,
+    );
+    final picked = result?.files.single;
+    if (picked == null || picked.bytes == null || !context.mounted) return;
+
+    context.read<SpecialistsCubit>().uploadDocument(
           especialistaId: especialistaId,
           tipoDocumento: tipo,
+          bytes: Uint8List.fromList(picked.bytes!),
+          nombreArchivo: picked.name,
         );
+  }
+
+  Future<void> _abrirDocumento(
+      BuildContext context, DocumentoEspecialistaEntity documento) async {
+    final path = documento.urlArchivo;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Este documento no tiene archivo adjunto.')),
+      );
+      return;
+    }
+    final url = await context
+        .read<SpecialistsCubit>()
+        .generarUrlFirmadaDocumento(path);
+    if (url == null || !context.mounted) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el documento.')),
+        );
+      }
+    }
   }
 }
 
 class _DocumentoFila extends StatelessWidget {
   final DocumentoEspecialistaEntity documento;
-  const _DocumentoFila({required this.documento});
+  final VoidCallback onVer;
+
+  const _DocumentoFila({required this.documento, required this.onVer});
 
   @override
   Widget build(BuildContext context) {
@@ -100,7 +146,7 @@ class _DocumentoFila extends StatelessWidget {
                 : Icons.description_outlined,
         color: color,
       ),
-      title: Text(documento.tipoDocumento.toDb),
+      title: Text(_labels[documento.tipoDocumento] ?? documento.tipoDocumento.toDb),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -115,7 +161,26 @@ class _DocumentoFila extends StatelessWidget {
             ),
         ],
       ),
-      trailing: Text('v${documento.versionDocumento}'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('v${documento.versionDocumento}'),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: 'Ver documento',
+            icon: const Icon(Icons.visibility_outlined, size: 20),
+            onPressed: onVer,
+          ),
+        ],
+      ),
     );
   }
 }
+
+const Map<TipoDocumento, String> _labels = {
+  TipoDocumento.identificacion: 'Identificación oficial',
+  TipoDocumento.licencia: 'Licencia profesional',
+  TipoDocumento.diploma: 'Diploma',
+  TipoDocumento.certificacion: 'Certificación',
+  TipoDocumento.otro: 'Otro',
+};

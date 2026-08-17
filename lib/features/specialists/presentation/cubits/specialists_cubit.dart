@@ -149,6 +149,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final GetEspecialistaEspecialidades _getEspecialidadesDelEspecialista;
   final SolicitarVerificacion _solicitarVerificacion;
   final RevisarDocumento _revisarDocumento;
+  final GenerarUrlFirmadaDocumento _generarUrlFirmadaDocumento;
 
   SpecialistsCubit({
     required GetMySpecialist getMySpecialist,
@@ -173,6 +174,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required GetEspecialistaEspecialidades getEspecialidadesDelEspecialista,
     required SolicitarVerificacion solicitarVerificacion,
     required RevisarDocumento revisarDocumento,
+    required GenerarUrlFirmadaDocumento generarUrlFirmadaDocumento,
   })  : _getMySpecialist = getMySpecialist,
         _createEspecialista = createEspecialista,
         _getMedicosRegentes = getMedicosRegentes,
@@ -195,6 +197,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _getEspecialidadesDelEspecialista = getEspecialidadesDelEspecialista,
         _solicitarVerificacion = solicitarVerificacion,
         _revisarDocumento = revisarDocumento,
+        _generarUrlFirmadaDocumento = generarUrlFirmadaDocumento,
         super(const SpecialistsInitial());
 
   /// Carga el tablero completo del especialista.
@@ -494,6 +497,21 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
       (doc) => emit(current.copyWith(documentos: [...current.documentos, doc])),
+    );
+  }
+
+  /// Genera una URL firmada para abrir un documento privado.
+  /// Devuelve null si falla (emite `SpecialistsError` para el SnackBar).
+  Future<String?> generarUrlFirmadaDocumento(String path) async {
+    final result = await _generarUrlFirmadaDocumento(
+      GenerarUrlFirmadaDocumentoParams(path),
+    );
+    return result.fold(
+      (f) {
+        emit(SpecialistsError(f.message));
+        return null;
+      },
+      (url) => url,
     );
   }
 

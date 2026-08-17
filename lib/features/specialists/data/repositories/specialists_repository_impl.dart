@@ -277,6 +277,16 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String>> generarUrlFirmadaDocumento(String path) async {
+    try {
+      final url = await _dataSource.crearUrlFirmada(path);
+      return Right(url);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   // ── Presencia (online/offline) ───────────────────────────────
   @override
   Future<Either<Failure, void>> marcarPresencia(

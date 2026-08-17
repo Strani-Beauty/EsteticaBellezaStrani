@@ -51,6 +51,7 @@ SpecialistsCubit _buildCubit(MockISpecialistsRepository repo) {
     getEspecialidadesDelEspecialista: GetEspecialistaEspecialidades(repo),
     solicitarVerificacion: SolicitarVerificacion(repo),
     revisarDocumento: RevisarDocumento(repo),
+    generarUrlFirmadaDocumento: GenerarUrlFirmadaDocumento(repo),
   );
 }
 

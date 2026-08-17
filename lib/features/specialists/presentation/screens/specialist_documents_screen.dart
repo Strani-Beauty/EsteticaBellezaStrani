@@ -10,6 +10,7 @@ import '../../../../app/config/app_theme.dart';
 import '../../../auth_users/presentation/cubits/auth_cubit.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
 import '../cubits/specialists_cubit.dart';
+import '../widgets/documentos_requeridos.dart';
 
 /// Pantalla obligatoria de documentos requeridos al registrarse como
 /// especialista. Fuerza la subida de los documentos indispensables
@@ -29,12 +30,12 @@ class SpecialistDocumentsScreen extends StatefulWidget {
 }
 
 class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
-  static const _requeridos = [TipoDocumento.identificacion, TipoDocumento.licencia];
+  static final _requeridos = requisitosDocumentos;
 
   bool _uploading = false;
 
-  List<TipoDocumento> get _pendientes => _requeridos
-      .where((t) => !_documentos.any((d) => d.tipoDocumento == t && d.activo))
+  List<RequisitoDocumento> get _pendientes => _requeridos
+      .where((r) => !_documentos.any((d) => d.activo && r.loCumple(d)))
       .toList();
 
   bool get _completo => _pendientes.isEmpty;
@@ -116,11 +117,12 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
                   ),
                   const SizedBox(height: 16),
                   ..._requeridos.map(
-                    (tipo) => _DocumentoTile(
-                      tipo: tipo,
-                      subido: _documentos.any((d) => d.tipoDocumento == tipo && d.activo),
+                    (requisito) => _DocumentoTile(
+                      requisito: requisito,
+                      subido: _documentos
+                          .any((d) => d.activo && requisito.loCumple(d)),
                       cargando: _uploading,
-                      onSelect: () => _seleccionarArchivo(tipo),
+                      onSelect: () => _seleccionarArchivo(requisito),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -151,7 +153,24 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     );
   }
 
-  Future<void> _seleccionarArchivo(TipoDocumento tipo) async {
+  Future<void> _seleccionarArchivo(RequisitoDocumento requisito) async {
+    var tipo = requisito.tipo;
+    if (requisito.alternativas.isNotEmpty) {
+      final elegido = await showDialog<TipoDocumento>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: const Text('¿Qué documento adjuntarás?'),
+          children: tiposDeRequisito(requisito)
+              .map((t) => SimpleDialogOption(
+                    onPressed: () => Navigator.pop(ctx, t),
+                    child: Text(_labels[t] ?? t.toDb),
+                  ))
+              .toList(),
+        ),
+      );
+      if (elegido == null || !mounted) return;
+      tipo = elegido;
+    }
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
       type: FileType.any,
@@ -181,13 +200,13 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
 }
 
 class _DocumentoTile extends StatelessWidget {
-  final TipoDocumento tipo;
+  final RequisitoDocumento requisito;
   final bool subido;
   final bool cargando;
   final VoidCallback onSelect;
 
   const _DocumentoTile({
-    required this.tipo,
+    required this.requisito,
     required this.subido,
     required this.cargando,
     required this.onSelect,
@@ -210,7 +229,7 @@ class _DocumentoTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_labels[tipo]!,
+                  Text(requisito.label,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   Text(
                     subido ? 'Completado' : 'Pendiente',
@@ -219,6 +238,12 @@ class _DocumentoTile extends StatelessWidget {
                       color: subido ? AppTheme.cBrandGreen : AppTheme.cMutedText,
                     ),
                   ),
+                  if (!subido && requisito.alternativas.isNotEmpty)
+                    Text(
+                      requisito.descripcion,
+                      style: const TextStyle(
+                          fontSize: 11, color: AppTheme.cMutedText),
+                    ),
                 ],
               ),
             ),
@@ -245,4 +270,7 @@ class _DocumentoTile extends StatelessWidget {
 const Map<TipoDocumento, String> _labels = {
   TipoDocumento.identificacion: 'Identificación oficial (Cédula o pasaporte)',
   TipoDocumento.licencia: 'Licencia profesional',
+  TipoDocumento.diploma: 'Diploma',
+  TipoDocumento.certificacion: 'Certificación',
+  TipoDocumento.otro: 'Otro',
 };

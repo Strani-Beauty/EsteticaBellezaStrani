@@ -7,10 +7,10 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/a
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
 import '../cubits/specialists_cubit.dart';
 import '../../domain/entities/contrato_entity.dart';
-import '../../domain/entities/documento_especialista_entity.dart';
 import '../../domain/entities/especialista_entity.dart';
 import '../widgets/disponibilidad_card.dart';
 import '../widgets/documentos_section.dart';
+import '../widgets/documentos_requeridos.dart';
 
 /// Panel del especialista — carga perfil, verificación, disponibilidad,
 /// documentos y contrato vía [SpecialistsCubit].
@@ -115,9 +115,7 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
   }
 
   bool _tieneDocumentosRequeridos(SpecialistsLoaded state) {
-    const requeridos = [TipoDocumento.identificacion, TipoDocumento.licencia];
-    return requeridos.every((t) =>
-        state.documentos.any((d) => d.tipoDocumento == t && d.activo));
+    return tieneDocumentosRequeridos(state.documentos);
   }
 
   Widget _buildDashboard(BuildContext context, SpecialistsLoaded state) {

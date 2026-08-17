@@ -181,6 +181,8 @@ void _registerSpecialists() {
           GetEspecialistaEspecialidades(sl<ISpecialistsRepository>()),
       solicitarVerificacion: SolicitarVerificacion(sl<ISpecialistsRepository>()),
       revisarDocumento: RevisarDocumento(sl<ISpecialistsRepository>()),
+      generarUrlFirmadaDocumento:
+          GenerarUrlFirmadaDocumento(sl<ISpecialistsRepository>()),
     ),
   );
 }

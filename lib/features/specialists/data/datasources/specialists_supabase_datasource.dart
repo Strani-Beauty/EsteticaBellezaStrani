@@ -288,7 +288,8 @@ class SpecialistsSupabaseDataSource {
   }
 
   /// Sube los bytes del documento al bucket y registra la fila en la BD.
-  /// Devuelve el documento ya guardado con su URL pública.
+  /// El bucket es privado: `url_archivo` guarda el path de storage (lo que
+  /// requiere `createSignedUrl` para leerse).
   Future<DocumentoEspecialistaModel> subirDocumento({
     required String especialistaId,
     required TipoDocumento tipoDocumento,
@@ -299,20 +300,24 @@ class SpecialistsSupabaseDataSource {
     final ext = _extension(nombreArchivo);
     final path = '$especialistaId/${DateTime.now().millisecondsSinceEpoch}.$ext';
 
-    final uploadResult = await _client.storage
+    await _client.storage
         .from(AppConstants.bucketDocumentos)
         .uploadBinary(path, bytes);
-    final publicUrl = _client.storage
-        .from(AppConstants.bucketDocumentos)
-        .getPublicUrl(uploadResult);
 
     return registerDocumento(
       especialistaId: especialistaId,
       tipoDocumento: tipoDocumento,
       nombreArchivo: nombreArchivo,
-      urlArchivo: publicUrl,
+      urlArchivo: path,
       versionDocumento: versionDocumento,
     );
+  }
+
+  /// Genera una URL firmada de expiración corta para leer un documento privado.
+  Future<String> crearUrlFirmada(String path) async {
+    return _client.storage
+        .from(AppConstants.bucketDocumentos)
+        .createSignedUrl(path, 3600);
   }
 
   /// Aprueba o rechaza un documento (uso administrativo). Al rechazar deja

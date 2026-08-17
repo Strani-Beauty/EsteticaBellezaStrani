@@ -96,6 +96,9 @@ abstract class ISpecialistsRepository {
     required String revisadoPor,
   });
 
+  /// Genera una URL firmada de expiración corta para leer un documento privado.
+  Future<Either<Failure, String>> generarUrlFirmadaDocumento(String path);
+
   // ── Presencia (online/offline) ───────────────────────────────
   /// Marca el estado de presencia (heartbeat) del especialista.
   Future<Either<Failure, void>> marcarPresencia(

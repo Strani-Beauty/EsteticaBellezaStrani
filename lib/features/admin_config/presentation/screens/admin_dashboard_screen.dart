@@ -571,7 +571,7 @@ class _DocumentoFila extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Ver documento',
                 icon: const Icon(Icons.visibility_outlined, size: 20),
-                onPressed: () => _abrirDocumento(context, documento.urlArchivo),
+                onPressed: () => _abrirDocumento(context, documento),
               ),
             ],
           ),
@@ -620,13 +620,18 @@ class _DocumentoFila extends StatelessWidget {
     );
   }
 
-  Future<void> _abrirDocumento(BuildContext context, String? url) async {
-    if (url == null || url.isEmpty) {
+  Future<void> _abrirDocumento(
+      BuildContext context, DocumentoEspecialistaEntity documento) async {
+    final path = documento.urlArchivo;
+    if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Este documento no tiene archivo adjunto.')),
       );
       return;
     }
+    final url =
+        await context.read<SpecialistsCubit>().generarUrlFirmadaDocumento(path);
+    if (url == null || !context.mounted) return;
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     try {

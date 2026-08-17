@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/config/app_constants.dart';
+import '../../domain/entities/adelanto_servicio_entity.dart';
 import '../models/pago_model.dart';
 import '../models/payment_intent_model.dart';
 
@@ -24,6 +25,7 @@ class PaymentsSupabaseDataSource {
   }
 
   /// Lee el depósito configurado en `configuracion_sistema` (default $30).
+  /// Solo aplica a la cuota inicial de Qualify (telemedicina/medicina interna).
   Future<double> _getDepositoReserva() async {
     try {
       final res = await _client
@@ -36,6 +38,31 @@ class PaymentsSupabaseDataSource {
     } catch (_) {
       return AppConstants.depositoInicial;
     }
+  }
+
+  /// Lee el porcentaje de adelanto de servicios en `configuracion_sistema`
+  /// (default 50%).
+  Future<double> _getAdelantoPorcentaje() async {
+    try {
+      final res = await _client
+          .from('configuracion_sistema')
+          .select('valor')
+          .eq('clave', 'adelanto_porcentaje')
+          .maybeSingle();
+      final pct = double.tryParse(res?['valor']?.toString() ?? '');
+      return (pct == null || pct <= 0) ? 50.0 : pct;
+    } catch (_) {
+      return 50.0;
+    }
+  }
+
+  /// Calcula el adelanto de un servicio: porcentaje configurado aplicado al
+  /// precio total, redondeado a 2 decimales.
+  Future<AdelantoServicioEntity> calcularAdelanto(
+      double servicePrice) async {
+    final pct = await _getAdelantoPorcentaje();
+    final monto = (servicePrice * pct / 100 * 100).round() / 100;
+    return AdelantoServicioEntity(porcentaje: pct, monto: monto);
   }
 
   Future<String?> _getDireccionPrincipal(String pacienteId) async {
@@ -187,12 +214,14 @@ class PaymentsSupabaseDataSource {
 
   // ── Pago de servicio del catálogo (depósito o totalidad) ──
 
-  /// Reserva un servicio específico: depósito parcial o pago total.
+  /// Reserva un servicio específico: adelanto parcial o pago total.
+  /// `montoAPagar` es el monto ya cobrado por Stripe (adelanto o totalidad).
   Future<String?> createServicePayment({
     required String profileId,
     required String servicioId,
     required double servicePrice,
     required bool payFullAmount,
+    required double montoAPagar,
     required String stripePaymentRef,
   }) async {
     final pacienteId = await _ensurePaciente(profileId);
@@ -206,8 +235,6 @@ class PaymentsSupabaseDataSource {
     }
 
     final direccionId = await _getDireccionPrincipal(pacienteId);
-    final deposito = await _getDepositoReserva();
-    final montoAPagar = payFullAmount ? servicePrice : deposito;
     final saldoPendiente =
         (servicePrice - montoAPagar).clamp(0.0, double.infinity);
     final now = DateTime.now().toIso8601String();
@@ -220,7 +247,7 @@ class PaymentsSupabaseDataSource {
           ? AppConstants.solicitudPublicada
           : AppConstants.solicitudBorrador,
       'fecha_solicitud': now,
-      'deposito_requerido': deposito,
+      'deposito_requerido': montoAPagar,
       'deposito_pagado': true,
     }).select('id').maybeSingle();
     final solicitudId = solRes?['id'] as String?;
@@ -231,15 +258,16 @@ class PaymentsSupabaseDataSource {
     await _client.from('pagos').insert({
       'solicitud_id': solicitudId,
       'monto_total': servicePrice,
-      'deposito': deposito,
+      'deposito': montoAPagar,
       'saldo_pendiente': saldoPendiente,
-      'estado': payFullAmount ? 'PAGADO' : 'PARCIAL',
+      'estado': montoAPagar >= servicePrice ? 'PAGADO' : 'PARCIAL',
     });
 
     await _client.from('transacciones').insert({
       'solicitud_id': solicitudId,
       'paciente_id': pacienteId,
-      'tipo_transaccion': payFullAmount ? 'PAGO_TOTAL' : 'DEPÓSITO',
+      'tipo_transaccion':
+          payFullAmount ? 'PAGO_TOTAL' : AppConstants.txDeposito,
       'monto': montoAPagar,
       'moneda': 'USD',
       'estado': 'APROBADO',

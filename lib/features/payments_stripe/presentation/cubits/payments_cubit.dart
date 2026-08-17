@@ -132,13 +132,14 @@ class PaymentsCubit extends Cubit<PaymentsState> {
     );
   }
 
-  /// Reserva un servicio del catálogo (depósito o totalidad).
+  /// Reserva un servicio del catálogo (adelanto o totalidad).
   Future<String?> pagarServicio({
     required String profileId,
     required String servicioId,
     required String serviceTitle,
     required double servicePrice,
     required bool payFullAmount,
+    required double montoAPagar,
     required String stripePaymentRef,
   }) async {
     final result = await _pagarServicio(PagarServicioParams(
@@ -147,6 +148,7 @@ class PaymentsCubit extends Cubit<PaymentsState> {
       serviceTitle: serviceTitle,
       servicePrice: servicePrice,
       payFullAmount: payFullAmount,
+      montoAPagar: montoAPagar,
       stripePaymentRef: stripePaymentRef,
     ));
     return result.fold(

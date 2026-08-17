@@ -1,3 +1,4 @@
+import '../entities/adelanto_servicio_entity.dart';
 import '../entities/pago_entity.dart';
 import '../entities/payment_intent_entity.dart';
 
@@ -20,14 +21,19 @@ abstract class IPaymentsRepository {
     required String paymentReference,
   });
 
-  /// Reserva un servicio del catálogo (depósito parcial o pago total).
+  /// Reserva un servicio del catálogo (adelanto parcial o pago total).
+  /// `montoAPagar` es el monto ya cobrado por Stripe.
   Future<String?> createServicePayment({
     required String profileId,
     required String servicioId,
     required double servicePrice,
     required bool payFullAmount,
+    required double montoAPagar,
     required String stripePaymentRef,
   });
+
+  /// Calcula el adelanto de un servicio (porcentaje configurado del total).
+  Future<AdelantoServicioEntity> calcularAdelanto(double servicePrice);
 
   /// Cobra el saldo restante al finalizar un tratamiento (transacción SALDO).
   /// Devuelve `false` si no había saldo pendiente.

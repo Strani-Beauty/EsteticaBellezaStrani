@@ -11,13 +11,14 @@ import 'package:esteticaybellezastrani/features/catalog_services/domain/entities
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/adelanto_servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 
 /// Dashboard de catálogo de servicios — Vista post-evaluación para clientes/pacientes.
 /// Los servicios y categorías se cargan desde Supabase (`servicios`, `categorias_servicio`).
-/// Permite ingresar a cualquier servicio para cancelar parte (depósito) o la totalidad,
-/// condicionado a contar con evaluación médica vigente (< 1 año).
+/// Permite ingresar a cualquier servicio para cancelar un adelanto (porcentaje del
+/// total) o la totalidad, condicionado a contar con evaluación médica vigente (< 1 año).
 class ServicesDashboardScreen extends StatefulWidget {
   const ServicesDashboardScreen({super.key});
 
@@ -222,11 +223,21 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     );
   }
 
-  void _showPaymentOptionsModal(ServicioEntity service) {
+  Future<void> _showPaymentOptionsModal(ServicioEntity service) async {
     final title = service.nombre;
     final price = service.precioBase;
-    const deposito = 30.0;
 
+    // Adelanto = porcentaje configurado del total (configuracion_sistema).
+    AdelantoServicioEntity? adelanto;
+    try {
+      adelanto = await sl<IPaymentsRepository>().calcularAdelanto(price);
+    } catch (e) {
+      debugPrint('⚠️ [_showPaymentOptionsModal] calcularAdelanto: $e');
+    }
+    final adelantoMonto = adelanto?.monto ?? (price * 0.5);
+    final porcentaje = adelanto?.porcentaje ?? 50;
+
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -281,7 +292,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
               ),
               const SizedBox(height: 14),
               Text(
-                'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar una parte (depósito) o la totalidad:',
+                'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar un adelanto del ${porcentaje.toStringAsFixed(0)}% o la totalidad:',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -301,10 +312,13 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                     serviceTitle: title,
                     servicePrice: price,
                     payFullAmount: false,
+                    montoAPagar: adelantoMonto,
                   );
                 },
                 icon: const Icon(Icons.bookmark_add_rounded, size: 18),
-                label: Text('Cancelar Depósito (\$$deposito USD)'),
+                label: Text(
+                  'Pagar Adelanto (\$${adelantoMonto.toStringAsFixed(2)} · ${porcentaje.toStringAsFixed(0)}%)',
+                ),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
@@ -315,6 +329,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
                     serviceTitle: title,
                     servicePrice: price,
                     payFullAmount: true,
+                    montoAPagar: price,
                   );
                 },
                 icon: const Icon(Icons.check_circle_rounded, size: 18),
@@ -332,16 +347,15 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     required String serviceTitle,
     required double servicePrice,
     required bool payFullAmount,
+    required double montoAPagar,
   }) async {
     final user = SupabaseService.currentUser;
     if (user == null) return;
 
     // Pago real con Stripe (o simulado si no hay clave configurada)
-    const deposito = 30.0;
-    final montoAPagar = payFullAmount ? servicePrice : deposito;
     final stripeRef = await procesarPagoStripe(
       monto: montoAPagar,
-      concepto: payFullAmount ? 'PAGO_TOTAL' : 'DEPOSITO',
+      concepto: payFullAmount ? 'PAGO_TOTAL' : 'ADELANTO',
     );
     if (stripeRef == null) {
       if (mounted) {
@@ -367,6 +381,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         servicioId: servicioId,
         servicePrice: servicePrice,
         payFullAmount: payFullAmount,
+        montoAPagar: montoAPagar,
         stripePaymentRef: stripeRef,
       );
     } catch (e) {

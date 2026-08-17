@@ -10,6 +10,7 @@ class PagarServicioParams {
   final String serviceTitle;
   final double servicePrice;
   final bool payFullAmount;
+  final double montoAPagar;
   final String stripePaymentRef;
 
   const PagarServicioParams({
@@ -18,11 +19,12 @@ class PagarServicioParams {
     required this.serviceTitle,
     required this.servicePrice,
     required this.payFullAmount,
+    required this.montoAPagar,
     required this.stripePaymentRef,
   });
 }
 
-/// Reserva un servicio del catálogo pagando depósito o totalidad.
+/// Reserva un servicio del catálogo pagando adelanto o totalidad.
 class PagarServicio extends UseCase<String?, PagarServicioParams> {
   final IPaymentsRepository _repository;
 
@@ -36,6 +38,7 @@ class PagarServicio extends UseCase<String?, PagarServicioParams> {
         servicioId: params.servicioId,
         servicePrice: params.servicePrice,
         payFullAmount: params.payFullAmount,
+        montoAPagar: params.montoAPagar,
         stripePaymentRef: params.stripePaymentRef,
       );
       return Right(solicitudId);

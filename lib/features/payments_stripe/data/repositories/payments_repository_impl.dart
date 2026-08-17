@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../domain/entities/adelanto_servicio_entity.dart';
 import '../../domain/entities/pago_entity.dart';
 import '../../domain/entities/payment_intent_entity.dart';
 import '../../domain/repositories/i_payments_repository.dart';
@@ -53,6 +54,7 @@ class PaymentsRepositoryImpl implements IPaymentsRepository {
     required String servicioId,
     required double servicePrice,
     required bool payFullAmount,
+    required double montoAPagar,
     required String stripePaymentRef,
   }) async {
     try {
@@ -61,10 +63,21 @@ class PaymentsRepositoryImpl implements IPaymentsRepository {
         servicioId: servicioId,
         servicePrice: servicePrice,
         payFullAmount: payFullAmount,
+        montoAPagar: montoAPagar,
         stripePaymentRef: stripePaymentRef,
       );
     } catch (e) {
       debugPrint('❌ [createServicePayment] $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<AdelantoServicioEntity> calcularAdelanto(double servicePrice) async {
+    try {
+      return await _dataSource.calcularAdelanto(servicePrice);
+    } catch (e) {
+      debugPrint('❌ [calcularAdelanto] $e');
       rethrow;
     }
   }

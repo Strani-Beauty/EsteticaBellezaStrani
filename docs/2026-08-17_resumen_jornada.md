@@ -1,18 +1,20 @@
 # Resumen de jornada — 2026-08-17
 
 - **Fecha**: 2026-08-17
-- **Rama**: `main` (sincronizada con `origin/main` en `36b9ab5`; trabajo de la mañana pusheado).
-- **Flutter**: SDK actualizado a **3.44.9** (ver bloque 3).
+- **Rama**: `main` (sincronizada con `origin/main` en `a4ec43e`; trabajo de la mañana pusheado).
+- **Flutter**: SDK en **3.44.9** (ver bloque 3).
 
-Tres ciclos de trabajo hoy:
+Cinco ciclos de trabajo hoy:
 
 | Ciclo | Estado | Commit |
 |---|---|---|
 | 1. Fix confirmación de correo PKCE | ✅ Pusheado | `191b563` |
 | 2. Documentos de compliance + storage privado | ✅ Pusheado | `36b9ab5` |
-| 3. Upgrade Flutter 3.44.9 + cerrar deuda `dart:html` | 🚧 Implementado y verificado, **sin commit** | — |
+| 3. Upgrade Flutter 3.44.9 + cerrar deuda `dart:html` | ✅ Pusheado | `2bf3140` |
+| 4. Face map reutilizable por servicio | ✅ Pusheado | `a4ec43e` |
+| 5. Adelanto porcentual configurable para pago de servicios | 🚧 Implementado y verificado, **sin commit** | — |
 
-Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_correo_pkce.md`, `2026-08-17_documentos_compliance_storage_privado.md`, `2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`.
+Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_correo_pkce.md`, `2026-08-17_documentos_compliance_storage_privado.md`, `2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`, `2026-08-17_face_map_servicio_estado_tratamiento.md`, `2026-08-17_adelanto_porcentual_servicios.md`.
 
 ---
 
@@ -53,7 +55,7 @@ Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_co
 
 ---
 
-## 3. Upgrade Flutter 3.44.9 + cerrar deuda `dart:html` — 🚧 SIN COMMIT
+## 3. Upgrade Flutter 3.44.9 + cerrar deuda `dart:html` — `2bf3140` ✅
 
 **Objetivo aprobado**: actualizar el SDK a **3.44.9** (patch de la línea actual, no 3.47.0), migrar `session_storage_cleaner_web.dart` a `package:web` y subir `supabase_flutter` 2.5.0 → 2.16.0. **Sin deploy** (solo build de verificación). Fases 1-3 juntas.
 
@@ -76,20 +78,53 @@ Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_co
 - `flutter analyze` sin issues; `flutter test` 80/80 (post-clean); `flutter build web` ✓ Built.
 - Plan persistido en `docs/plans/2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`.
 
+### Commit
+- `2bf3140` "Actualiza Flutter a 3.44.9 y cierra deuda dart:html: cleaner web con package:web y supabase_flutter 2.16.0" → pusheado a `main` (36b9ab5..2bf3140).
+
 ### Pendiente
 - [ ] Smoke test manual en browser (checklist en el plan): login/registro PKCE, logout web (solo `sb-*-auth-token` en Local Storage), subida de documentos → URL firmada, revisión admin con observación, vista rápida de mapa/firma/stripe/avatar.
-- [ ] Commit + push (requiere confirmación del usuario; mensaje en español).
 
-### Working tree actual (sin commitear)
-- `lib/app/core/session_storage_cleaner_web.dart` (migrado a `package:web`)
-- `pubspec.yaml` (`web ^1.1.1`, `supabase_flutter ^2.16.0`)
-- `pubspec.lock` (resolución nueva)
-- `docs/plans/2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md` (nuevo)
+---
+
+## 4. Face map reutilizable por servicio — `a4ec43e` ✅
+
+**Objetivo aprobado**: al re-seleccionar un servicio inyectable, si el tratamiento aún no está cerrado, mostrar los puntos ya seleccionados por el paciente (solo lectura + "Continuar al Pago"); solo pedir editar puntos al iniciar otro tratamiento del mismo tipo (pre-cargando los puntos previos).
+
+**Definición de "tratamiento cerrado" (acordada con el usuario)**: tratamiento aplicado (todos los productos, todos los puntos, especialista informa) **y pagado en su totalidad** → `tratamientos.estado = 'COMPLETADO'` para ese servicio **y** `pagos.saldo_pendiente = 0`. Cualquier otro caso (sin fila, `INICIADO/EN_PROCESO/PENDIENTE_FIRMA`, `CANCELADO`) = no cerrado → mostrar puntos guardados.
+
+**Cambios**:
+- **Migración `20260817010000_face_map_servicio_y_puntos.sql`** (aplicada al remoto): `face_maps.servicio_id` + índice `(paciente_id, servicio_id)`; `face_map_puntos.punto_id` + `vista` + índice `face_map_id`.
+- `SupabaseService.saveFaceMapRecord` ahora guarda `servicio_id` y por punto `punto_id`/`vista`; nuevo `getFaceMapPorServicio({profileId, servicioId})` → último mapa del paciente+servicio con `tratamientoCerrado` (consulta `citas→tratamientos(estado)` por `solicitud_id` + `pagos.saldo_pendiente`).
+- `IPatientsComplianceRepository` + impl espejados; **backfill** `face_maps.solicitud_id` en `createServicePayment` (el face map se guarda antes de que exista la solicitud → trazabilidad a tratamiento/pago).
+- Face map screen: params `servicioId`/`soloLectura`/`puntosIniciales`, modo lectura (banner, oculta barra rápida/notas/borrado, botón "Continuar al Pago" → `pop('continuar')`), pre-carga en edición, `FaceMapParams` (ruta retro-compatible con `String`), helper `reconstruirPuntosFaceMap` (agrupa por `punto_id`/`vista`, fallback por label).
+- `services_dashboard_screen.dart`: consulta `getFaceMapPorServicio` → lectura si hay mapa y no cerrado (→ 'continuar' abre pago) o edición pre-cargada.
+
+**Verificación**: `flutter analyze` sin issues; `flutter test` 80/80; migración aplicada al remoto (remoto en `20260817010000`).
+
+---
+
+## 5. Adelanto porcentual configurable para pago de servicios — 🚧 SIN COMMIT
+
+**Objetivo aprobado**: el pago de $30 (cuota inicial / Qualify) cubre la telemedicina o el servicio médico interno y es obligatorio → **no se modifica**. Al pagar un servicio del catálogo debe ofrecerse un **adelanto porcentual del total** (configurable) o el servicio completo — no un "depósito" fijo de $30. El cobro del saldo al finalizar se mantiene como hoy (decisión diferida: se definirá la mejor fecha al desarrollar citas y tratamientos).
+
+**Cambios**:
+- **Migración `20260817010001_adelanto_porcentaje.sql`** (aplicada al remoto): seed `adelanto_porcentaje = 50` en `configuracion_sistema`. `deposito_reserva` ($30, cuota Qualify) intacto.
+- `AdelantoServicioEntity(porcentaje, monto)` (nuevo); datasource: `_getAdelantoPorcentaje()` (default 50) + `calcularAdelanto(servicePrice)` (monto = precio × %/100, 2 decimales) + `createServicePayment` con `montoAPagar` (lo ya cobrado por Stripe) → graba `deposito_requerido`/`deposito` = monto pagado, `saldo_pendiente = precio − monto`, `estado = PAGADO/PARCIAL`; transacción parcial usa `DEPOSITO` (consistente con el enum).
+- `IPaymentsRepository` (+impl): `calcularAdelanto` nuevo y firma de `createServicePayment` con `montoAPagar`; usecase `PagarServicio` y cubit `payments` propagan `montoAPagar`.
+- UI (`services_dashboard_screen.dart`): el modal consulta `calcularAdelanto(price)` y muestra **"Pagar Adelanto ($X · 50%)"** o **"Cancelar Totalidad ($price)"**; `_processServicePayment` usa el `montoAPagar` calculado (concepto `ADELANTO`/`PAGO_TOTAL`).
+
+**Verificación**: `flutter analyze` sin issues; `flutter test` 80/80; migración aplicada al remoto.
+
+**Pendiente**: commit + push (el usuario avisará; mensaje en español).
 
 ---
 
 ## Verificación transversal
 
-- `flutter analyze` → sin issues (en los tres ciclos).
+- `flutter analyze` → sin issues (en los cinco ciclos).
 - `flutter test` → 80/80 OK (tests placeholder/widget; el proyecto no tiene suite real de tests).
-- BD: migraciones aplicadas al remoto hasta `20260817000000` (`supabase db push`).
+- BD: migraciones aplicadas al remoto hasta `20260817010001` (`supabase db push`).
+
+### Working tree actual (sin commitear)
+- Ciclo 5 (adelanto porcentual): `supabase/migrations/20260817010001_adelanto_porcentaje.sql`, `lib/features/payments_stripe/domain/entities/adelanto_servicio_entity.dart`, datasource/repositorio/usecase/cubit de `payments_stripe`, `services_dashboard_screen.dart`.
+- `docs/plans/2026-08-17_adelanto_porcentual_servicios.md` (nuevo) y este resumen.

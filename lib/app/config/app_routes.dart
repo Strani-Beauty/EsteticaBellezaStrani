@@ -114,32 +114,32 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.services,
       name: 'services',
-      builder: (context, state) => BlocProvider<CatalogCubit>(
-        create: (_) => sl<CatalogCubit>(),
+      builder: (context, state) => BlocProvider<CatalogCubit>.value(
+        value: sl<CatalogCubit>(),
         child: const ServicesDashboardScreen(),
       ),
     ),
     GoRoute(
       path: AppRoutes.specialistHome,
       name: 'specialistHome',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>(
-        create: (_) => sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
         child: const SpecialistHomeScreen(),
       ),
     ),
     GoRoute(
       path: AppRoutes.specialistProfile,
       name: 'specialistProfile',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>(
-        create: (_) => sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
         child: const SpecialistProfileScreen(),
       ),
     ),
     GoRoute(
       path: AppRoutes.specialistDocuments,
       name: 'specialistDocuments',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>(
-        create: (_) => sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
         child: SpecialistDocumentsScreen(
           especialistaId: state.extra as String? ?? '',
           isOnboarding: true,
@@ -149,8 +149,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.specialistContract,
       name: 'specialistContract',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>(
-        create: (_) => sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
         child: ContractSignatureScreen(
           especialistaId: state.extra as String? ?? '',
         ),
@@ -159,8 +159,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.specialistOnboarding,
       name: 'specialistOnboarding',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>(
-        create: (_) => sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
         child: SpecialistOnboardingScreen(
           especialistaId: state.extra as String? ?? '',
         ),
@@ -169,16 +169,16 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.adminDashboard,
       name: 'adminDashboard',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>(
-        create: (_) => sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
         child: const AdminDashboardScreen(),
       ),
     ),
     GoRoute(
       path: AppRoutes.adminUsuarios,
       name: 'adminUsuarios',
-      builder: (context, state) => BlocProvider<AdminUsersCubit>(
-        create: (_) => sl<AdminUsersCubit>(),
+      builder: (context, state) => BlocProvider<AdminUsersCubit>.value(
+        value: sl<AdminUsersCubit>(),
         child: const AdminUsersScreen(),
       ),
     ),
@@ -204,8 +204,8 @@ final GoRouter appRouter = GoRouter(
       name: 'fotografiasTratamiento',
       builder: (context, state) {
         final tratamientoId = state.pathParameters['id'] ?? '';
-        return BlocProvider<TreatmentPhotosCubit>(
-          create: (_) => sl<TreatmentPhotosCubit>(),
+        return BlocProvider<TreatmentPhotosCubit>.value(
+          value: sl<TreatmentPhotosCubit>(),
           child: FotografiasScreen(tratamientoId: tratamientoId),
         );
       },
@@ -215,12 +215,8 @@ final GoRouter appRouter = GoRouter(
       name: 'specialistPatientMap',
       builder: (context, state) => MultiBlocProvider(
         providers: [
-          BlocProvider<SpecialistsCubit>(
-            create: (_) => sl<SpecialistsCubit>(),
-          ),
-          BlocProvider<MarketplaceCubit>(
-            create: (_) => sl<MarketplaceCubit>(),
-          ),
+          BlocProvider<SpecialistsCubit>.value(value: sl<SpecialistsCubit>()),
+          BlocProvider<MarketplaceCubit>.value(value: sl<MarketplaceCubit>()),
         ],
         child: SpecialistMapScreen(
           especialistaId: state.extra as String? ?? '',
@@ -230,8 +226,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.misCitas,
       name: 'misCitas',
-      builder: (context, state) => BlocProvider<TreatmentExecutionCubit>(
-        create: (_) => sl<TreatmentExecutionCubit>(),
+      builder: (context, state) => BlocProvider<TreatmentExecutionCubit>.value(
+        value: sl<TreatmentExecutionCubit>(),
         child: MisCitasScreen(
           especialistaId: state.extra as String? ?? '',
         ),
@@ -240,8 +236,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.misCitasDetalle,
       name: 'misCitasDetalle',
-      builder: (context, state) => BlocProvider<TreatmentExecutionCubit>(
-        create: (_) => sl<TreatmentExecutionCubit>(),
+      builder: (context, state) => BlocProvider<TreatmentExecutionCubit>.value(
+        value: sl<TreatmentExecutionCubit>(),
         child: CitaDetalleScreen(
           citaId: state.pathParameters['id'] ?? '',
         ),

@@ -60,7 +60,19 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Documentos requeridos')),
+      appBar: AppBar(
+        title: const Text('Documentos requeridos'),
+        automaticallyImplyLeading: false,
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.specialistHome);
+            }
+          },
+        ),
+      ),
       body: BlocListener<SpecialistsCubit, SpecialistsState>(
         listener: (context, state) {
           if (state is SpecialistsError) {
@@ -254,9 +266,16 @@ class _DocumentoTile extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else if (!subido)
-              OutlinedButton(
-                onPressed: onSelect,
-                child: const Text('Adjuntar'),
+              // Dimensiones fijas: un botón como hijo no-flex de un Row recibe
+              // ancho ilimitado (0..∞) y su mínimo interno (40) colapsa con
+              // `BoxConstraints(w=Infinity)`. Con tamaño finito es inmune.
+              SizedBox(
+                width: 108,
+                height: 40,
+                child: OutlinedButton(
+                  onPressed: onSelect,
+                  child: const Text('Adjuntar'),
+                ),
               )
             else
               const Icon(Icons.check_circle, color: AppTheme.cBrandGreen),

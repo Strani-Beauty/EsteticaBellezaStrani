@@ -385,7 +385,8 @@ class SpecialistsSupabaseDataSource {
     final res = await _client.from('disponibilidad_especialista').insert({
       'especialista_id': especialistaId,
       'estado': estado.toDb,
-      'fecha_inicio': fechaInicio?.toIso8601String(),
+      // `fecha_inicio` es NOT NULL (default now()): nunca enviar null.
+      'fecha_inicio': (fechaInicio ?? DateTime.now()).toIso8601String(),
       'fecha_fin': fechaFin?.toIso8601String(),
       'created_at': now,
     }).select().maybeSingle();
@@ -401,7 +402,8 @@ class SpecialistsSupabaseDataSource {
   }) async {
     final res = await _client.from('disponibilidad_especialista').update({
       'estado': estado.toDb,
-      'fecha_inicio': fechaInicio?.toIso8601String(),
+      // `fecha_inicio` es NOT NULL (default now()): nunca enviar null.
+      'fecha_inicio': (fechaInicio ?? DateTime.now()).toIso8601String(),
       'fecha_fin': fechaFin?.toIso8601String(),
     }).eq('id', id).select().maybeSingle();
     if (res == null) throw Exception('No se pudo actualizar disponibilidad');

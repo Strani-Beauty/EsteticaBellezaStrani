@@ -210,7 +210,7 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
     if (!mounted) return;
     setState(() => _guardando = false);
     if (especialistaId.isNotEmpty) {
-      context.go(AppRoutes.specialistDocuments, extra: especialistaId);
+      context.push(AppRoutes.specialistDocuments, extra: especialistaId);
     }
   }
 
@@ -243,12 +243,11 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
       appBar: AppBar(
         title: const Text('Completa tu perfil de especialista'),
         automaticallyImplyLeading: false,
-        actions: [
-          TextButton(
-            onPressed: () => context.go(AppRoutes.specialistHome),
-            child: const Text('Salir'),
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Volver al panel',
+          onPressed: () => context.go(AppRoutes.specialistHome),
+        ),
       ),
       body: BlocListener<SpecialistsCubit, SpecialistsState>(
         listener: (context, state) {
@@ -257,6 +256,9 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
             setState(() => _cargandoInicial = false);
           }
           if (state is SpecialistsError) {
+            // Si la carga inicial falla, salir del spinner para que el
+            // especialista pueda completar el formulario igualmente.
+            if (_cargandoInicial) setState(() => _cargandoInicial = false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message), backgroundColor: AppTheme.cError),
             );

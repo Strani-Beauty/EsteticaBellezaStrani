@@ -235,7 +235,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
                 children: [
                   _EstadoVerificacionCard(
                     especialista: state.especialista,
-                    onCorregir: () => context.go(
+                    onCorregir: () => context.push(
                       AppRoutes.specialistDocuments,
                       extra: state.especialista?.id ?? '',
                     ),

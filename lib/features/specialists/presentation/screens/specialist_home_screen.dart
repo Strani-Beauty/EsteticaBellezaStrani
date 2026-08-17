@@ -90,7 +90,7 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
               state.especialista!.estadoVerificacion == EstadoVerificacion.rechazado;
           if (!rechazado && !_tieneDocumentosRequeridos(state) && !_redirectedToDocuments) {
             _redirectedToDocuments = true;
-            context.go(
+            context.push(
               AppRoutes.specialistDocuments,
               extra: state.especialista!.id,
             );
@@ -313,7 +313,7 @@ class _VerificationCardState extends State<_VerificationCard> {
   }
 
   void _pedirVerificacion(BuildContext context) {
-    context.go(
+    context.push(
       AppRoutes.specialistDocuments,
       extra: widget.especialista?.id ?? '',
     );

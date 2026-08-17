@@ -200,6 +200,16 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _generarUrlFirmadaDocumento = generarUrlFirmadaDocumento,
         super(const SpecialistsInitial());
 
+  /// Guarda contra el caso de emitir tras `close()`: si una operación async
+  /// (p.ej. `loadDashboard`) termina cuando el cubit ya se cerró (navegación),
+  /// se descarta el estado en vez de lanzar "Cannot emit new states after
+  /// calling close".
+  @override
+  void emit(SpecialistsState state) {
+    if (isClosed) return;
+    super.emit(state);
+  }
+
   /// Carga el tablero completo del especialista.
   Future<void> loadDashboard({required String usuarioId}) async {
     emit(const SpecialistsLoading());

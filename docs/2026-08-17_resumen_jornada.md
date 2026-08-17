@@ -1,10 +1,10 @@
 # Resumen de jornada — 2026-08-17
 
 - **Fecha**: 2026-08-17
-- **Rama**: `main` (sincronizada con `origin/main` en `a4ec43e`; trabajo de la mañana pusheado).
+- **Rama**: `main` (sincronizada con `origin/main` en `6c19d8a`; todo el trabajo del día pusheado y desplegado).
 - **Flutter**: SDK en **3.44.9** (ver bloque 3).
 
-Cinco ciclos de trabajo hoy:
+Siete ciclos de trabajo hoy:
 
 | Ciclo | Estado | Commit |
 |---|---|---|
@@ -12,7 +12,10 @@ Cinco ciclos de trabajo hoy:
 | 2. Documentos de compliance + storage privado | ✅ Pusheado | `36b9ab5` |
 | 3. Upgrade Flutter 3.44.9 + cerrar deuda `dart:html` | ✅ Pusheado | `2bf3140` |
 | 4. Face map reutilizable por servicio | ✅ Pusheado | `a4ec43e` |
-| 5. Adelanto porcentual configurable para pago de servicios | 🚧 Implementado y verificado, **sin commit** | — |
+| 5. Adelanto porcentual configurable para pago de servicios | ✅ Pusheado | `4cfdf84` |
+| 6. Avatares específicos del ingreso de datos paciente | ✅ Pusheado | `5fa0211` |
+| 7. Confirmación de correos pendientes (pruebas, reversible) | ✅ Pusheado | `617d602` |
+| 8. Flujo de registro y panel del especialista en web (4 bugs) | ✅ Pusheado + **desplegado** | `6c19d8a` |
 
 Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_correo_pkce.md`, `2026-08-17_documentos_compliance_storage_privado.md`, `2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`, `2026-08-17_face_map_servicio_estado_tratamiento.md`, `2026-08-17_adelanto_porcentual_servicios.md`.
 
@@ -103,7 +106,7 @@ Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_co
 
 ---
 
-## 5. Adelanto porcentual configurable para pago de servicios — 🚧 SIN COMMIT
+## 5. Adelanto porcentual configurable para pago de servicios — `4cfdf84` ✅
 
 **Objetivo aprobado**: el pago de $30 (cuota inicial / Qualify) cubre la telemedicina o el servicio médico interno y es obligatorio → **no se modifica**. Al pagar un servicio del catálogo debe ofrecerse un **adelanto porcentual del total** (configurable) o el servicio completo — no un "depósito" fijo de $30. El cobro del saldo al finalizar se mantiene como hoy (decisión diferida: se definirá la mejor fecha al desarrollar citas y tratamientos).
 
@@ -115,11 +118,49 @@ Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_co
 
 **Verificación**: `flutter analyze` sin issues; `flutter test` 80/80; migración aplicada al remoto.
 
-**Pendiente**: commit + push (el usuario avisará; mensaje en español).
+---
+
+## 6. Avatares específicos del ingreso de datos paciente — `5fa0211` ✅
+
+Se corrigió el selector de avatar del ingreso de datos del paciente para mostrar avatares más específicos en una sola fila (commit `5fa0211` "Avatares de paciente más específicos y en una sola fila en el ingreso de datos").
 
 ---
 
-## 6. Pruebas: confirmación de correos pendientes (TEMPORAL, reversible)
+## 7. Flujo de registro y panel del especialista en web — `6c19d8a` ✅
+
+**Contexto**: prueba manual completa del flujo en web: onboarding (dirección → especialidades/licencia) → documentos requeridos → panel. Se encontraron y arreglaron 4 bugs:
+
+### 7.1 Onboarding atascado en el spinner — `Cannot emit new states after calling close`
+- **Causa raíz**: todos los cubits de features se registran como `registerLazySingleton` en DI, y `BlocProvider(create: (_) => sl<Cubit>(), ...)` **cierra el singleton** al hacer dispose de la pantalla (flutter_bloc marca el cubit como self-created y lo `close()` en dispose). La siguiente pantalla usa el mismo singleton ya cerrado → `emit` lanza `Bad state: Cannot emit new states after calling close`.
+- **Fix**: en `app_routes.dart` los 12 providers de cubits singleton pasaron a `BlocProvider<X>.value(value: sl<X>(), ...)` (rutas services, specialistHome, specialistProfile, specialistDocuments, specialistContract, specialistOnboarding, adminDashboard, adminUsuarios, fotografiasTratamiento, specialistPatientMap, misCitas, misCitasDetalle); guard defensivo en `SpecialistsCubit.emit` (no-op si `isClosed`); `specialist_onboarding_screen.dart` sale del spinner ante `SpecialistsError` y muestra el formulario.
+
+### 7.2 Pantalla de documentos en blanco — `BoxConstraints forces an infinite width`
+- **Causa raíz** (error real del browser): el `OutlinedButton` del tile es hijo **no-flex de un `Row`** → el flex le da ancho ilimitado (`BoxConstraints(w=Infinity, 40.0<=h<=Infinity)`) y el mínimo interno del botón (altura 40) colapsa → excepción de layout → pantalla en blanco (SDK 3.44, `render/flex.dart` `_constraintsForNonFlexChild`).
+- **Fix**: envolver el botón "Adjuntar" en `SizedBox(width: 108, height: 40)` (`specialist_documents_screen.dart`). Único `OutlinedButton` en `Row` de la app (el de admin_users está en un `Column`, seguro).
+
+### 7.3 Pantallas sin opción de volver atrás
+- **Causa raíz**: las pantallas se abrían con `context.go()` (reemplaza la ruta, sin pila → sin flecha atrás).
+- **Fix**: onboarding → documentos ahora `context.push`; flecha atrás en onboarding (→ panel, sustituye al "Salir"); flecha atrás en documentos (`pop()` si hay pila, sino `go(panel)`); el redirect del panel a docs y "Corregir y reenviar" (`specialist_home_screen.dart`) y "Corregir" del perfil (`specialist_profile_screen.dart`) → `push`. El redirect panel → onboarding se mantiene como `go` a propósito (evita double-push: el listener del panel comparte el cubit singleton y empujaría documentos duplicados durante el onboarding).
+
+### 7.4 Toggle de disponibilidad → 400
+- **Causa raíz** (reproducida contra la BD real): `{"code":"23502","message":"null value in column \"fecha_inicio\" of relation \"disponibilidad_especialista\" violates not-null constraint"}`. La tabla `disponibilidad_especialista` (creada a mano en el dashboard, no versionada) tiene `fecha_inicio NOT NULL` (default `now()`), pero el datasource enviaba `fecha_inicio: null` al alternar.
+- **Fix** (app-side, sin migración — el esquema es correcto): en `setDisponibilidad`/`updateDisponibilidad` se usa `(fechaInicio ?? DateTime.now())` (`specialists_supabase_datasource.dart`).
+
+**Verificación**: `flutter analyze` sin issues; `flutter test` 80/80; URL generada por postgrest 2.8.0 confirmada con test temporal (eliminado).
+
+**Commit**: `6c19d8a` "Arregla el flujo de registro y panel del especialista: cubit singleton que no se cierra al navegar, pantallas sin retroceso, botón de documentos sin ancho infinito y toggle de disponibilidad que enviaba fecha_inicio null" → pusheado a `main`.
+
+---
+
+## 8. Deploy a Firebase Hosting — ✅
+
+- `flutter build web --release` OK (Wasm dry run OK).
+- `firebase deploy --only hosting` → 71 archivos subidos al proyecto `esteticaybellezastrani`.
+- **URL de producción**: https://esteticaybellezastrani.web.app (rewrites SPA a `/index.html`).
+
+---
+
+## 9. Pruebas: confirmación de correos pendientes (TEMPORAL, reversible)
 
 **Contexto**: el toggle "Confirm email" de Supabase está apagado para pruebas, pero las cuentas creadas **antes** de apagarlo quedaron con `auth.users.email_confirmed_at = null` y la app seguía mostrando "Confirma tu correo" (el flujo lo dispara GoTrue con `email_not_confirmed`, no la app). Se confirmaron los correos pendientes para poder probar login con cuentas existentes.
 
@@ -146,12 +187,16 @@ drop table public.mig_20260817010002_confirmados;
 
 ## Verificación transversal
 
-- `flutter analyze` → sin issues (en los cinco ciclos).
+- `flutter analyze` → sin issues (en todos los ciclos).
 - `flutter test` → 80/80 OK (tests placeholder/widget; el proyecto no tiene suite real de tests).
 - BD: migraciones aplicadas al remoto hasta `20260817010002` (`supabase db push`).
 
-### Working tree actual (sin commitear)
-- Ciclo 5 (adelanto porcentual): `supabase/migrations/20260817010001_adelanto_porcentaje.sql`, `lib/features/payments_stripe/domain/entities/adelanto_servicio_entity.dart`, datasource/repositorio/usecase/cubit de `payments_stripe`, `services_dashboard_screen.dart`.
-- Avatares específicos del ingreso de datos paciente: `lib/features/auth_users/presentation/widgets/avatar_selector.dart`.
-- Migración temporal de pruebas `supabase/migrations/20260817010002_confirmar_correos_testing.sql` (ya aplicada; revert documentado en la sección 6).
-- `docs/plans/2026-08-17_adelanto_porcentual_servicios.md` (nuevo) y este resumen.
+### Working tree actual
+- **Limpio**: todo el trabajo del día está commiteado, pusheado a `main` (hasta `6c19d8a`) y desplegado en Firebase Hosting (https://esteticaybellezastrani.web.app).
+- `docs/plans/2026-08-17_adelanto_porcentual_servicios.md` (nuevo) y este resumen actualizado (commiteado junto a `6c19d8a`).
+
+### Pendientes documentados
+- Revert de la confirmación de correos de pruebas (sección 9) cuando termine la prueba.
+- Versionar las tablas creadas a mano en el dashboard (`disponibilidad_especialista`, `ubicaciones_especialista`, `contratos`) — hoy se tocó `disponibilidad_especialista` (toggle) y sigue sin estar en migraciones.
+- Convertir a privados los buckets aún públicos (`contratos`, `firmas`, `fotografias-tratamiento`) — fuera de alcance del ciclo 2.
+- Smoke test manual en browser del flujo del especialista (checklist del ciclo 8) y del resto de módulos tras el upgrade 3.44.9.

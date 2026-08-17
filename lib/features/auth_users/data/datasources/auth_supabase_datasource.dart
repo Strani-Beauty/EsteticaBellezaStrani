@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../app/config/app_constants.dart';
 import '../models/profile_model.dart';
 
 /// Datasource de Supabase para el módulo auth_users.
@@ -304,6 +305,15 @@ class AuthSupabaseDataSource {
         return [];
       }
     }
+  }
+
+  // ── Avatar (storage privado) ────────────────────────────────
+
+  /// Genera una URL firmada de expiración corta para leer un avatar privado.
+  Future<String> crearUrlFirmadaAvatar(String path) async {
+    return _client.storage
+        .from(AppConstants.bucketAvatars)
+        .createSignedUrl(path, 3600);
   }
 
   // ── Dispositivos / FCM ───────────────────────────────────────

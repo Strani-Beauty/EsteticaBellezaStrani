@@ -185,15 +185,33 @@ drop table public.mig_20260817010002_confirmados;
 
 ---
 
+## 10. Avatares: bucket privado + URLs firmadas + DiceBear local — ✅ (pendiente commit)
+
+**Bug**: en el ingreso de datos del paciente (`complete_profile_screen`) la subida de foto mostraba "subida correctamente", pero el círculo de vista previa no mostraba la imagen. Causa raíz: el bucket `avatars` era **privado** (creado a mano), pero `AvatarSelector._upload` guardaba en `avatar_url` una URL pública (`getPublicUrl`) que `Image.network` pedía sin auth → 400.
+
+**Cambios** (plan en `docs/plans/2026-08-17_avatars_storage_dicebear.md`):
+- **Migración `20260817000100_avatars_storage_privado.sql`** (aplicada con `supabase db push --include-all`):
+  - Bucket `avatars` → `public = FALSE` (idempotente).
+  - `DROP POLICY "avatars_public_select"`; nuevas policies `avatars_storage_own_insert/select/update/delete` (dueño: `(storage.foldername(name))[1] = auth.uid()::text`) + `avatars_storage_admin_select`.
+  - Migra `profiles.avatar_url` existentes (URL pública → path `<userId>/<ts>.<ext>`).
+- **Capa de datos (auth_users)**: `crearUrlFirmadaAvatar(path)` → `createSignedUrl(path, 3600)` (datasource + repositorio + usecase `GenerarUrlFirmadaAvatar` + registro en `injection.dart`); `AvatarSelector._upload` guarda el **path** (`uploaded`), sin `getPublicUrl`.
+- **Widget compartido `AvatarView`** (`auth_users/presentation/widgets/avatar_view.dart`): preset key → ícono pastel; path/URL legacy → URL firmada → `CachedNetworkImage`; null + paciente → DiceBear identicon; null + admin/especialista → ícono de rol. Reemplaza el contenido de `_Preview` (avatar_selector) y `_AvatarContent` (profile_screen).
+- **DiceBear local**: `dicebear_core 10.6.0` + `dicebear_styles 10.5.0` + `flutter_svg 2.3.0`; `Style.parse(adventurer)` + `Avatar(style, {'seed': uid})` → `SvgPicture.string(avatar.svg)`.
+
+**Verificación**: `flutter analyze` sin issues; `flutter test` 80/80; migración aplicada al remoto (remoto en `20260817000100`); `flutter build web --release` OK + `firebase deploy --only hosting` (https://esteticaybellezastrani.web.app).
+
+**Pendiente manual**: smoke test en browser (subida + preview + perfil + DiceBear sin avatar).
+
+---
+
 ## Verificación transversal
 
 - `flutter analyze` → sin issues (en todos los ciclos).
 - `flutter test` → 80/80 OK (tests placeholder/widget; el proyecto no tiene suite real de tests).
-- BD: migraciones aplicadas al remoto hasta `20260817010002` (`supabase db push`).
+- BD: migraciones aplicadas al remoto hasta `20260817010002` + `20260817000100` avatares (`supabase db push --include-all`).
 
 ### Working tree actual
-- **Limpio**: todo el trabajo del día está commiteado, pusheado a `main` (hasta `6c19d8a`) y desplegado en Firebase Hosting (https://esteticaybellezastrani.web.app).
-- `docs/plans/2026-08-17_adelanto_porcentual_servicios.md` (nuevo) y este resumen actualizado (commiteado junto a `6c19d8a`).
+- Trabajo del día commiteado/pusheado hasta `6c19d8a` y desplegado; **pendiente de commit**: plan `2026-08-17_avatars_storage_dicebear.md`, migración `20260817000100_avatars_storage_privado.sql`, capa de datos de avatares, `AvatarView` + DiceBear, pubspec y este resumen (ciclo 10).
 
 ### Pendientes documentados
 - Revert de la confirmación de correos de pruebas (sección 9) cuando termine la prueba.

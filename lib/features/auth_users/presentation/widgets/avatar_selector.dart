@@ -6,12 +6,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/config/app_constants.dart';
 import '../../../../app/config/app_theme.dart';
+import 'avatar_view.dart';
 
 /// Selector de avatar para el perfil del paciente (AU-H-08).
 ///
 /// Ofrece dos modos:
 ///  * Avatares predefinidos: se guardan como clave `avatar_N` en `avatar_url`.
-///  * Subir foto propia: se sube al bucket `avatars` y se guarda la URL pública.
+///  * Subir foto propia: se sube al bucket privado `avatars` y se guarda el
+///    **path de storage** en `avatar_url` (se lee con URL firmada).
 class AvatarSelector extends StatelessWidget {
   final String? avatarUrl;
   final ValueChanged<String?> onChanged;
@@ -141,9 +143,7 @@ class AvatarSelector extends StatelessWidget {
     final uploaded = await client.storage
         .from(AppConstants.bucketAvatars)
         .uploadBinary(path, bytes);
-    return client.storage
-        .from(AppConstants.bucketAvatars)
-        .getPublicUrl(uploaded);
+    return uploaded;
   }
 }
 
@@ -154,39 +154,12 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final presetIcon = AvatarSelector.presetIcon(avatarUrl);
-    final presetColor = AvatarSelector.presetColor(avatarUrl);
-
-    Widget child;
-    if (presetIcon != null) {
-      child = Icon(presetIcon, size: 52, color: AppTheme.cDeepAccent);
-    } else if (avatarUrl != null && avatarUrl!.isNotEmpty) {
-      child = ClipOval(
-        child: Image.network(
-          avatarUrl!,
-          width: 88,
-          height: 88,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const Icon(
-            Icons.person_rounded,
-            size: 52,
-            color: AppTheme.cDeepAccent,
-          ),
-        ),
-      );
-    } else {
-      child = const Icon(Icons.person_rounded, size: 52, color: AppTheme.cDeepAccent);
-    }
-
-    return Container(
-      width: 96,
-      height: 96,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: presetColor ?? AppTheme.cPastelPurple,
-        border: Border.all(color: AppTheme.cDeepAccent.withValues(alpha: 0.3)),
-      ),
-      child: Center(child: child),
+    return AvatarView(
+      avatarUrl: avatarUrl,
+      isPatient: true,
+      seed: Supabase.instance.client.auth.currentUser?.id,
+      diameter: 96,
+      showBorder: true,
     );
   }
 }

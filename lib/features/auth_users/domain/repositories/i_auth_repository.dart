@@ -51,6 +51,10 @@ abstract class IAuthRepository {
   // ── Roles ────────────────────────────────────────────────────
   Future<Either<Failure, List<RoleEntity>>> getRoles();
 
+  // ── Avatar (storage privado) ────────────────────────────────
+  /// Genera una URL firmada de expiración corta para leer un avatar privado.
+  Future<Either<Failure, String>> generarUrlFirmadaAvatar(String path);
+
   // ── Dispositivos / FCM ───────────────────────────────────────
   Future<Either<Failure, void>> registerFcmToken({
     required String profileId,

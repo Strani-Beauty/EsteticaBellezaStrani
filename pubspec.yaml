@@ -16,6 +16,9 @@ dependencies:
   google_fonts: ^8.2.1
   cached_network_image: ^3.4.1
   signature: ^5.4.0
+  flutter_svg: ^2.0.17
+  dicebear_core: ^10.0.0
+  dicebear_styles: ^10.0.0
 
   # ── Supabase & Network ─────────────────────────────────────
   supabase_flutter: ^2.16.0

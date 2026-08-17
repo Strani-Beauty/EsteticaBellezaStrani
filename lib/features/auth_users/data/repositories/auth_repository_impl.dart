@@ -224,6 +224,16 @@ class AuthRepositoryImpl implements IAuthRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String>> generarUrlFirmadaAvatar(String path) async {
+    try {
+      final url = await _dataSource.crearUrlFirmadaAvatar(path);
+      return Right(url);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   /// Mapea una [sb.AuthException] a [AuthFailure] con mensaje amigable en
   /// español, usando el `code` de GoTrue cuando está disponible (fallback al
   /// mensaje crudo). Los códigos comunes (credenciales, email duplicado,

@@ -225,6 +225,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.1"
+  dicebear_core:
+    dependency: "direct main"
+    description:
+      name: dicebear_core
+      sha256: "15bfe0f79b647298d0e2200a6bea410fe9350bb1e979a22d7769eb597ab6b2ca"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.6.0"
+  dicebear_schema:
+    dependency: transitive
+    description:
+      name: dicebear_schema
+      sha256: "662d9fad3999e9dd9d58e91d035330888b2a001033e8d22e3f585131417429a1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
+  dicebear_styles:
+    dependency: "direct main"
+    description:
+      name: dicebear_styles
+      sha256: "550855a6c886e78418128e527adcba9a05a89f2ef21b43775c22d287383d36ff"
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.5.0"
   diff_match_patch:
     dependency: transitive
     description:
@@ -404,7 +428,7 @@ packages:
     source: hosted
     version: "6.5.1"
   flutter_svg:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_svg
       sha256: "35882981abcbfb8c15b286f0cd690ff25bac12d95eff3e25ee207f37d4c42e7f"
@@ -599,6 +623,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.12.0"
+  json_schema:
+    dependency: transitive
+    description:
+      name: json_schema
+      sha256: f37d9c3fdfe8c9aae55fdfd5af815d24ce63c3a0f6a2c1f0982c30f43643fa1a
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.2.2"
   jwt_decode:
     dependency: transitive
     description:
@@ -927,6 +959,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  quiver:
+    dependency: transitive
+    description:
+      name: quiver
+      sha256: ea0b925899e64ecdfbf9c7becb60d5b50e706ade44a85b2363be2a22d88117d2
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.2"
   realtime_client:
     dependency: transitive
     description:
@@ -951,6 +991,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  rfc_6901:
+    dependency: transitive
+    description:
+      name: rfc_6901
+      sha256: "6a43b1858dca2febaf93e15639aa6b0c49ccdfd7647775f15a499f872b018154"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   rxdart:
     dependency: transitive
     description:
@@ -1268,6 +1316,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+  uri:
+    dependency: transitive
+    description:
+      name: uri
+      sha256: "889eea21e953187c6099802b7b4cf5219ba8f3518f604a1033064d45b1b8268a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   url_launcher:
     dependency: "direct main"
     description:

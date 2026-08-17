@@ -119,12 +119,39 @@ Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_co
 
 ---
 
+## 6. Pruebas: confirmación de correos pendientes (TEMPORAL, reversible)
+
+**Contexto**: el toggle "Confirm email" de Supabase está apagado para pruebas, pero las cuentas creadas **antes** de apagarlo quedaron con `auth.users.email_confirmed_at = null` y la app seguía mostrando "Confirma tu correo" (el flujo lo dispara GoTrue con `email_not_confirmed`, no la app). Se confirmaron los correos pendientes para poder probar login con cuentas existentes.
+
+**Migración aplicada al remoto**: `20260817010002_confirmar_correos_testing.sql`
+- Confirma los usuarios con `email_confirmed_at is null` en `auth.users`.
+- Deja una snapshot en `public.mig_20260817010002_confirmados (user_id, email, confirmado_en)` para revertir con precisión.
+- Idempotente (`ON CONFLICT DO NOTHING`).
+
+**REVERT (cuando termine la prueba — volver a NO confirmados)**:
+
+```sql
+update auth.users u
+set email_confirmed_at = null
+from public.mig_20260817010002_confirmados m
+where u.id = m.user_id;
+
+-- opcional, limpiar la snapshot:
+drop table public.mig_20260817010002_confirmados;
+```
+
+- Nota: con el toggle apagado, los **usuarios nuevos** ya entran directo (signUp devuelve sesión); no necesitan confirmación. Si se reactiva el toggle, las nuevas altas vuelven a exigir confirmación como antes.
+
+---
+
 ## Verificación transversal
 
 - `flutter analyze` → sin issues (en los cinco ciclos).
 - `flutter test` → 80/80 OK (tests placeholder/widget; el proyecto no tiene suite real de tests).
-- BD: migraciones aplicadas al remoto hasta `20260817010001` (`supabase db push`).
+- BD: migraciones aplicadas al remoto hasta `20260817010002` (`supabase db push`).
 
 ### Working tree actual (sin commitear)
 - Ciclo 5 (adelanto porcentual): `supabase/migrations/20260817010001_adelanto_porcentaje.sql`, `lib/features/payments_stripe/domain/entities/adelanto_servicio_entity.dart`, datasource/repositorio/usecase/cubit de `payments_stripe`, `services_dashboard_screen.dart`.
+- Avatares específicos del ingreso de datos paciente: `lib/features/auth_users/presentation/widgets/avatar_selector.dart`.
+- Migración temporal de pruebas `supabase/migrations/20260817010002_confirmar_correos_testing.sql` (ya aplicada; revert documentado en la sección 6).
 - `docs/plans/2026-08-17_adelanto_porcentual_servicios.md` (nuevo) y este resumen.

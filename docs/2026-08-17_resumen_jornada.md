@@ -16,8 +16,10 @@ Siete ciclos de trabajo hoy:
 | 6. Avatares específicos del ingreso de datos paciente | ✅ Pusheado | `5fa0211` |
 | 7. Confirmación de correos pendientes (pruebas, reversible) | ✅ Pusheado | `617d602` |
 | 8. Flujo de registro y panel del especialista en web (4 bugs) | ✅ Pusheado + **desplegado** | `6c19d8a` |
+| 9. Avatares: bucket privado + URLs firmadas + DiceBear local | ✅ Pusheado | `d01b7c2` |
+| 10. Presets DiceBear creativos (8 estilos) + fix de subida/preview | ✅ Desplegado | *pendiente commit* |
 
-Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_correo_pkce.md`, `2026-08-17_documentos_compliance_storage_privado.md`, `2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`, `2026-08-17_face_map_servicio_estado_tratamiento.md`, `2026-08-17_adelanto_porcentual_servicios.md`.
+Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_correo_pkce.md`, `2026-08-17_documentos_compliance_storage_privado.md`, `2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`, `2026-08-17_face_map_servicio_estado_tratamiento.md`, `2026-08-17_adelanto_porcentual_servicios.md`, `2026-08-17_avatars_storage_dicebear.md`, `2026-08-17_avatares_dicebear_creativos_y_fix_foto.md`.
 
 ---
 
@@ -204,6 +206,23 @@ drop table public.mig_20260817010002_confirmados;
 
 ---
 
+## 11. Presets DiceBear creativos (8 estilos) + fix de subida/preview de foto — ✅ (pendiente commit)
+
+**Quejas del usuario**: (1) "los avatares a seleccionar siguen siendo los mismos" — los presets del ingreso de datos eran íconos pastel de Material; (2) "la foto no la sube o no la muestra" — la foto seguía sin aparecer en el círculo.
+
+**Cambios** (plan en `docs/plans/2026-08-17_avatares_dicebear_creativos_y_fix_foto.md`, aprobado por el usuario):
+- **Helper `avatar_preset.dart`** (`auth_users/presentation/widgets/`): `AvatarPreset` (key, label, style, seed, color), lista `avatarPresets` (claves `avatar_1..8`), `presetFor`, `isPresetKey`, `dicebearSvg(style, seed)`, `dicebearSvgFor(key)`, `presetColorFor`. **8 estilos DiceBear distintos** por preset: `adventurer`, `avataaars`, `lorelei`, `micah`, `fun_emoji`, `open_peeps`, `big_ears`, `miniavs`; seed fijo por clave → mismo avatar siempre, offline. Estilos parseados cacheados en `Map<String, Style>`.
+  - Nota: `dicebear_core` exporta un tipo `Color` que choca con Flutter → se importa con prefijo `as dicebear`.
+- **`avatar_selector.dart`**: `_PresetTile` renderiza el **SVG DiceBear** (`SvgPicture.string`) en vez del ícono Material; `AvatarSelector` pasa a `StatefulWidget` con estado de subida (botón con spinner mientras sube) y snackbar con el **error real**.
+- **`avatar_view.dart`**: rama preset → SVG DiceBear; rama null+paciente → DiceBear (adventurer + seed); ya no importa `avatar_selector` (rompe el import circular).
+- **Fix de la foto**: `_SignedAvatar` ahora tiene `didUpdateWidget` (re-resuelve la URL firmada si cambia `value`), estado `_error` con el motivo real, tap para reintentar y `debugPrint` del error.
+
+**Verificación**: `flutter analyze` sin issues; `flutter test` 80/80; `flutter build web --release` OK + `firebase deploy --only hosting` (https://esteticaybellezastrani.web.app).
+
+**Smoke test (validado por el usuario con hard refresh)**: los 8 presets DiceBear se ven distintos y por preset cambia la vista previa; la foto subida aparece en la vista previa, persiste al re-entrar y se muestra en el perfil. El flujo `createSignedUrl` quedó validado en vivo (sin migración correctiva; también confirma el mecanismo de documentos de especialistas).
+
+---
+
 ## Verificación transversal
 
 - `flutter analyze` → sin issues (en todos los ciclos).
@@ -211,7 +230,7 @@ drop table public.mig_20260817010002_confirmados;
 - BD: migraciones aplicadas al remoto hasta `20260817010002` + `20260817000100` avatares (`supabase db push --include-all`).
 
 ### Working tree actual
-- Trabajo del día commiteado/pusheado hasta `6c19d8a` y desplegado; **pendiente de commit**: plan `2026-08-17_avatars_storage_dicebear.md`, migración `20260817000100_avatars_storage_privado.sql`, capa de datos de avatares, `AvatarView` + DiceBear, pubspec y este resumen (ciclo 10).
+- Trabajo del día commiteado/pusheado hasta `d01b7c2` y desplegado; **pendiente de commit**: plan `2026-08-17_avatares_dicebear_creativos_y_fix_foto.md`, `avatar_preset.dart`, `avatar_selector.dart` y `avatar_view.dart` (presets DiceBear + fix de foto, ciclo 11) y este resumen.
 
 ### Pendientes documentados
 - Revert de la confirmación de correos de pruebas (sección 9) cuando termine la prueba.

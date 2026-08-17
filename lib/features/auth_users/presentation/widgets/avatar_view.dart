@@ -1,17 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dicebear_core/dicebear_core.dart';
-import 'package:dicebear_styles/adventurer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import '../../domain/usecases/generar_url_firmada_avatar.dart';
-import 'avatar_selector.dart';
+import 'avatar_preset.dart';
 
 /// Vista circular compartida del avatar.
 ///
 /// Resuelve, en orden:
-///   * preset (`avatar_N`) → ícono pastel de la paleta Strani;
+///   * preset (`avatar_N`) → SVG DiceBear del preset;
 ///   * path de storage / URL pública legacy → URL firmada (`createSignedUrl`)
 ///     → `CachedNetworkImage`;
 ///   * null + paciente → DiceBear determinístico (seed = user id);
@@ -38,19 +36,20 @@ class AvatarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final presetIcon = AvatarSelector.presetIcon(avatarUrl);
-    final presetColor = AvatarSelector.presetColor(avatarUrl);
-    final bg = presetColor ?? AppTheme.cPastelPurple;
+    final preset = presetFor(avatarUrl);
+    final bg = presetColorFor(avatarUrl) ?? AppTheme.cPastelPurple;
 
     Widget child;
-    if (presetIcon != null) {
-      child = Center(
-        child: Icon(presetIcon, size: diameter * 0.55, color: AppTheme.cDeepAccent),
-      );
+    if (preset != null) {
+      final svg = dicebearSvgFor(avatarUrl);
+      child = _DiceBearAvatar(svg: svg!, diameter: diameter);
     } else if (avatarUrl != null && avatarUrl!.isNotEmpty) {
       child = _SignedAvatar(value: avatarUrl!, diameter: diameter);
     } else if (isPatient && seed != null && seed!.isNotEmpty) {
-      child = _DiceBearAvatar(seed: seed!, diameter: diameter);
+      child = _DiceBearAvatar(
+        svg: dicebearSvg('adventurer', seed!),
+        diameter: diameter,
+      );
     } else {
       child = Center(
         child: Icon(
@@ -93,12 +92,24 @@ class _SignedAvatar extends StatefulWidget {
 
 class _SignedAvatarState extends State<_SignedAvatar> {
   String? _signedUrl;
-  bool _failed = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _resolve();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SignedAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si el valor cambió (otra foto, URL legacy migrada, etc.) se re-resuelve
+    // en vez de quedarse con el estado anterior.
+    if (oldWidget.value != widget.value) {
+      _signedUrl = null;
+      _error = null;
+      _resolve();
+    }
   }
 
   Future<void> _resolve() async {
@@ -114,7 +125,7 @@ class _SignedAvatarState extends State<_SignedAvatar> {
     }
 
     if (path == null) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted) setState(() => _error = 'Avatar inválido.');
       return;
     }
 
@@ -124,14 +135,15 @@ class _SignedAvatarState extends State<_SignedAvatar> {
       );
       result.fold(
         (failure) {
-          if (mounted) setState(() => _failed = true);
+          if (mounted) setState(() => _error = failure.message);
         },
         (url) {
           if (mounted) setState(() => _signedUrl = url);
         },
       );
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
+    } catch (e) {
+      debugPrint('⚠️ AvatarView: falló la URL firmada: $e');
+      if (mounted) setState(() => _error = e.toString());
     }
   }
 
@@ -152,24 +164,12 @@ class _SignedAvatarState extends State<_SignedAvatar> {
               child: const CircularProgressIndicator(strokeWidth: 2.5),
             ),
           ),
-          errorWidget: (_, _, _) => Center(
-            child: Icon(
-              Icons.person_rounded,
-              size: widget.diameter * 0.55,
-              color: AppTheme.cDeepAccent,
-            ),
-          ),
+          errorWidget: (_, _, _) => _fallback(context),
         ),
       );
     }
-    if (_failed) {
-      return Center(
-        child: Icon(
-          Icons.person_rounded,
-          size: widget.diameter * 0.55,
-          color: AppTheme.cDeepAccent,
-        ),
-      );
+    if (_error != null) {
+      return _fallback(context);
     }
     return Center(
       child: SizedBox(
@@ -182,23 +182,39 @@ class _SignedAvatarState extends State<_SignedAvatar> {
       ),
     );
   }
+
+  /// Ícono de respaldo: muestra el motivo del fallo en un tooltip y permite
+  /// reintentar con un toque.
+  Widget _fallback(BuildContext context) {
+    return Tooltip(
+      message: _error ?? 'No se pudo cargar la foto. Toca para reintentar.',
+      child: GestureDetector(
+        onTap: _resolve,
+        child: Center(
+          child: Icon(
+            Icons.person_rounded,
+            size: widget.diameter * 0.55,
+            color: AppTheme.cDeepAccent,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-/// Avatar determinístico generado localmente con DiceBear (estilo adventurer).
+/// Avatar determinístico generado localmente con DiceBear.
 class _DiceBearAvatar extends StatelessWidget {
-  final String seed;
+  final String svg;
   final double diameter;
 
-  const _DiceBearAvatar({required this.seed, required this.diameter});
+  const _DiceBearAvatar({required this.svg, required this.diameter});
 
   @override
   Widget build(BuildContext context) {
-    final style = Style.parse(adventurer);
-    final avatar = Avatar(style, {'seed': seed});
     return SizedBox(
       width: diameter,
       height: diameter,
-      child: SvgPicture.string(avatar.svg, fit: BoxFit.cover),
+      child: SvgPicture.string(svg, fit: BoxFit.cover),
     );
   }
 }

@@ -2,19 +2,22 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/config/app_constants.dart';
 import '../../../../app/config/app_theme.dart';
+import 'avatar_preset.dart';
 import 'avatar_view.dart';
 
 /// Selector de avatar para el perfil del paciente (AU-H-08).
 ///
 /// Ofrece dos modos:
-///  * Avatares predefinidos: se guardan como clave `avatar_N` en `avatar_url`.
+///  * Avatares predefinidos: avatares DiceBear creativos; se guardan como clave
+///    `avatar_N` en `avatar_url`.
 ///  * Subir foto propia: se sube al bucket privado `avatars` y se guarda el
 ///    **path de storage** en `avatar_url` (se lee con URL firmada).
-class AvatarSelector extends StatelessWidget {
+class AvatarSelector extends StatefulWidget {
   final String? avatarUrl;
   final ValueChanged<String?> onChanged;
 
@@ -24,42 +27,12 @@ class AvatarSelector extends StatelessWidget {
     required this.onChanged,
   });
 
-  /// Avatares predefinidos (íconos pastel de la paleta Strani).
-  /// Cada preset identifica un perfil por edad y género (clave `avatar_N`).
-  static const List<Map<String, dynamic>> presets = [
-    {'key': 'avatar_1', 'label': 'Hombre joven', 'icon': Icons.face_3_rounded, 'color': Color(0xFFF7D6E0)},
-    {'key': 'avatar_2', 'label': 'Hombre adulto', 'icon': Icons.face_5_rounded, 'color': Color(0xFFBEE1E6)},
-    {'key': 'avatar_3', 'label': 'Mujer joven', 'icon': Icons.face_2_rounded, 'color': Color(0xFFE2ECE9)},
-    {'key': 'avatar_4', 'label': 'Mujer adulta', 'icon': Icons.face_6_rounded, 'color': Color(0xFFFFF3CD)},
-    {'key': 'avatar_5', 'label': 'Tercera edad hombre', 'icon': Icons.face_4_rounded, 'color': Color(0xFFF7D6E0)},
-    {'key': 'avatar_6', 'label': 'Tercera edad mujer', 'icon': Icons.face_rounded, 'color': Color(0xFFBEE1E6)},
-    {'key': 'avatar_7', 'label': 'Adulto mayor hombre', 'icon': Icons.emoji_emotions_rounded, 'color': Color(0xFFE2ECE9)},
-    {'key': 'avatar_8', 'label': 'Adulto mayor mujer', 'icon': Icons.sentiment_satisfied_alt, 'color': Color(0xFFFFF3CD)},
-  ];
+  @override
+  State<AvatarSelector> createState() => _AvatarSelectorState();
+}
 
-  /// Indica si `avatarUrl` es una clave de avatar predefinido.
-  static bool isPreset(String? avatarUrl) {
-    if (avatarUrl == null) return false;
-    return presets.any((p) => p['key'] == avatarUrl);
-  }
-
-  /// Resuelve el ícono de un avatar predefinido (o null si no es preset).
-  static IconData? presetIcon(String? avatarUrl) {
-    if (avatarUrl == null) return null;
-    for (final p in presets) {
-      if (p['key'] == avatarUrl) return p['icon'] as IconData;
-    }
-    return null;
-  }
-
-  /// Resuelve el color de fondo de un avatar predefinido.
-  static Color? presetColor(String? avatarUrl) {
-    if (avatarUrl == null) return null;
-    for (final p in presets) {
-      if (p['key'] == avatarUrl) return p['color'] as Color;
-    }
-    return null;
-  }
+class _AvatarSelectorState extends State<AvatarSelector> {
+  bool _uploading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -72,15 +45,25 @@ class AvatarSelector extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         // Vista previa
-        Center(child: _Preview(avatarUrl: avatarUrl)),
+        Center(child: _Preview(avatarUrl: widget.avatarUrl)),
         const SizedBox(height: 12),
         // Subir foto propia
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => _pickAndUpload(context),
-            icon: const Icon(Icons.add_a_photo_rounded, size: 18),
-            label: const Text('Subir foto desde mi dispositivo'),
+            onPressed: _uploading ? null : () => _pickAndUpload(context),
+            icon: _uploading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.add_a_photo_rounded, size: 18),
+            label: Text(
+              _uploading
+                  ? 'Subiendo foto...'
+                  : 'Subir foto desde mi dispositivo',
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -88,12 +71,12 @@ class AvatarSelector extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final preset in presets)
+            for (final preset in avatarPresets)
               Expanded(
                 child: _PresetTile(
                   preset: preset,
-                  selected: avatarUrl == preset['key'],
-                  onTap: () => onChanged(preset['key'] as String),
+                  selected: widget.avatarUrl == preset.key,
+                  onTap: () => widget.onChanged(preset.key),
                 ),
               ),
           ],
@@ -119,9 +102,10 @@ class AvatarSelector extends StatelessWidget {
       return;
     }
 
+    setState(() => _uploading = true);
     try {
-      final url = await _upload(bytes, picked.name);
-      onChanged(url);
+      final path = await _upload(bytes, picked.name);
+      widget.onChanged(path);
       messenger.showSnackBar(
         const SnackBar(content: Text('Foto de perfil subida correctamente.')),
       );
@@ -129,6 +113,8 @@ class AvatarSelector extends StatelessWidget {
       messenger.showSnackBar(
         SnackBar(content: Text('Error al subir la foto: $e')),
       );
+    } finally {
+      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -140,10 +126,10 @@ class AvatarSelector extends StatelessWidget {
     final path =
         '${client.auth.currentUser?.id ?? 'anon'}/${DateTime.now().millisecondsSinceEpoch}.$ext';
 
-    final uploaded = await client.storage
+    await client.storage
         .from(AppConstants.bucketAvatars)
         .uploadBinary(path, bytes);
-    return uploaded;
+    return path;
   }
 }
 
@@ -164,9 +150,9 @@ class _Preview extends StatelessWidget {
   }
 }
 
-/// Tile de un avatar predefinido (avatar circular pequeño + etiqueta).
+/// Tile de un avatar predefinido (avatar DiceBear circular pequeño + etiqueta).
 class _PresetTile extends StatelessWidget {
-  final Map<String, dynamic> preset;
+  final AvatarPreset preset;
   final bool selected;
   final VoidCallback onTap;
 
@@ -178,7 +164,7 @@ class _PresetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = preset['color'] as Color;
+    final svg = dicebearSvgFor(preset.key)!;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusSm),
@@ -190,34 +176,30 @@ class _PresetTile extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color,
+              color: preset.color,
               border: Border.all(
-                color: selected
-                    ? AppTheme.cDeepAccent
-                    : Colors.transparent,
+                color: selected ? AppTheme.cDeepAccent : Colors.transparent,
                 width: 2,
               ),
             ),
-            child: Center(
-              child: Icon(
-                preset['icon'] as IconData,
-                size: 20,
-                color: AppTheme.cDeepAccent,
+            child: ClipOval(
+              child: SizedBox(
+                width: 38,
+                height: 38,
+                child: SvgPicture.string(svg, fit: BoxFit.cover),
               ),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            preset['label'] as String,
+            preset.label,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 8,
               height: 1.1,
-              color: selected
-                  ? AppTheme.cDeepAccent
-                  : AppTheme.cMutedText,
+              color: selected ? AppTheme.cDeepAccent : AppTheme.cMutedText,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             ),
           ),

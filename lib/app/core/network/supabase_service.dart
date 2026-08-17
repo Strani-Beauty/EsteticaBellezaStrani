@@ -1000,18 +1000,22 @@ class SupabaseService {
   /// `face_map_puntos`, alineado al esquema real de Supabase.
   ///
   /// Al seleccionar un servicio facial/inyectable (antes de que exista un
-  /// tratamiento) el mapa se vincula a `paciente_id`; `tratamiento_id` queda
-  /// opcional para los mapas generados durante la ejecución clínica.
+  /// tratamiento) el mapa se vincula a `paciente_id` y `servicio_id`;
+  /// `tratamiento_id` queda opcional para los mapas generados durante la
+  /// ejecución clínica.
   ///
-  /// [puntos] es una lista de mapas `{ 'zona_anatomica', 'coordenada_x',
-  /// 'coordenada_y' }` con coordenadas normalizadas (0.0..1.0) por vista.
+  /// [puntos] es una lista de mapas `{ 'zona_anatomica', 'punto_id', 'vista',
+  /// 'coordenada_x', 'coordenada_y' }` con coordenadas normalizadas (0.0..1.0)
+  /// por vista; `punto_id`/`vista` permiten reconstruir exactamente el mapa al
+  /// re-mostrarlo.
   static Future<bool> saveFaceMapRecord({
     required String profileId,
     String? tratamientoId,
+    String? servicioId,
     required List<Map<String, dynamic>> puntos,
     String? notas,
   }) async {
-    debugPrint('📍 [saveFaceMapRecord] profileId=$profileId, tratamientoId=$tratamientoId, puntos=${puntos.length}');
+    debugPrint('📍 [saveFaceMapRecord] profileId=$profileId, tratamientoId=$tratamientoId, servicioId=$servicioId, puntos=${puntos.length}');
 
     final pacienteId = await _ensurePaciente(profileId);
     if (pacienteId == null) {
@@ -1024,6 +1028,8 @@ class SupabaseService {
       'paciente_id': pacienteId,
       'tipo_mapa': 'ROSTRO',
       'imagen_base_url': '',
+      if (servicioId != null && servicioId.isNotEmpty)
+        'servicio_id': servicioId,
       if (tratamientoId != null && tratamientoId.isNotEmpty)
         'tratamiento_id': tratamientoId,
       if (notasLimpio != null && notasLimpio.isNotEmpty)
@@ -1046,6 +1052,8 @@ class SupabaseService {
         await _client.from('face_map_puntos').insert({
           'face_map_id': faceMapId,
           'zona_anatomica': punto['zona_anatomica'] as String? ?? '',
+          if (punto['punto_id'] != null) 'punto_id': punto['punto_id'],
+          if (punto['vista'] != null) 'vista': punto['vista'],
           'coordenada_x': punto['coordenada_x'],
           'coordenada_y': punto['coordenada_y'],
           'cantidad': 1,
@@ -1058,6 +1066,94 @@ class SupabaseService {
       debugPrint('❌ [saveFaceMapRecord] Error guardando face map: $e');
       rethrow;
     }
+  }
+
+  /// Obtiene el último Face Map guardado del paciente para un servicio, con sus
+  /// puntos y si el tratamiento asociado ya quedó **cerrado**.
+  ///
+  /// Se considera cerrado solo cuando el tratamiento indicado se aplicó por
+  /// completo (productos + puntos + reporte del especialista) y se pagó en su
+  /// totalidad: existe un `tratamientos.estado = 'COMPLETADO'` vinculado a la
+  /// solicitud del mapa **y** `pagos.saldo_pendiente = 0`.
+  ///
+  /// Devuelve `null` si el paciente no tiene un mapa para ese servicio.
+  /// El mapa resultante contiene: `id`, `notas`, `puntos` (filas de
+  /// `face_map_puntos`) y `tratamientoCerrado` (bool).
+  static Future<Map<String, dynamic>?> getFaceMapPorServicio({
+    required String profileId,
+    required String servicioId,
+  }) async {
+    debugPrint('📍 [getFaceMapPorServicio] profileId=$profileId, servicioId=$servicioId');
+
+    final pacienteId = await _ensurePaciente(profileId);
+    if (pacienteId == null) {
+      debugPrint('❌ [getFaceMapPorServicio] No se pudo obtener pacienteId');
+      return null;
+    }
+
+    final mapa = await _client
+        .from('face_maps')
+        .select('id, observaciones, solicitud_id, tratamiento_id')
+        .eq('paciente_id', pacienteId)
+        .eq('servicio_id', servicioId)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (mapa == null) return null;
+
+    final puntos = await _client
+        .from('face_map_puntos')
+        .select('zona_anatomica, punto_id, vista, coordenada_x, coordenada_y')
+        .eq('face_map_id', mapa['id']);
+
+    bool tratamientoCerrado = false;
+    final solicitudId = mapa['solicitud_id'] as String?;
+
+    if (solicitudId != null && solicitudId.isNotEmpty) {
+      // Estado del tratamiento vinculado a la solicitud del mapa.
+      var tratamientoCompletado = false;
+      try {
+        final citas = await _client
+            .from('citas')
+            .select('tratamientos(estado)')
+            .eq('solicitud_id', solicitudId);
+        for (final cita in citas) {
+          final tratamientos = cita['tratamientos'];
+          if (tratamientos is List) {
+            for (final t in tratamientos) {
+              if (t is Map && t['estado']?.toString().toUpperCase() == 'COMPLETADO') {
+                tratamientoCompletado = true;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [getFaceMapPorServicio] Error leyendo tratamientos: $e');
+      }
+
+      // Saldo pendiente: el tratamiento se cierra solo si se pagó en su totalidad.
+      double saldoPendiente = 0;
+      try {
+        final pago = await _client
+            .from('pagos')
+            .select('saldo_pendiente')
+            .eq('solicitud_id', solicitudId)
+            .maybeSingle();
+        saldoPendiente = (pago?['saldo_pendiente'] as num?)?.toDouble() ?? 0;
+      } catch (e) {
+        debugPrint('⚠️ [getFaceMapPorServicio] Error leyendo pago: $e');
+      }
+
+      tratamientoCerrado = tratamientoCompletado && saldoPendiente <= 0;
+    }
+
+    debugPrint('✅ [getFaceMapPorServicio] mapa=${mapa['id']} puntos=${puntos.length} cerrado=$tratamientoCerrado');
+    return {
+      'id': mapa['id'],
+      'notas': mapa['observaciones'],
+      'puntos': puntos,
+      'tratamientoCerrado': tratamientoCerrado,
+    };
   }
 
   // ══════════════════════════════════════════════════════════════

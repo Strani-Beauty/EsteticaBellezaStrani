@@ -185,14 +185,42 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
   ];
 }
 
+/// Argumentos de navegación hacia el face map (extra de la ruta).
+class FaceMapParams {
+  final String? tratamientoId;
+  final String? servicioId;
+  final bool soloLectura;
+  final List<InjectionPoint>? puntosIniciales;
+
+  const FaceMapParams({
+    this.tratamientoId,
+    this.servicioId,
+    this.soloLectura = false,
+    this.puntosIniciales,
+  });
+}
+
 /// Screen para el Cuestionario de Inyectables y Mapeo Interactivo de Puntos
 /// sobre una cabeza realista rotable (Frente + Perfiles Izq/Der).
 class FaceMapQuestionnaireScreen extends StatefulWidget {
   final String? tratamientoId;
+  final String? servicioId;
+
+  /// Si `true`, la pantalla solo muestra los puntos ya registrados del paciente
+  /// (sin permitir marcar/desmarcar). El botón principal pasa a "Continuar al
+  /// Pago" y hace `Navigator.pop(context, 'continuar')`.
+  final bool soloLectura;
+
+  /// Puntos a precargar (modo edición con tratamiento previo cerrado, o modo
+  /// lectura para re-mostrar el mapa ya guardado).
+  final List<InjectionPoint>? puntosIniciales;
 
   const FaceMapQuestionnaireScreen({
     super.key,
     this.tratamientoId,
+    this.servicioId,
+    this.soloLectura = false,
+    this.puntosIniciales,
   });
 
   @override
@@ -224,12 +252,17 @@ class _FaceMapQuestionnaireScreenState
   late final PageController _pageController;
   HeadView _currentView = HeadView.frente;
 
+  bool get _soloLectura => widget.soloLectura;
+
   @override
   void initState() {
     super.initState();
     _effectiveTratamientoId = widget.tratamientoId ??
         'TRAT-INY-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
     _pageController = PageController(initialPage: HeadView.frente.index);
+    if (widget.puntosIniciales != null && widget.puntosIniciales!.isNotEmpty) {
+      _selectedPoints.addAll(widget.puntosIniciales!);
+    }
   }
 
   @override
@@ -254,6 +287,8 @@ class _FaceMapQuestionnaireScreenState
     HeadView view,
     BoxConstraints constraints,
   ) {
+    if (_soloLectura) return;
+
     final dx = details.localPosition.dx / constraints.maxWidth;
     final dy = details.localPosition.dy / constraints.maxHeight;
     final tappedOffset = Offset(dx, dy);
@@ -301,6 +336,7 @@ class _FaceMapQuestionnaireScreenState
   }
 
   void _togglePoint(InjectionPoint point) {
+    if (_soloLectura) return;
     setState(() {
       final existingIndex = _selectedPoints.indexWhere((p) => p.id == point.id);
       if (existingIndex >= 0) {
@@ -415,6 +451,8 @@ class _FaceMapQuestionnaireScreenState
         for (final entry in p.offsets.entries)
           {
             'zona_anatomica': p.label,
+            'punto_id': p.id,
+            'vista': entry.key.name,
             'coordenada_x': double.parse(entry.value.dx.toStringAsFixed(3)),
             'coordenada_y': double.parse(entry.value.dy.toStringAsFixed(3)),
           },
@@ -424,6 +462,7 @@ class _FaceMapQuestionnaireScreenState
       final success = await SupabaseService.saveFaceMapRecord(
         profileId: profileId,
         tratamientoId: widget.tratamientoId,
+        servicioId: widget.servicioId,
         puntos: puntos,
         notas: _notasController.text.trim(),
       );
@@ -520,6 +559,10 @@ class _FaceMapQuestionnaireScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTreatmentBadge(),
+                  if (_soloLectura) ...[
+                    const SizedBox(height: 12),
+                    _buildReadOnlyBanner(),
+                  ],
                   const SizedBox(height: 20),
                   _buildSectionTitle(
                     title: 'Mapa Mapeable de Inyectables (Rostro & Cuello)',
@@ -529,8 +572,10 @@ class _FaceMapQuestionnaireScreenState
                   const SizedBox(height: 14),
                   _buildInteractiveSilhouetteCanvas(),
                   const SizedBox(height: 16),
-                  _buildQuickPointsBar(),
-                  const SizedBox(height: 24),
+                  if (!_soloLectura) ...[
+                    _buildQuickPointsBar(),
+                    const SizedBox(height: 24),
+                  ],
                   _buildSectionTitle(
                     title: 'Resumen de Puntos Marcados',
                     subtitle: 'Lista de puntos de inyección válidos seleccionados:',
@@ -538,34 +583,39 @@ class _FaceMapQuestionnaireScreenState
                   ),
                   const SizedBox(height: 12),
                   _buildPointsSummaryCard(),
-                  const SizedBox(height: 16),
-                  _buildNotesTextField(),
+                  if (!_soloLectura) ...[
+                    const SizedBox(height: 16),
+                    _buildNotesTextField(),
+                  ],
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.cDeepAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  if (_soloLectura)
+                    _buildContinueButton()
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.cDeepAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          ),
+                          elevation: 3,
                         ),
-                        elevation: 3,
-                      ),
-                      onPressed: _isSaving ? null : _saveFaceMap,
-                      icon: _isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Icon(Icons.cloud_upload_rounded, color: Colors.white),
-                      label: Text(
-                        _isSaving ? 'Guardando en Supabase...' : 'Guardar Mapeo en Supabase (face_maps)',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        onPressed: _isSaving ? null : _saveFaceMap,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Icon(Icons.cloud_upload_rounded, color: Colors.white),
+                        label: Text(
+                          _isSaving ? 'Guardando en Supabase...' : 'Guardar Mapeo en Supabase (face_maps)',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 30),
                 ],
               ),
@@ -715,6 +765,53 @@ class _FaceMapQuestionnaireScreenState
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Aviso en modo lectura: muestra que son los puntos ya registrados.
+  Widget _buildReadOnlyBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.cPastelPurple.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(color: AppTheme.cDeepAccent.withValues(alpha: 0.25)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.visibility_rounded, color: AppTheme.cDeepAccent, size: 20),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Estos son los puntos de inyección ya registrados para tu tratamiento en curso. No se pueden modificar en esta vista.',
+              style: TextStyle(fontSize: 12.5, color: AppTheme.cDarkText, height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Botón de modo lectura: continúa al pago del servicio.
+  Widget _buildContinueButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.cDeepAccent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          ),
+          elevation: 3,
+        ),
+        onPressed: () => Navigator.of(context).pop('continuar'),
+        icon: const Icon(Icons.payment_rounded, color: Colors.white),
+        label: const Text(
+          'Continuar al Pago',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
       ),
     );
   }
@@ -1118,7 +1215,7 @@ class _FaceMapQuestionnaireScreenState
                     point.label,
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.cDeepAccent),
                   ),
-                  onDeleted: () => _togglePoint(point),
+                  onDeleted: _soloLectura ? null : () => _togglePoint(point),
                   deleteIconColor: AppTheme.cDeepAccent,
                 );
               }).toList(),
@@ -1142,4 +1239,78 @@ class _FaceMapQuestionnaireScreenState
       ),
     );
   }
+}
+
+/// Convierte las filas de `face_map_puntos` (con `punto_id`, `vista` y
+/// coordenadas normalizadas) de vuelta a [InjectionPoint] para re-mostrar o
+/// precargar el mapa ya guardado del paciente.
+///
+/// Si la fila no trae `punto_id`/`vista` (datos viejos), hace un fallback por
+/// `zona_anatomica` (label) contra los puntos predefinidos.
+List<InjectionPoint> reconstruirPuntosFaceMap(List<dynamic> filas) {
+  final predefinidos = _defaultInjectionPoints();
+  final predefinidosPorLabel = {for (final p in predefinidos) p.label: p};
+  final predefinidosIds = predefinidos.map((p) => p.id).toSet();
+
+  // Agrupar por id (formato nuevo) o por label (fallback para filas viejas).
+  final grupos = <String, List<Map<String, dynamic>>>{};
+  final ids = <String>[];
+  for (final item in filas) {
+    if (item is! Map) continue;
+    final fila = Map<String, dynamic>.from(item);
+    var key = (fila['punto_id'] as String?)?.trim();
+    if (key == null || key.isEmpty) {
+      final label = (fila['zona_anatomica'] as String?)?.trim() ?? '';
+      key = predefinidosPorLabel[label]?.id ?? 'custom_$label';
+    }
+    if (!grupos.containsKey(key)) ids.add(key);
+    grupos.putIfAbsent(key, () => []).add(fila);
+  }
+
+  final result = <InjectionPoint>[];
+  for (final id in ids) {
+    final rows = grupos[id]!;
+    final first = rows.first;
+    final label = (first['zona_anatomica'] as String?)?.trim() ?? 'Punto marcado';
+
+    // Punto predefinido: se conservan sus offsets conocidos por vista.
+    InjectionPoint? predef;
+    for (final p in predefinidos) {
+      if (p.id == id) {
+        predef = p;
+        break;
+      }
+    }
+    if (predef != null) {
+      result.add(predef);
+      continue;
+    }
+
+    // Punto custom: reconstruir offsets por vista desde las coordenadas.
+    final offsets = <HeadView, Offset>{};
+    for (final fila in rows) {
+      HeadView? vista;
+      for (final v in HeadView.values) {
+        if (v.name == fila['vista']) {
+          vista = v;
+          break;
+        }
+      }
+      if (vista == null) continue;
+      final x = (fila['coordenada_x'] as num?)?.toDouble();
+      final y = (fila['coordenada_y'] as num?)?.toDouble();
+      if (x == null || y == null) continue;
+      offsets[vista] = Offset(x, y);
+    }
+    if (offsets.isEmpty) continue;
+    result.add(
+      InjectionPoint(
+        id: id,
+        label: label,
+        offsets: offsets,
+        isCustom: !predefinidosIds.contains(id),
+      ),
+    );
+  }
+  return result;
 }

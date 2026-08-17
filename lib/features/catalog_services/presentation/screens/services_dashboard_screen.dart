@@ -9,6 +9,8 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 
@@ -100,7 +102,38 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
         const {'Inyectables', 'Rejuvenecimiento Facial'}
             .contains(service.nombreCategoria);
     if (esFacialOInyectable) {
-      context.push(AppRoutes.faceMapQuestionnaire);
+      // Si el paciente ya tiene un mapa y su tratamiento aún no está cerrado,
+      // mostrar los puntos ya seleccionados (solo lectura); solo se pide
+      // editar al iniciar otro tratamiento del mismo tipo (previo cerrado).
+      final mapData = await sl<IPatientsComplianceRepository>()
+          .getFaceMapPorServicio(profileId: user.id, servicioId: service.id);
+      if (!mounted) return;
+
+      final puntos = reconstruirPuntosFaceMap(mapData?['puntos'] ?? []);
+      final tratamientoCerrado = mapData?['tratamientoCerrado'] == true;
+      final tieneMapa = puntos.isNotEmpty;
+
+      if (tieneMapa && !tratamientoCerrado) {
+        final resultado = await context.push(
+          AppRoutes.faceMapQuestionnaire,
+          extra: FaceMapParams(
+            servicioId: service.id,
+            soloLectura: true,
+            puntosIniciales: puntos,
+          ),
+        );
+        if (resultado == 'continuar' && mounted) {
+          _showPaymentOptionsModal(service);
+        }
+      } else {
+        await context.push(
+          AppRoutes.faceMapQuestionnaire,
+          extra: FaceMapParams(
+            servicioId: service.id,
+            puntosIniciales: tieneMapa ? puntos : null,
+          ),
+        );
+      }
       return;
     }
 

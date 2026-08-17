@@ -186,8 +186,17 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.faceMapQuestionnaire,
       name: 'faceMapQuestionnaire',
       builder: (context, state) {
-        final tratamientoId = state.extra as String?;
-        return FaceMapQuestionnaireScreen(tratamientoId: tratamientoId);
+        final extra = state.extra;
+        if (extra is FaceMapParams) {
+          return FaceMapQuestionnaireScreen(
+            tratamientoId: extra.tratamientoId,
+            servicioId: extra.servicioId,
+            soloLectura: extra.soloLectura,
+            puntosIniciales: extra.puntosIniciales,
+          );
+        }
+        // Retro-compatibilidad: el extra solía ser el tratamientoId.
+        return FaceMapQuestionnaireScreen(tratamientoId: extra as String?);
       },
     ),
     GoRoute(

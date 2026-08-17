@@ -54,14 +54,26 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
   Future<bool> saveFaceMapRecord({
     required String profileId,
     String? tratamientoId,
+    String? servicioId,
     required List<Map<String, dynamic>> puntos,
     String? notas,
   }) =>
       SupabaseService.saveFaceMapRecord(
         profileId: profileId,
         tratamientoId: tratamientoId,
+        servicioId: servicioId,
         puntos: puntos,
         notas: notas,
+      );
+
+  @override
+  Future<Map<String, dynamic>?> getFaceMapPorServicio({
+    required String profileId,
+    required String servicioId,
+  }) =>
+      SupabaseService.getFaceMapPorServicio(
+        profileId: profileId,
+        servicioId: servicioId,
       );
 
   @override

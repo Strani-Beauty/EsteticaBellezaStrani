@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/config/app_constants.dart';
@@ -246,6 +247,19 @@ class PaymentsSupabaseDataSource {
       'stripe_payment_intent': stripePaymentRef,
       'fecha_transaccion': now,
     });
+
+    // Vincula el face map (guardado antes del pago) a esta solicitud para poder
+    // trazarlo hacia el tratamiento/pago al re-seleccionar el servicio.
+    try {
+      await _client
+          .from('face_maps')
+          .update({'solicitud_id': solicitudId})
+          .eq('paciente_id', pacienteId)
+          .eq('servicio_id', resolvedServicioId)
+          .isFilter('solicitud_id', null);
+    } catch (e) {
+      debugPrint('⚠️ [createServicePayment] Nota DB (vincular face map): $e');
+    }
 
     return solicitudId;
   }

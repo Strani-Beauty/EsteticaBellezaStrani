@@ -18,7 +18,7 @@ dependencies:
   signature: ^5.4.0
 
   # ── Supabase & Network ─────────────────────────────────────
-  supabase_flutter: 2.5.0
+  supabase_flutter: ^2.16.0
   flutter_dotenv: ^6.0.1
   http: ^1.6.0
 
@@ -46,6 +46,7 @@ dependencies:
   latlong2: 0.9.1
   url_launcher: 6.3.1
   file_picker: ^8.1.4
+  web: ^1.1.1
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
   flutter_stripe_web: 6.5.1

@@ -17,7 +17,7 @@ Siete ciclos de trabajo hoy:
 | 7. Confirmación de correos pendientes (pruebas, reversible) | ✅ Pusheado | `617d602` |
 | 8. Flujo de registro y panel del especialista en web (4 bugs) | ✅ Pusheado + **desplegado** | `6c19d8a` |
 | 9. Avatares: bucket privado + URLs firmadas + DiceBear local | ✅ Pusheado | `d01b7c2` |
-| 10. Presets DiceBear creativos (8 estilos) + fix de subida/preview | ✅ Desplegado | *pendiente commit* |
+| 10. Presets DiceBear creativos (8 estilos) + fix de subida/preview | ✅ Pusheado | `a94d349` |
 
 Planes detallados en `docs/plans/` (inmutables): `2026-08-17_fix_confirmacion_correo_pkce.md`, `2026-08-17_documentos_compliance_storage_privado.md`, `2026-08-17_upgrade_flutter_3449_y_deuda_dart_html.md`, `2026-08-17_face_map_servicio_estado_tratamiento.md`, `2026-08-17_adelanto_porcentual_servicios.md`, `2026-08-17_avatars_storage_dicebear.md`, `2026-08-17_avatares_dicebear_creativos_y_fix_foto.md`.
 
@@ -230,7 +230,7 @@ drop table public.mig_20260817010002_confirmados;
 - BD: migraciones aplicadas al remoto hasta `20260817010002` + `20260817000100` avatares (`supabase db push --include-all`).
 
 ### Working tree actual
-- Trabajo del día commiteado/pusheado hasta `d01b7c2` y desplegado; **pendiente de commit**: plan `2026-08-17_avatares_dicebear_creativos_y_fix_foto.md`, `avatar_preset.dart`, `avatar_selector.dart` y `avatar_view.dart` (presets DiceBear + fix de foto, ciclo 11) y este resumen.
+- Trabajo del día commiteado/pusheado hasta `a94d349` y desplegado. El siguiente ciclo dejará `main` sincronizada con `origin/main`.
 
 ### Pendientes documentados
 - Revert de la confirmación de correos de pruebas (sección 9) cuando termine la prueba.

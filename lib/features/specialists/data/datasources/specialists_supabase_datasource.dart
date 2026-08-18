@@ -304,13 +304,35 @@ class SpecialistsSupabaseDataSource {
         .from(AppConstants.bucketDocumentos)
         .uploadBinary(path, bytes);
 
+    // Re-subida de un tipo: versiona según la última versión existente.
+    final version = versionDocumento == 1
+        ? await _siguienteVersionDocumento(especialistaId, tipoDocumento)
+        : versionDocumento;
+
     return registerDocumento(
       especialistaId: especialistaId,
       tipoDocumento: tipoDocumento,
       nombreArchivo: nombreArchivo,
       urlArchivo: path,
-      versionDocumento: versionDocumento,
+      versionDocumento: version,
     );
+  }
+
+  /// Devuelve `MAX(version_documento) + 1` para el tipo, o 1 si no hay filas.
+  Future<int> _siguienteVersionDocumento(
+    String especialistaId,
+    TipoDocumento tipoDocumento,
+  ) async {
+    final res = await _client
+        .from('documentos_especialista')
+        .select('version_documento')
+        .eq('especialista_id', especialistaId)
+        .eq('tipo_documento', tipoDocumento.toDb)
+        .order('version_documento', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (res == null) return 1;
+    return ((res['version_documento'] as num?)?.toInt() ?? 0) + 1;
   }
 
   /// Genera una URL firmada de expiración corta para leer un documento privado.

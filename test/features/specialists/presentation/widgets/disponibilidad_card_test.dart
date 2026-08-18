@@ -36,6 +36,7 @@ void main() {
     await tester.pumpWidget(wrap(DisponibilidadCard(
       especialistaId: 'esp-1',
       disponibilidad: disponible,
+      habilitado: true,
     )));
 
     expect(find.text('Disponible para citas'), findsOneWidget);
@@ -60,11 +61,26 @@ void main() {
     await tester.pumpWidget(wrap(DisponibilidadCard(
       especialistaId: 'esp-1',
       disponibilidad: disponible,
+      habilitado: true,
     )));
 
     await tester.tap(find.byType(Switch));
     await tester.pump();
 
     verify(() => cubit.toggleDisponibilidad(especialistaId: 'esp-1')).called(1);
+  });
+
+  testWidgets(
+      'switch bloqueado y aviso cuando el especialista no está verificado',
+      (tester) async {
+    await tester.pumpWidget(wrap(DisponibilidadCard(
+      especialistaId: 'esp-1',
+      disponibilidad: disponible,
+      habilitado: false,
+    )));
+
+    expect(find.text('Disponible solo cuando estés verificado.'),
+        findsOneWidget);
+    expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNull);
   });
 }

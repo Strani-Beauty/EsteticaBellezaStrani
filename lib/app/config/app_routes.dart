@@ -27,6 +27,8 @@ import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cu
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/screens/fotografias_screen.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/screens/specialist_map_screen.dart';
+import 'package:esteticaybellezastrani/features/notifications/presentation/cubits/notifications_cubit.dart';
+import 'package:esteticaybellezastrani/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/cubits/treatment_execution_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/mis_citas_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/cita_detalle_screen.dart';
@@ -50,6 +52,7 @@ class AppRoutes {
   static const String specialistDocuments  = '/specialist/documents';
   static const String specialistContract   = '/specialist/contract';
   static const String specialistOnboarding = '/specialist/onboarding';
+  static const String notifications = '/specialist/notificaciones';
   static const String profile              = '/profile';
   static const String changePassword       = '/change-password';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
@@ -164,6 +167,14 @@ final GoRouter appRouter = GoRouter(
         child: SpecialistOnboardingScreen(
           especialistaId: state.extra as String? ?? '',
         ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.notifications,
+      name: 'notifications',
+      builder: (context, state) => BlocProvider<NotificationsCubit>.value(
+        value: sl<NotificationsCubit>(),
+        child: const NotificationsScreen(),
       ),
     ),
     GoRoute(

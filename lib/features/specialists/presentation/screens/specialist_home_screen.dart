@@ -3,14 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
+import 'package:esteticaybellezastrani/features/notifications/presentation/cubits/notifications_cubit.dart';
+import 'package:esteticaybellezastrani/features/notifications/presentation/widgets/notificaciones_bell.dart';
 import '../cubits/specialists_cubit.dart';
 import '../../domain/entities/contrato_entity.dart';
+import '../../domain/entities/documento_especialista_entity.dart';
 import '../../domain/entities/especialista_entity.dart';
+import '../../domain/entities/medico_regente_entity.dart';
 import '../widgets/disponibilidad_card.dart';
 import '../widgets/documentos_section.dart';
 import '../widgets/documentos_requeridos.dart';
+import '../widgets/expediente_compliance.dart';
 
 /// Panel del especialista — carga perfil, verificación, disponibilidad,
 /// documentos y contrato vía [SpecialistsCubit].
@@ -31,6 +37,7 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
     final usuarioId = context.read<AuthCubit>().currentProfile?.id;
     if (usuarioId != null) {
       context.read<SpecialistsCubit>().loadDashboard(usuarioId: usuarioId);
+      sl<NotificationsCubit>().load(usuarioId);
     }
   }
 
@@ -45,6 +52,7 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          const NotificacionesBell(),
           const ProfileMenuButton(iconColor: Colors.white),
           IconButton(
             onPressed: () => context.read<AuthCubit>().signOut(),
@@ -154,11 +162,21 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
             DisponibilidadCard(
               especialistaId: especialista.id,
               disponibilidad: state.disponibilidad,
+              habilitado: especialista.isApproved,
+            ),
+            const SizedBox(height: 16),
+            _ExpedienteCard(
+              especialista: especialista,
+              documentos: state.documentos,
+              medicosRegentes: state.medicosRegentes,
+              numeroEspecialidades: state.especialidadIds.length,
+              contrato: state.contrato,
             ),
             const SizedBox(height: 16),
             DocumentosSection(
               especialistaId: especialista.id,
               documentos: state.documentos,
+              verificado: especialista.isApproved,
             ),
             const SizedBox(height: 16),
             _ContratoCard(
@@ -351,6 +369,95 @@ class _Badge extends StatelessWidget {
       child: Text(estado.toDb, style: TextStyle(color: color, fontSize: 11)),
     );
   }
+}
+
+class _ExpedienteCard extends StatelessWidget {
+  final EspecialistaEntity especialista;
+  final List<DocumentoEspecialistaEntity> documentos;
+  final List<MedicoRegenteEntity> medicosRegentes;
+  final int numeroEspecialidades;
+  final ContratoEntity? contrato;
+
+  const _ExpedienteCard({
+    required this.especialista,
+    required this.documentos,
+    required this.medicosRegentes,
+    required this.numeroEspecialidades,
+    required this.contrato,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final expediente = ExpedienteEspecialista(
+      documentos: documentos,
+      medicoRegenteId: especialista.medicoRegenteId,
+      medicosRegentes: medicosRegentes,
+      numeroEspecialidades: numeroEspecialidades,
+      contrato: contrato,
+    );
+
+    if (especialista.isApproved) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.verified_rounded,
+              color: AppTheme.cBrandGreen, size: 32),
+          title: const Text('Expediente completo',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: const Text('Estás verificado y habilitado para operar.'),
+        ),
+      );
+    }
+
+    final pendientes = expediente.pendientes;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Tu expediente de verificación',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            for (final item in _checklist(expediente))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      item.$1 ? Icons.check_circle : Icons.radio_button_unchecked,
+                      size: 18,
+                      color: item.$1
+                          ? AppTheme.cBrandGreen
+                          : AppTheme.cMutedText,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(item.$2,
+                          style: const TextStyle(fontSize: 13)),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              'Pendiente: ${pendientes.isEmpty ? 'nada' : pendientes.join(', ')}',
+              style: const TextStyle(
+                  color: AppTheme.cMutedText, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Pares (cumplido, label) del checklist del expediente.
+  List<(bool, String)> _checklist(ExpedienteEspecialista e) => [
+        (e.documentosAprobados, 'Documentos obligatorios aprobados'),
+        (e.medicoRegenteActivo, 'Médico regente activo'),
+        (e.tieneEspecialidades, 'Al menos una especialidad'),
+        (e.contratoFirmado, 'Contrato firmado'),
+      ];
 }
 
 class _ContratoCard extends StatelessWidget {

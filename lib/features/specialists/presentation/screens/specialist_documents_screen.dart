@@ -129,13 +129,7 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
                   ),
                   const SizedBox(height: 16),
                   ..._requeridos.map(
-                    (requisito) => _DocumentoTile(
-                      requisito: requisito,
-                      subido: _documentos
-                          .any((d) => d.activo && requisito.loCumple(d)),
-                      cargando: _uploading,
-                      onSelect: () => _seleccionarArchivo(requisito),
-                    ),
+                    (requisito) => _buildTile(requisito),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -165,9 +159,49 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     );
   }
 
-  Future<void> _seleccionarArchivo(RequisitoDocumento requisito) async {
-    var tipo = requisito.tipo;
-    if (requisito.alternativas.isNotEmpty) {
+  /// Estado del requisito según los documentos ya subidos:
+  /// completado (APROBADO) → no se puede re-subir; rechazado → re-subir ese
+  /// mismo tipo; en revisión → esperando al admin; pendiente → adjuntar.
+  Widget _buildTile(RequisitoDocumento requisito) {
+    final docs = _documentos.where(requisito.loCumple).toList();
+    final aprobado = docs
+        .where((d) => d.estadoRevision == EstadoRevisionDocumento.aprobado)
+        .toList();
+    final rechazado = docs
+        .where((d) => d.estadoRevision == EstadoRevisionDocumento.rechazado)
+        .toList();
+    final enRevision = docs.any((d) =>
+        d.activo && d.estadoRevision == EstadoRevisionDocumento.pendiente);
+
+    _EstadoRequisito estado;
+    if (aprobado.isNotEmpty) {
+      estado = _EstadoRequisito.completado;
+    } else if (rechazado.isNotEmpty) {
+      estado = _EstadoRequisito.rechazado;
+    } else if (enRevision) {
+      estado = _EstadoRequisito.enRevision;
+    } else {
+      estado = _EstadoRequisito.pendiente;
+    }
+
+    return _DocumentoTile(
+      requisito: requisito,
+      estado: estado,
+      motivo: rechazado.isNotEmpty ? rechazado.first.observacionRevision : null,
+      cargando: _uploading,
+      onSelect: () => _seleccionarArchivo(
+        requisito,
+        tipo: rechazado.isNotEmpty ? rechazado.first.tipoDocumento : null,
+      ),
+    );
+  }
+
+  Future<void> _seleccionarArchivo(
+    RequisitoDocumento requisito, {
+    TipoDocumento? tipo,
+  }) async {
+    var tipoElegido = tipo;
+    if (tipoElegido == null && requisito.alternativas.isNotEmpty) {
       final elegido = await showDialog<TipoDocumento>(
         context: context,
         builder: (ctx) => SimpleDialog(
@@ -181,8 +215,9 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
         ),
       );
       if (elegido == null || !mounted) return;
-      tipo = elegido;
+      tipoElegido = elegido;
     }
+    if (tipoElegido == null) return;
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
       type: FileType.any,
@@ -194,7 +229,7 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     setState(() => _uploading = true);
     await context.read<SpecialistsCubit>().uploadDocument(
           especialistaId: widget.especialistaId,
-          tipoDocumento: tipo,
+          tipoDocumento: tipoElegido,
           bytes: Uint8List.fromList(picked.bytes!),
           nombreArchivo: picked.name,
         );
@@ -211,21 +246,39 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
   }
 }
 
+enum _EstadoRequisito { completado, enRevision, rechazado, pendiente }
+
 class _DocumentoTile extends StatelessWidget {
   final RequisitoDocumento requisito;
-  final bool subido;
+  final _EstadoRequisito estado;
+  final String? motivo;
   final bool cargando;
   final VoidCallback onSelect;
 
   const _DocumentoTile({
     required this.requisito,
-    required this.subido,
+    required this.estado,
+    this.motivo,
     required this.cargando,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
+    final subido = estado != _EstadoRequisito.pendiente;
+    final rechazado = estado == _EstadoRequisito.rechazado;
+    final Color color = switch (estado) {
+      _EstadoRequisito.completado => AppTheme.cBrandGreen,
+      _EstadoRequisito.rechazado => Colors.redAccent,
+      _EstadoRequisito.enRevision => Colors.orange,
+      _EstadoRequisito.pendiente => AppTheme.cMutedText,
+    };
+    final String estadoTexto = switch (estado) {
+      _EstadoRequisito.completado => 'Aprobado',
+      _EstadoRequisito.enRevision => 'En revisión',
+      _EstadoRequisito.rechazado => 'Rechazado',
+      _EstadoRequisito.pendiente => 'Pendiente',
+    };
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
       child: Padding(
@@ -233,8 +286,13 @@ class _DocumentoTile extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              subido ? Icons.verified_rounded : Icons.description_outlined,
-              color: subido ? AppTheme.cBrandGreen : AppTheme.cDeepAccent,
+              switch (estado) {
+                _EstadoRequisito.completado => Icons.verified_rounded,
+                _EstadoRequisito.rechazado => Icons.cancel_outlined,
+                _EstadoRequisito.enRevision => Icons.hourglass_top_rounded,
+                _EstadoRequisito.pendiente => Icons.description_outlined,
+              },
+              color: color,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -244,12 +302,15 @@ class _DocumentoTile extends StatelessWidget {
                   Text(requisito.label,
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   Text(
-                    subido ? 'Completado' : 'Pendiente',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: subido ? AppTheme.cBrandGreen : AppTheme.cMutedText,
-                    ),
+                    estadoTexto,
+                    style: TextStyle(fontSize: 12, color: color),
                   ),
+                  if (rechazado && motivo != null && motivo!.isNotEmpty)
+                    Text(
+                      'Motivo: $motivo',
+                      style: const TextStyle(
+                          fontSize: 11, color: Colors.redAccent),
+                    ),
                   if (!subido && requisito.alternativas.isNotEmpty)
                     Text(
                       requisito.descripcion,
@@ -265,7 +326,11 @@ class _DocumentoTile extends StatelessWidget {
                 width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            else if (!subido)
+            else if (estado == _EstadoRequisito.completado)
+              const Icon(Icons.check_circle, color: AppTheme.cBrandGreen)
+            else if (estado == _EstadoRequisito.enRevision)
+              const Icon(Icons.schedule_rounded, color: Colors.orange)
+            else
               // Dimensiones fijas: un botón como hijo no-flex de un Row recibe
               // ancho ilimitado (0..∞) y su mínimo interno (40) colapsa con
               // `BoxConstraints(w=Infinity)`. Con tamaño finito es inmune.
@@ -274,11 +339,9 @@ class _DocumentoTile extends StatelessWidget {
                 height: 40,
                 child: OutlinedButton(
                   onPressed: onSelect,
-                  child: const Text('Adjuntar'),
+                  child: Text(rechazado ? 'Reintentar' : 'Adjuntar'),
                 ),
-              )
-            else
-              const Icon(Icons.check_circle, color: AppTheme.cBrandGreen),
+              ),
           ],
         ),
       ),

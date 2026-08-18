@@ -59,6 +59,8 @@ class SpecialistsLoaded extends SpecialistsState {
   final List<EspecialistaEntity> especialistas;
   final List<int> especialidadIds;
   final Map<String, List<DocumentoEspecialistaEntity>> documentosPorEspecialista;
+  final Map<String, ContratoEntity?> contratosPorEspecialista;
+  final Map<String, int> especialidadesCountPorEspecialista;
 
   const SpecialistsLoaded({
     this.especialista,
@@ -71,6 +73,8 @@ class SpecialistsLoaded extends SpecialistsState {
     this.especialistas = const [],
     this.especialidadIds = const [],
     this.documentosPorEspecialista = const {},
+    this.contratosPorEspecialista = const {},
+    this.especialidadesCountPorEspecialista = const {},
   });
 
   SpecialistsLoaded copyWith({
@@ -84,6 +88,8 @@ class SpecialistsLoaded extends SpecialistsState {
     List<EspecialistaEntity>? especialistas,
     List<int>? especialidadIds,
     Map<String, List<DocumentoEspecialistaEntity>>? documentosPorEspecialista,
+    Map<String, ContratoEntity?>? contratosPorEspecialista,
+    Map<String, int>? especialidadesCountPorEspecialista,
   }) {
     return SpecialistsLoaded(
       especialista: especialista ?? this.especialista,
@@ -97,6 +103,10 @@ class SpecialistsLoaded extends SpecialistsState {
       especialidadIds: especialidadIds ?? this.especialidadIds,
       documentosPorEspecialista:
           documentosPorEspecialista ?? this.documentosPorEspecialista,
+      contratosPorEspecialista:
+          contratosPorEspecialista ?? this.contratosPorEspecialista,
+      especialidadesCountPorEspecialista: especialidadesCountPorEspecialista ??
+          this.especialidadesCountPorEspecialista,
     );
   }
 
@@ -112,6 +122,8 @@ class SpecialistsLoaded extends SpecialistsState {
         especialistas,
         especialidadIds,
         documentosPorEspecialista,
+        contratosPorEspecialista,
+        especialidadesCountPorEspecialista,
       ];
 }
 
@@ -618,9 +630,20 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     result.fold((f) => failure = f.message, (e) => especialistas.addAll(e));
 
     final docsMap = <String, List<DocumentoEspecialistaEntity>>{};
+    final contratosMap = <String, ContratoEntity?>{};
+    final especialidadesCountMap = <String, int>{};
     for (final esp in especialistas) {
       final docs = await _getDocumentos(GetDocumentosParams(esp.id));
       docs.fold((_) {}, (d) => docsMap[esp.id] = d);
+      final con = await _getContrato(GetContratoParams(esp.id));
+      con.fold((_) {}, (c) => contratosMap[esp.id] = c);
+      final rel = await _getEspecialidadesDelEspecialista(
+        GetEspecialistaEspecialidadesParams(esp.id),
+      );
+      rel.fold(
+        (_) {},
+        (r) => especialidadesCountMap[esp.id] = r.length,
+      );
     }
 
     if (failure.isNotEmpty) {
@@ -632,6 +655,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       especialistas: especialistas,
       medicosRegentes: medicosList,
       documentosPorEspecialista: docsMap,
+      contratosPorEspecialista: contratosMap,
+      especialidadesCountPorEspecialista: especialidadesCountMap,
     ));
   }
 

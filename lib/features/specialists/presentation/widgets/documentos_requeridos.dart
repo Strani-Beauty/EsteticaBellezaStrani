@@ -45,8 +45,38 @@ List<TipoDocumento> tiposDeRequisito(RequisitoDocumento r) =>
     [r.tipo, ...r.alternativas];
 
 /// True si todos los requisitos tienen un documento activo que los cumple.
+/// (Un documento rechazado queda `activo=false`, por lo que cuenta como
+/// pendiente de volver a subir.)
 bool tieneDocumentosRequeridos(List<DocumentoEspecialistaEntity> documentos) {
   return requisitosDocumentos.every(
     (r) => documentos.any((d) => d.activo && r.loCumple(d)),
   );
+}
+
+/// True si todos los requisitos tienen un documento APROBADO que los cumple.
+/// (Criterio del expediente: para habilitar al especialista cada requisito
+/// debe estar aprobado por el administrador.)
+bool tieneDocumentosAprobadosRequeridos(
+  List<DocumentoEspecialistaEntity> documentos,
+) {
+  return requisitosDocumentos.every(
+    (r) => documentos.any(
+      (d) =>
+          d.estadoRevision == EstadoRevisionDocumento.aprobado &&
+          r.loCumple(d),
+    ),
+  );
+}
+
+/// Tipos de documento que el especialista puede subir: los que no tienen un
+/// documento APROBADO (primera carga o re-subida de un rechazado). Los tipos ya
+/// aprobados quedan fuera (se conservan y no se pueden re-subir).
+Set<TipoDocumento> tiposSubiblesDocumentos(
+  List<DocumentoEspecialistaEntity> documentos,
+) {
+  final aprobados = documentos
+      .where((d) => d.estadoRevision == EstadoRevisionDocumento.aprobado)
+      .map((d) => d.tipoDocumento)
+      .toSet();
+  return TipoDocumento.values.where((t) => !aprobados.contains(t)).toSet();
 }

@@ -27,6 +27,12 @@ import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecase
 import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecases/get_mi_ubicacion.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/domain/usecases/get_solicitudes_pendientes.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
+import 'package:esteticaybellezastrani/features/notifications/data/datasources/notifications_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/notifications/data/repositories/notifications_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/notifications/domain/repositories/i_notifications_repository.dart';
+import 'package:esteticaybellezastrani/features/notifications/domain/usecases/get_notificaciones.dart';
+import 'package:esteticaybellezastrani/features/notifications/domain/usecases/marcar_leida.dart';
+import 'package:esteticaybellezastrani/features/notifications/presentation/cubits/notifications_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/data/datasources/payments_supabase_datasource.dart';
@@ -96,6 +102,9 @@ void setupDependencies() {
 
   // ── Features: Auth Users ───────────────────────────────────
   _registerAuthUsers();
+
+  // ── Features: Notifications ────────────────────────────────
+  _registerNotifications();
 
   // ── Features: Specialists ─────────────────────────────────
   _registerSpecialists();
@@ -187,6 +196,31 @@ void _registerSpecialists() {
       revisarDocumento: RevisarDocumento(sl<ISpecialistsRepository>()),
       generarUrlFirmadaDocumento:
           GenerarUrlFirmadaDocumento(sl<ISpecialistsRepository>()),
+    ),
+  );
+}
+
+void _registerNotifications() {
+  sl.registerLazySingleton<NotificationsSupabaseDataSource>(
+    () => NotificationsSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<INotificationsRepository>(
+    () => NotificationsRepositoryImpl(sl<NotificationsSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<GetNotificaciones>(
+    () => GetNotificaciones(sl<INotificationsRepository>()),
+  );
+  sl.registerLazySingleton<MarcarNotificacionLeida>(
+    () => MarcarNotificacionLeida(sl<INotificationsRepository>()),
+  );
+  sl.registerLazySingleton<MarcarTodasLeidas>(
+    () => MarcarTodasLeidas(sl<INotificationsRepository>()),
+  );
+  sl.registerLazySingleton<NotificationsCubit>(
+    () => NotificationsCubit(
+      getNotificaciones: sl<GetNotificaciones>(),
+      marcarLeida: sl<MarcarNotificacionLeida>(),
+      marcarTodasLeidas: sl<MarcarTodasLeidas>(),
     ),
   );
 }

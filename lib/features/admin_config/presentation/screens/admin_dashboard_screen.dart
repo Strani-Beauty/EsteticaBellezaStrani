@@ -6,10 +6,12 @@ import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/entities/contrato_entity.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/documento_especialista_entity.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/especialista_entity.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/medico_regente_entity.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
+import 'package:esteticaybellezastrani/features/specialists/presentation/widgets/expediente_compliance.dart';
 
 /// Panel de administración — gestión de verificación de licencias.
 class AdminDashboardScreen extends StatefulWidget {
@@ -76,6 +78,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               especialistas: state.especialistas,
               medicosRegentes: state.medicosRegentes,
               documentosPorEspecialista: state.documentosPorEspecialista,
+              contratosPorEspecialista: state.contratosPorEspecialista,
+              especialidadesCountPorEspecialista:
+                  state.especialidadesCountPorEspecialista,
               onAprobar: (especialista) => _cambiarEstado(
                 especialista,
                 EstadoVerificacion.aprobado,
@@ -171,6 +176,8 @@ class _VerificacionDeLicencias extends StatelessWidget {
   final List<EspecialistaEntity> especialistas;
   final List<MedicoRegenteEntity> medicosRegentes;
   final Map<String, List<DocumentoEspecialistaEntity>> documentosPorEspecialista;
+  final Map<String, ContratoEntity?> contratosPorEspecialista;
+  final Map<String, int> especialidadesCountPorEspecialista;
   final void Function(EspecialistaEntity) onAprobar;
   final void Function(EspecialistaEntity) onRechazar;
   final void Function(EspecialistaEntity) onBloquear;
@@ -182,6 +189,8 @@ class _VerificacionDeLicencias extends StatelessWidget {
     required this.especialistas,
     required this.medicosRegentes,
     required this.documentosPorEspecialista,
+    required this.contratosPorEspecialista,
+    required this.especialidadesCountPorEspecialista,
     required this.onAprobar,
     required this.onRechazar,
     required this.onBloquear,
@@ -251,8 +260,12 @@ class _VerificacionDeLicencias extends StatelessWidget {
             for (final especialista in especialistas)
               _EspecialistaCard(
                 especialista: especialista,
+                medicosRegentes: medicosRegentes,
                 documentos:
                     documentosPorEspecialista[especialista.id] ?? const [],
+                contrato: contratosPorEspecialista[especialista.id],
+                numeroEspecialidades:
+                    especialidadesCountPorEspecialista[especialista.id] ?? 0,
                 onAprobar: () => onAprobar(especialista),
                 onRechazar: () => onRechazar(especialista),
                 onBloquear: () => onBloquear(especialista),
@@ -356,7 +369,10 @@ class _MedicoRegenteCard extends StatelessWidget {
 
 class _EspecialistaCard extends StatelessWidget {
   final EspecialistaEntity especialista;
+  final List<MedicoRegenteEntity> medicosRegentes;
   final List<DocumentoEspecialistaEntity> documentos;
+  final ContratoEntity? contrato;
+  final int numeroEspecialidades;
   final VoidCallback onAprobar;
   final VoidCallback onRechazar;
   final VoidCallback onBloquear;
@@ -365,7 +381,10 @@ class _EspecialistaCard extends StatelessWidget {
 
   const _EspecialistaCard({
     required this.especialista,
+    required this.medicosRegentes,
     required this.documentos,
+    required this.contrato,
+    required this.numeroEspecialidades,
     required this.onAprobar,
     required this.onRechazar,
     required this.onBloquear,
@@ -375,6 +394,13 @@ class _EspecialistaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final aprobado = especialista.isApproved;
+    final expediente = ExpedienteEspecialista(
+      documentos: documentos,
+      medicoRegenteId: especialista.medicoRegenteId,
+      medicosRegentes: medicosRegentes,
+      numeroEspecialidades: numeroEspecialidades,
+      contrato: contrato,
+    );
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -433,6 +459,8 @@ class _EspecialistaCard extends StatelessWidget {
               onRevisar: onRevisarDocumento,
             ),
             const SizedBox(height: 12),
+            _ExpedienteChecklist(expediente: expediente),
+            const SizedBox(height: 12),
             if (aprobado)
               const Row(
                 children: [
@@ -441,12 +469,12 @@ class _EspecialistaCard extends StatelessWidget {
                   Text('Licencia verificada'),
                 ],
               )
-            else
+            else ...[
               Row(
                 children: [
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: onAprobar,
+                      onPressed: expediente.cumple ? onAprobar : null,
                       icon: const Icon(Icons.check_rounded),
                       label: const Text('Aprobar'),
                       style: FilledButton.styleFrom(
@@ -467,6 +495,16 @@ class _EspecialistaCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (!expediente.cumple) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Aprobación disponible cuando el expediente esté completo '
+                  '(falta: ${expediente.pendientes.join(', ')}).',
+                  style: const TextStyle(
+                      color: AppTheme.cMutedText, fontSize: 12),
+                ),
+              ],
+            ],
             if (!aprobado) ...[
               const SizedBox(height: 8),
               TextButton.icon(
@@ -485,6 +523,59 @@ class _EspecialistaCard extends StatelessWidget {
   String _formatFecha(DateTime fecha) {
     final local = fecha.toLocal();
     return '${local.day}/${local.month}/${local.year}';
+  }
+}
+
+class _ExpedienteChecklist extends StatelessWidget {
+  final ExpedienteEspecialista expediente;
+  const _ExpedienteChecklist({required this.expediente});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      (expediente.documentosAprobados, 'Documentos obligatorios aprobados'),
+      (expediente.medicoRegenteActivo, 'Médico regente activo'),
+      (expediente.tieneEspecialidades, 'Al menos una especialidad'),
+      (expediente.contratoFirmado, 'Contrato firmado'),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.cSurface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Expediente',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(height: 6),
+          for (final (cumplido, label) in items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    cumplido
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    size: 16,
+                    color: cumplido
+                        ? AppTheme.cBrandGreen
+                        : AppTheme.cMutedText,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(label, style: const TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

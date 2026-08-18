@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
 import '../cubits/specialists_cubit.dart';
+import 'documentos_requeridos.dart';
 
 /// Sección de documentos del especialista: subida de archivos para revisión
 /// y vista de cada documento vía URL firmada (bucket privado).
@@ -14,14 +15,19 @@ class DocumentosSection extends StatelessWidget {
   final String especialistaId;
   final List<DocumentoEspecialistaEntity> documentos;
 
+  /// true cuando el especialista ya está verificado: solo consulta, no sube.
+  final bool verificado;
+
   const DocumentosSection({
     super.key,
     required this.especialistaId,
     required this.documentos,
+    this.verificado = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final tiposSubibles = tiposSubiblesDocumentos(documentos);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -34,11 +40,12 @@ class DocumentosSection extends StatelessWidget {
                   child: Text('Documentos',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                TextButton.icon(
-                  onPressed: () => _showSubirDialog(context),
-                  icon: const Icon(Icons.upload_file_rounded, size: 18),
-                  label: const Text('Subir'),
-                ),
+                if (!verificado && tiposSubibles.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => _showSubirDialog(context, tiposSubibles),
+                    icon: const Icon(Icons.upload_file_rounded, size: 18),
+                    label: const Text('Subir'),
+                  ),
               ],
             ),
             if (documentos.isEmpty)
@@ -61,12 +68,18 @@ class DocumentosSection extends StatelessWidget {
     );
   }
 
-  Future<void> _showSubirDialog(BuildContext context) async {
+  Future<void> _showSubirDialog(
+    BuildContext context,
+    Set<TipoDocumento> tiposSubibles,
+  ) async {
+    if (tiposSubibles.isEmpty) return;
+    final tipos = tiposSubibles.toList()
+      ..sort((a, b) => (b.index).compareTo(a.index));
     final tipo = await showDialog<TipoDocumento>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: const Text('Tipo de documento'),
-        children: TipoDocumento.values
+        children: tipos
             .map((t) => SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, t),
                   child: Text(_labels[t] ?? t.toDb),

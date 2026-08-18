@@ -5,14 +5,18 @@ import '../../domain/entities/disponibilidad_entity.dart';
 import '../cubits/specialists_cubit.dart';
 
 /// Tarjeta que muestra y alterna la disponibilidad del especialista.
+/// El toggle queda bloqueado si el especialista aún no está verificado
+/// (`habilitado=false`): solo puede operar tras completar su expediente.
 class DisponibilidadCard extends StatelessWidget {
   final String especialistaId;
   final DisponibilidadEntity? disponibilidad;
+  final bool habilitado;
 
   const DisponibilidadCard({
     super.key,
     required this.especialistaId,
     required this.disponibilidad,
+    this.habilitado = false,
   });
 
   @override
@@ -26,15 +30,19 @@ class DisponibilidadCard extends StatelessWidget {
         ),
         title: Text(isAvailable ? 'Disponible para citas' : 'No disponible'),
         subtitle: Text(
-          disponibilidad == null
-              ? 'Activa tu disponibilidad para recibir citas.'
-              : 'Última actualización ${_format(disponibilidad!.createdAt)}',
+          !habilitado
+              ? 'Disponible solo cuando estés verificado.'
+              : disponibilidad == null
+                  ? 'Activa tu disponibilidad para recibir citas.'
+                  : 'Última actualización ${_format(disponibilidad!.createdAt)}',
         ),
         trailing: Switch(
-          value: isAvailable,
-          onChanged: (_) => context
-              .read<SpecialistsCubit>()
-              .toggleDisponibilidad(especialistaId: especialistaId),
+          value: isAvailable && habilitado,
+          onChanged: habilitado
+              ? (_) => context
+                  .read<SpecialistsCubit>()
+                  .toggleDisponibilidad(especialistaId: especialistaId)
+              : null,
         ),
       ),
     );

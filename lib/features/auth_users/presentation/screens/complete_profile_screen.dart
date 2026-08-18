@@ -9,6 +9,9 @@ import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/paciente_entity.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/patient_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
@@ -26,6 +29,8 @@ class CompleteProfileScreen extends StatefulWidget {
 }
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
+  static const _generoOptions = ['Femenino', 'Masculino', 'Otro', 'Prefiero no decir'];
+
   final _formKey = GlobalKey<FormState>();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
@@ -36,6 +41,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool _isLoadingInitialData = true;
   String? _addressError;
   String? _avatarUrl;
+  DateTime? _fechaNacimiento;
+  String? _genero;
 
   @override
   void initState() {
@@ -65,6 +72,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     final lng = profile?.longitude ?? (userProfileMap?['longitude'] as num?)?.toDouble();
     final avatar = profile?.avatarUrl ?? userProfileMap?['avatar_url']?.toString();
 
+    // Datos clínicos del paciente (use case limpio).
+    PacienteEntity? paciente;
+    final pacRes = await sl<GetMiPaciente>()();
+    pacRes.fold((f) => null, (p) => paciente = p);
+
     setState(() {
       if (phone != null && phone.isNotEmpty) {
         _phoneCtrl.text = phone;
@@ -76,6 +88,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         _selectedLocation = LatLng(lat!, lng!);
       }
       _avatarUrl = avatar;
+      _fechaNacimiento = paciente?.fechaNacimiento;
+      _genero = paciente?.genero;
       _isLoadingInitialData = false;
     });
   }
@@ -258,6 +272,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         content: Text('✅ Datos guardados en Supabase correctamente.'),
         duration: Duration(seconds: 2),
       ),
+    );
+
+    // Datos clínicos del paciente (use case limpio).
+    final pacRes = await sl<UpdateMiPaciente>()(UpdateMiPacienteParams(
+      fechaNacimiento: _fechaNacimiento,
+      genero: _genero,
+    ));
+    pacRes.fold(
+      (f) => null,
+      (p) => null,
     );
 
     // ── 2. Verificar estado del flujo desde Supabase ──
@@ -611,6 +635,61 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 ),
                 validator: (v) => v == null || v.trim().isEmpty
                     ? 'Ingresa tu número telefónico' : null,
+              ),
+              const SizedBox(height: 14),
+
+              // Fecha de nacimiento
+              InkWell(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _fechaNacimiento ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    setState(() => _fechaNacimiento = picked);
+                  }
+                },
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                child: InputDecorator(
+                  decoration: AppTheme.fieldDecoration(
+                    label: 'Fecha de Nacimiento',
+                    hint: 'Selecciona tu fecha de nacimiento',
+                    prefix: const Icon(Icons.cake_outlined, color: AppTheme.cDeepAccent),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _fechaNacimiento == null
+                            ? 'Selecciona una fecha'
+                            : '${_fechaNacimiento!.day.toString().padLeft(2, '0')}/${_fechaNacimiento!.month.toString().padLeft(2, '0')}/${_fechaNacimiento!.year}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _fechaNacimiento == null ? AppTheme.cMutedText : AppTheme.cDarkText,
+                        ),
+                      ),
+                      const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.cMutedText),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Género
+              DropdownButtonFormField<String>(
+                initialValue: _genero,
+                decoration: AppTheme.fieldDecoration(
+                  label: 'Género',
+                  hint: 'Selecciona tu género',
+                  prefix: const Icon(Icons.person_outline_rounded, color: AppTheme.cDeepAccent),
+                ),
+                items: [
+                  for (final g in _generoOptions)
+                    DropdownMenuItem(value: g, child: Text(g)),
+                ],
+                onChanged: (value) => setState(() => _genero = value),
               ),
               const SizedBox(height: 14),
 

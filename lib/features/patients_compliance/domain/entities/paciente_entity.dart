@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
 
 class PacienteEntity extends Equatable {
-  final String id;           // UUID
-  final String profileId;    // FK profiles.id (1:1)
+  final String id; // UUID de `pacientes`
+  final String profileId; // FK profiles.id (usuario_id)
   final DateTime? fechaNacimiento;
-  final String? sexo;        // 'M' | 'F' | 'O'
+  final String? genero; // 'M' | 'F' | 'O' | libre
   final String? grupoSanguineo;
-  final String? alergias;    // texto libre
-  final String? antecedentes; // texto libre
+  final String? alergias;
+  final String? antecedentes;
   final bool activo;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -16,7 +16,7 @@ class PacienteEntity extends Equatable {
     required this.id,
     required this.profileId,
     this.fechaNacimiento,
-    this.sexo,
+    this.genero,
     this.grupoSanguineo,
     this.alergias,
     this.antecedentes,

@@ -10,6 +10,7 @@ import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/validar_acceso_rn020.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/adelanto_servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
@@ -49,12 +50,13 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     }
 
     try {
-      final status = await SupabaseService.checkPatientFlowStatus(profileId: user.id);
+      final res = await sl<ValidarAccesoRN020>()();
       if (mounted) {
         setState(() {
-          _evaluationStatus = status['evaluationStatus']?.toString() ?? 'PENDIENTE';
-          _proveedorEvaluacion = status['proveedorEvaluacion']?.toString() ?? 'Telemedicina';
-          _isExpired = status['isExpired'] == true;
+          final result = res.fold((f) => null, (r) => r);
+          _evaluationStatus = result?.reason ?? 'PENDIENTE';
+          _proveedorEvaluacion = 'Telemedicina';
+          _isExpired = result?.reason == 'VENCIDA';
           _isLoadingStatus = false;
         });
       }
@@ -72,12 +74,15 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
       return;
     }
 
-    // ── REGLA ESTRICTA RN-020 / RN-022: Validar estado de la evaluación clínica en Supabase ──
-    final ruleValidation = await SupabaseService.validateReservationRulesRN020(profileId: user.id);
+    // ── REGLA ESTRICTA RN-020 / RN-022: Validar acceso (capa limpia) ──
+    final ruleRes = await sl<ValidarAccesoRN020>()();
     if (!mounted) return;
 
-    final bool allowed = ruleValidation['allowed'] == true;
-    final String reason = ruleValidation['reason']?.toString() ?? 'PENDIENTE';
+    final bool allowed = ruleRes.fold((f) => false, (r) => r.allowed);
+    final String reason = ruleRes.fold(
+      (f) => 'PENDIENTE',
+      (r) => r.reason,
+    );
 
     if (!allowed) {
       if (reason == 'RECHAZADA') {
@@ -569,6 +574,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              onPressed: () => context.push(AppRoutes.estadoSalud),
+              icon: const Icon(Icons.monitor_heart_rounded, color: AppTheme.cDeepAccent),
+              tooltip: 'Estado de Salud',
+            ),
             const ProfileMenuButton(iconColor: AppTheme.cDeepAccent),
             IconButton(
               onPressed: () => context.read<AuthCubit>().signOut(),

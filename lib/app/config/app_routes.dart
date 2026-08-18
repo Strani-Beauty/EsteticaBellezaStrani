@@ -23,6 +23,8 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/
 import 'package:esteticaybellezastrani/app/config/route_guard.dart';
 
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/estado_salud_screen.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/admin_cuestionario_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/screens/fotografias_screen.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
@@ -47,6 +49,7 @@ class AppRoutes {
   static const String payment              = '/payment/:id';
   static const String adminDashboard       = '/admin';
   static const String adminUsuarios        = '/admin/usuarios';
+  static const String adminCuestionario    = '/admin/cuestionario';
   static const String specialistHome       = '/specialist';
   static const String specialistProfile    = '/specialist/profile';
   static const String specialistDocuments  = '/specialist/documents';
@@ -56,6 +59,7 @@ class AppRoutes {
   static const String profile              = '/profile';
   static const String changePassword       = '/change-password';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
+  static const String estadoSalud = '/estado-salud';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
 
   /// Ruta concreta de fotografías de un tratamiento (sustituye `:id`).
@@ -194,6 +198,11 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: AppRoutes.adminCuestionario,
+      name: 'adminCuestionario',
+      builder: (context, state) => const AdminCuestionarioScreen(),
+    ),
+    GoRoute(
       path: AppRoutes.faceMapQuestionnaire,
       name: 'faceMapQuestionnaire',
       builder: (context, state) {
@@ -220,6 +229,11 @@ final GoRouter appRouter = GoRouter(
           child: FotografiasScreen(tratamientoId: tratamientoId),
         );
       },
+    ),
+    GoRoute(
+      path: AppRoutes.estadoSalud,
+      name: 'estadoSalud',
+      builder: (context, state) => const EstadoSaludScreen(),
     ),
     GoRoute(
       path: AppRoutes.specialistPatientMap,

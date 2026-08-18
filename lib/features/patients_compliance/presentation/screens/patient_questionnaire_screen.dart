@@ -4,8 +4,13 @@ import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/cuestionario_entity.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/evaluacion_salud_entity.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/patient_health_cubit.dart';
 
-/// Screen de Cuestionario Clínico Pre-Tratamiento (Previo a Consulta Qualify Modo Prueba).
+/// Screen de Cuestionario Clínico Pre-Tratamiento.
+/// Carga las preguntas reales del cuestionario activo (BD) y las renderiza
+/// según `tipo_respuesta`. Al aprobarse, registra la validación de
+/// telemedicina con fechas reales (validez 1 año).
 class PatientQuestionnaireScreen extends StatefulWidget {
   final String? serviceName;
   final VoidCallback? onCompleted;
@@ -26,64 +31,19 @@ class PatientQuestionnaireScreen extends StatefulWidget {
 class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Preguntas dinámicas de prueba (simulando tabla preguntas / cuestionario_preguntas por servicio)
-  final List<PreguntaEntity> _preguntas = [
-    PreguntaEntity(
-      id: 'p1',
-      texto: '¿Tienes alguna alergia conocida a la lidocaína, anestésicos locales o ácido hialurónico?',
-      tipo: TipoPregunta.boolean,
-      obligatoria: true,
-      activo: true,
-      createdAt: DateTime.now(),
-    ),
-    PreguntaEntity(
-      id: 'p2',
-      texto: '¿Estás actualmente embarazada, en período de lactancia o planeando embarazo en los próximos 3 meses?',
-      tipo: TipoPregunta.boolean,
-      obligatoria: true,
-      activo: true,
-      createdAt: DateTime.now(),
-    ),
-    PreguntaEntity(
-      id: 'p3',
-      texto: '¿Padeces alguna enfermedad autoinmune, diabetes no controlada o trastorno de coagulación?',
-      tipo: TipoPregunta.boolean,
-      obligatoria: true,
-      activo: true,
-      createdAt: DateTime.now(),
-    ),
-    PreguntaEntity(
-      id: 'p4',
-      texto: 'Menciona cualquier medicamento o suplemento que estés tomando actualmente (anticoagulantes, aspirina, etc.):',
-      tipo: TipoPregunta.abierta,
-      obligatoria: false,
-      activo: true,
-      createdAt: DateTime.now(),
-    ),
-    PreguntaEntity(
-      id: 'p5',
-      texto: '¿Has recibido tratamientos estéticos faciales o inyectables en los últimos 6 meses?',
-      tipo: TipoPregunta.seleccionMultiple,
-      opciones: const ['Bótox / Toxina Botulínica', 'Ácido Hialurónico', 'Peeling Químico', 'Hilos Tensores', 'Ninguno'],
-      obligatoria: true,
-      activo: true,
-      createdAt: DateTime.now(),
-    ),
-  ];
-
-  // Respuestas almacenadas
-  final Map<String, dynamic> _respuestas = {};
-  final Map<String, TextEditingController> _textControllers = {};
+  bool _cargando = true;
+  String? _error;
+  int? _cuestionarioId;
+  int _versionCuestionario = 1;
+  List<PreguntaEntity> _preguntas = const [];
+  final Map<int, String?> _respuestas = {};
+  final Map<int, TextEditingController> _textControllers = {};
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    for (final p in _preguntas) {
-      if (p.tipo == TipoPregunta.abierta) {
-        _textControllers[p.id] = TextEditingController();
-      }
-    }
+    _cargar();
   }
 
   @override
@@ -94,17 +54,57 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     super.dispose();
   }
 
+  Future<void> _cargar() async {
+    setState(() {
+      _cargando = true;
+      _error = null;
+    });
+
+    final cubit = sl<PatientHealthCubit>();
+    await cubit.loadCuestionario();
+
+    if (!mounted) return;
+    final state = cubit.state;
+    if (state is PatientHealthLoaded && state.cuestionario != null) {
+      setState(() {
+        _cuestionarioId = state.cuestionario!.id;
+        _versionCuestionario = state.cuestionario!.version;
+        _preguntas = state.preguntas;
+        _cargando = false;
+      });
+      for (final p in _preguntas) {
+        if (p.tipo == TipoRespuestaPregunta.texto ||
+            p.tipo == TipoRespuestaPregunta.numero ||
+            p.tipo == TipoRespuestaPregunta.decimal) {
+          _textControllers[p.id] = TextEditingController();
+        }
+      }
+    } else {
+      setState(() {
+        _cargando = false;
+        _error = state is PatientHealthError
+            ? state.message
+            : 'No se pudo cargar el cuestionario.';
+      });
+    }
+  }
+
   int get _answeredCount {
     int count = 0;
     for (final p in _preguntas) {
-      if (p.tipo == TipoPregunta.abierta) {
-        if ((_textControllers[p.id]?.text.trim() ?? '').isNotEmpty) count++;
-      } else if (_respuestas.containsKey(p.id) && _respuestas[p.id] != null) {
-        count++;
+      if (p.tipo == TipoRespuestaPregunta.archivo ||
+          p.tipo == TipoRespuestaPregunta.imagen) {
+        continue;
       }
+      final v = _textControllers[p.id]?.text.trim() ?? _respuestas[p.id] ?? '';
+      if (v.isNotEmpty) count++;
     }
     return count;
   }
+
+  String _fmtFecha(DateTime? d) => d == null
+      ? '—'
+      : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   Future<void> _submitQuestionnaire() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -117,36 +117,39 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    if (_cuestionarioId == null) return;
 
-    final user = SupabaseService.currentUser;
-    final userId = user?.id ?? 'invitado_test';
-
-    // Compilar respuestas finales
-    final Map<String, String> respuestasFinales = {};
+    // Compilar respuestas finales (textos desde controllers).
+    final respuestas = <int, String>{};
+    for (final entry in _respuestas.entries) {
+      final v = entry.value;
+      if (v != null && v.trim().isNotEmpty) respuestas[entry.key] = v;
+    }
     for (final p in _preguntas) {
-      if (p.tipo == TipoPregunta.abierta) {
-        respuestasFinales[p.id] = _textControllers[p.id]?.text.trim() ?? 'N/A';
-      } else {
-        respuestasFinales[p.id] = _respuestas[p.id]?.toString() ?? 'No respondida';
+      final ctrl = _textControllers[p.id];
+      if (ctrl != null && ctrl.text.trim().isNotEmpty) {
+        respuestas[p.id] = ctrl.text.trim();
       }
     }
 
-    // Persistir evaluación clínica en Supabase
-    try {
-      await SupabaseService.saveHealthEvaluation(
-        profileId: userId,
-        serviceName: widget.serviceName ?? 'Estética General',
-        answers: respuestasFinales,
-      );
-    } catch (_) {}
+    setState(() => _isSubmitting = true);
+
+    final cubit = sl<PatientHealthCubit>();
+    final resultado = await cubit.enviarRespuestas(_cuestionarioId!, respuestas);
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
 
-    // Diálogo de selección de modalidad de evaluación (Telemedicina vs Medicina Interna)
-    _showEvaluationModalitySelector();
+    if (resultado == null) return;
+
+    if (resultado.resultado == ResultadoEvaluacion.apto) {
+      _showEvaluationModalitySelector();
+    } else {
+      _showDictamenConRiesgos(resultado);
+    }
   }
+
+  // ── Modalidad de evaluación (Qualify simulado) ────────────────────────────
 
   void _showEvaluationModalitySelector() {
     showDialog(
@@ -211,28 +214,36 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
             Future.delayed(const Duration(seconds: 3), () async {
               if (!mounted) return;
 
-              final user = SupabaseService.currentUser;
-              if (user != null) {
-                try {
-                  await SupabaseService.saveQualifyTestValidation(
-                    profileId: user.id,
-                    aprobado: true,
-                    proveedor: proveedor,
-                  );
-                } catch (_) {}
+              final cubit = sl<PatientHealthCubit>();
+              final validacion = await cubit.registrarValidacion(
+                aprobado: true,
+                proveedor: proveedor,
+              );
 
+              final user = SupabaseService.currentUser;
+              if (user != null && validacion != null) {
                 try {
                   await sl<IPaymentsRepository>().createSolicitudAndPayment(
                     profileId: user.id,
-                    stripePaymentRef: widget.stripePaymentRef
-                        ?? 'STRIPE_SIM_${DateTime.now().millisecondsSinceEpoch}',
+                    stripePaymentRef: widget.stripePaymentRef ??
+                        'STRIPE_SIM_${DateTime.now().millisecondsSinceEpoch}',
                   );
                 } catch (_) {}
               }
 
               if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              if (!mounted) return;
 
-              _showQualifySuccessModal(proveedor: proveedor);
+              if (validacion != null) {
+                _showQualifySuccessModal(proveedor: proveedor, validacion: validacion);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Colors.redAccent,
+                    content: Text('No se pudo registrar la validación. Intenta de nuevo.'),
+                  ),
+                );
+              }
             });
 
             return AlertDialog(
@@ -269,7 +280,13 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     );
   }
 
-  void _showQualifySuccessModal({required String proveedor}) {
+  void _showQualifySuccessModal({
+    required String proveedor,
+    required ValidacionTelemedicinaEntity validacion,
+  }) {
+    final fecha = validacion.fechaValidacion;
+    final venc = validacion.fechaVencimiento;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -294,7 +311,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu expediente médico ha sido revisado y calificado como APTO por el canal de $proveedor. Ahora tienes acceso a reservar cualquier servicio del catálogo.',
+              'Tu expediente médico ha sido revisado y calificado como APTO. Ahora tienes acceso a reservar cualquier servicio del catálogo.',
               style: const TextStyle(fontSize: 13, color: AppTheme.cDarkText),
             ),
             const SizedBox(height: 12),
@@ -304,15 +321,25 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                 color: AppTheme.cPastelPurple,
                 borderRadius: BorderRadius.all(Radius.circular(8)),
               ),
-              child: const Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.shield_outlined, size: 18, color: AppTheme.cDeepAccent),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Aprobación médica oficial válida por 1 año (365 días).',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, size: 18, color: AppTheme.cDeepAccent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Aprobación médica oficial válida por 1 año (365 días).',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aprobada: ${_fmtFecha(fecha)}  ·  Vence: ${_fmtFecha(venc)}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
                   ),
                 ],
               ),
@@ -337,113 +364,239 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final progress = _answeredCount / _preguntas.length;
+  // ── Dictamen con riesgos (REQUIERE_REVISION / NO_APTO) ────────────────────
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Cuestionario: ${widget.serviceName ?? 'Servicio Estético'}'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Encabezado
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.cPastelPink,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.assignment_turned_in_rounded, color: AppTheme.cDeepAccent, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Evaluación Médica Previa',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
-                        ),
-                        Text(
-                          'Completa las preguntas clínicas requeridas para tu aptitud.',
-                          style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+  void _showDictamenConRiesgos(ResultadoEvaluacionRegistrada resultado) {
+    final bloqueado = resultado.resultado == ResultadoEvaluacion.noApto;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              bloqueado ? Icons.gpp_bad_rounded : Icons.report_problem_rounded,
+              color: bloqueado ? AppTheme.cError : Colors.orange,
+              size: 28,
+            ),
+            const SizedBox(width: 10),
+            Text(bloqueado ? 'Dictamen NO APTO' : 'Revisión requerida'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              bloqueado
+                  ? 'Nuestro equipo médico debe revisar tu caso antes de que puedas continuar.'
+                  : 'Tu cuestionario requiere revisión por nuestro equipo médico.',
+              style: const TextStyle(fontSize: 13, color: AppTheme.cDarkText),
+            ),
+            if (resultado.riesgos.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'Aspectos a revisar:',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
-
-              // Barra de progreso
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(height: 6),
+              for (final r in resultado.riesgos)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
                     children: [
-                      Text(
-                        'Progreso del Cuestionario',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                      Icon(
+                        r.critico ? Icons.error_outline : Icons.info_outline,
+                        size: 16,
+                        color: r.critico ? AppTheme.cError : Colors.orange,
                       ),
-                      Text(
-                        '$_answeredCount / ${_preguntas.length}',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          r.etiqueta,
+                          style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 8,
-                      backgroundColor: Colors.grey.shade200,
-                      color: AppTheme.cDeepAccent,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Lista de preguntas dinámicas
-              ..._preguntas.asMap().entries.map((entry) {
-                final idx = entry.key + 1;
-                final p = entry.value;
-                return _buildQuestionCard(idx, p);
-              }),
-
-              const SizedBox(height: 24),
-
-              // Botón de Envío
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: _isSubmitting ? null : _submitQuestionnaire,
-                  icon: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.send_rounded),
-                  label: Text(_isSubmitting
-                      ? 'Procesando...'
-                      : 'Enviar y Evaluar con Qualify (Modo Prueba)'),
                 ),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (widget.onCompleted != null) {
+                widget.onCompleted!();
+              } else {
+                Navigator.of(context).maybePop(false);
+              }
+            },
+            child: Text(bloqueado ? 'Entendido' : 'Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Cuestionario: ${widget.serviceName ?? 'Salud'}'),
+        centerTitle: true,
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_cargando) {
+      return const Center(child: CircularProgressIndicator(color: AppTheme.cDeepAccent));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: AppTheme.cError, size: 42),
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppTheme.cMutedText),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _cargar,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Reintentar'),
               ),
             ],
           ),
+        ),
+      );
+    }
+
+    final progress = _preguntas.isEmpty ? 0.0 : _answeredCount / _preguntas.length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cPastelPink,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.assignment_turned_in_rounded, color: AppTheme.cDeepAccent, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Evaluación Médica Previa',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
+                      ),
+                      Text(
+                        'Completa las preguntas clínicas requeridas para tu aptitud.',
+                        style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Cuestionario de Salud',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.cMutedText),
+                ),
+                Chip(
+                  backgroundColor: AppTheme.cPastelBlue,
+                  label: Text('Versión $_versionCuestionario',
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Progreso del Cuestionario',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+                    ),
+                    Text(
+                      '$_answeredCount / ${_preguntas.length}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade200,
+                    color: AppTheme.cDeepAccent,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            ..._preguntas.asMap().entries.map((entry) {
+              final idx = entry.key + 1;
+              final p = entry.value;
+              return _buildQuestionCard(idx, p);
+            }),
+
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _isSubmitting ? null : _submitQuestionnaire,
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: Text(_isSubmitting
+                    ? 'Procesando...'
+                    : 'Enviar y Evaluar con Qualify'),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -485,68 +638,236 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
             ),
             const SizedBox(height: 12),
 
-            // Renderizado por tipo de pregunta
-            if (pregunta.tipo == TipoPregunta.boolean)
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('Sí')),
-                      selected: _respuestas[pregunta.id] == true,
-                      selectedColor: AppTheme.cPastelPink,
-                      onSelected: (selected) {
-                        setState(() {
-                          _respuestas[pregunta.id] = selected ? true : null;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Center(child: Text('No')),
-                      selected: _respuestas[pregunta.id] == false,
-                      selectedColor: AppTheme.cPastelBlue,
-                      onSelected: (selected) {
-                        setState(() {
-                          _respuestas[pregunta.id] = selected ? false : null;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              )
-            else if (pregunta.tipo == TipoPregunta.abierta)
-              TextFormField(
-                controller: _textControllers[pregunta.id],
-                maxLines: 2,
-                onChanged: (_) => setState(() {}),
-                decoration: AppTheme.fieldDecoration(
-                  label: 'Detalles (opcional)',
-                  hint: 'Escribe tu respuesta aquí...',
-                ),
-              )
-            else if (pregunta.tipo == TipoPregunta.seleccionMultiple && pregunta.opciones != null)
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: pregunta.opciones!.map((op) {
-                  final isSelected = _respuestas[pregunta.id] == op;
-                  return ChoiceChip(
-                    label: Text(op),
-                    selected: isSelected,
-                    selectedColor: AppTheme.cPastelPurple,
-                    onSelected: (sel) {
-                      setState(() {
-                        _respuestas[pregunta.id] = sel ? op : null;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
+            _buildRespuesta(pregunta),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRespuesta(PreguntaEntity pregunta) {
+    switch (pregunta.tipo) {
+      case TipoRespuestaPregunta.siNo:
+        return _siNoField(pregunta);
+      case TipoRespuestaPregunta.texto:
+      case TipoRespuestaPregunta.numero:
+      case TipoRespuestaPregunta.decimal:
+        return _textField(pregunta);
+      case TipoRespuestaPregunta.fecha:
+        return _fechaField(pregunta);
+      case TipoRespuestaPregunta.lista:
+        return _listaField(pregunta, multiple: false);
+      case TipoRespuestaPregunta.multiple:
+        return _listaField(pregunta, multiple: true);
+      case TipoRespuestaPregunta.archivo:
+      case TipoRespuestaPregunta.imagen:
+        return const Text(
+          'Adjuntar archivo/imagen estará disponible próximamente.',
+          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.cMutedText),
+        );
+    }
+  }
+
+  String? _validarObligatoria(String? v, PreguntaEntity p) {
+    if (p.obligatoria && (v == null || v.trim().isEmpty)) {
+      return 'Responde esta pregunta';
+    }
+    return null;
+  }
+
+  Widget _siNoField(PreguntaEntity pregunta) {
+    return FormField<String>(
+      initialValue: _respuestas[pregunta.id],
+      validator: (v) => _validarObligatoria(v, pregunta),
+      builder: (field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text('Sí')),
+                    selected: _respuestas[pregunta.id] == 'Sí',
+                    selectedColor: AppTheme.cPastelPink,
+                    onSelected: (selected) {
+                      setState(() {
+                        _respuestas[pregunta.id] = selected ? 'Sí' : null;
+                      });
+                      field.didChange(_respuestas[pregunta.id]);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text('No')),
+                    selected: _respuestas[pregunta.id] == 'No',
+                    selectedColor: AppTheme.cPastelBlue,
+                    onSelected: (selected) {
+                      setState(() {
+                        _respuestas[pregunta.id] = selected ? 'No' : null;
+                      });
+                      field.didChange(_respuestas[pregunta.id]);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  field.errorText ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.red.shade600),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _textField(PreguntaEntity pregunta) {
+    final esNumerico =
+        pregunta.tipo == TipoRespuestaPregunta.numero || pregunta.tipo == TipoRespuestaPregunta.decimal;
+    return TextFormField(
+      controller: _textControllers[pregunta.id],
+      keyboardType: esNumerico ? TextInputType.number : TextInputType.multiline,
+      maxLines: pregunta.tipo == TipoRespuestaPregunta.texto ? 2 : 1,
+      onChanged: (_) => setState(() {}),
+      validator: (v) {
+        final obligatoria = _validarObligatoria(v, pregunta);
+        if (obligatoria != null) return obligatoria;
+        if (esNumerico && (v?.trim().isNotEmpty ?? false)) {
+          final ok = pregunta.tipo == TipoRespuestaPregunta.numero
+              ? int.tryParse(v!.trim()) != null
+              : double.tryParse(v!.trim()) != null;
+          if (!ok) return 'Ingresa un valor numérico válido';
+        }
+        return null;
+      },
+      decoration: AppTheme.fieldDecoration(
+        label: pregunta.tipo == TipoRespuestaPregunta.texto
+            ? 'Detalles (opcional)'
+            : pregunta.tipo == TipoRespuestaPregunta.numero
+                ? 'Número'
+                : 'Valor numérico',
+        hint: esNumerico ? '0' : 'Escribe tu respuesta aquí...',
+      ),
+    );
+  }
+
+  Widget _fechaField(PreguntaEntity pregunta) {
+    return FormField<String>(
+      initialValue: _respuestas[pregunta.id],
+      validator: (v) => _validarObligatoria(v, pregunta),
+      builder: (field) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(1900),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _respuestas[pregunta.id] = picked.toIso8601String().split('T').first;
+                  });
+                  field.didChange(_respuestas[pregunta.id]);
+                }
+              },
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              child: InputDecorator(
+                decoration: AppTheme.fieldDecoration(
+                  label: pregunta.obligatoria ? 'Fecha' : 'Fecha (opcional)',
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _respuestas[pregunta.id] ?? 'Selecciona una fecha',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _respuestas[pregunta.id] == null
+                            ? AppTheme.cMutedText
+                            : AppTheme.cDarkText,
+                      ),
+                    ),
+                    const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.cMutedText),
+                  ],
+                ),
+              ),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  field.errorText ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.red.shade600),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _listaField(PreguntaEntity pregunta, {required bool multiple}) {
+    return FormField<String>(
+      initialValue: _respuestas[pregunta.id],
+      validator: (v) => _validarObligatoria(v, pregunta),
+      builder: (field) {
+        final seleccionados = (_respuestas[pregunta.id] ?? '')
+            .split(', ')
+            .where((s) => s.isNotEmpty)
+            .toSet();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: pregunta.opciones.map((op) {
+                final isSelected = seleccionados.contains(op);
+                return ChoiceChip(
+                  label: Text(op),
+                  selected: isSelected,
+                  selectedColor: multiple ? AppTheme.cPastelPurple : AppTheme.cPastelPink,
+                  onSelected: (sel) {
+                    setState(() {
+                      if (multiple) {
+                        if (sel) {
+                          seleccionados.add(op);
+                        } else {
+                          seleccionados.remove(op);
+                        }
+                        _respuestas[pregunta.id] =
+                            seleccionados.isEmpty ? null : seleccionados.join(', ');
+                      } else {
+                        _respuestas[pregunta.id] = sel ? op : null;
+                      }
+                    });
+                    field.didChange(_respuestas[pregunta.id]);
+                  },
+                );
+              }).toList(),
+            ),
+            if (field.hasError)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  field.errorText ?? '',
+                  style: TextStyle(fontSize: 12, color: Colors.red.shade600),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

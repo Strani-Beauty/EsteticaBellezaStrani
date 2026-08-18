@@ -242,6 +242,36 @@ class _VerificacionDeLicencias extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            color: AppTheme.cSurface,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              side: const BorderSide(color: Colors.black12),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppTheme.cPastelPink,
+                child: const Icon(Icons.assignment_rounded,
+                    color: AppTheme.cDeepAccent),
+              ),
+              title: const Text(
+                'Cuestionario de Salud',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.cDarkText,
+                ),
+              ),
+              subtitle: const Text(
+                'Versiones, activar versión y editar preguntas',
+                style: TextStyle(color: AppTheme.cMutedText, fontSize: 12),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.go(AppRoutes.adminCuestionario),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text('Verificación de Licencias',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),

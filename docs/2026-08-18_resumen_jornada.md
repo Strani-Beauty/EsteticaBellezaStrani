@@ -8,7 +8,8 @@ Un ciclo grande hoy: **compliance del especialista de extremo a extremo** — ex
 
 | Ciclo | Estado | Commit |
 |---|---|---|
-| 1. Compliance especialista: expediente + Verificado gated + notificaciones in-app | ✅ A pushear | *pendiente* |
+| 1. Compliance especialista: expediente + Verificado gated + notificaciones in-app | ✅ Pusheado | `8e51419` |
+| 2. Verificación E2E del compliance (12 ítems) + fixes + deploy | ✅ Pusheado y desplegado | `6c60f33` |
 
 ---
 
@@ -55,16 +56,42 @@ Un ciclo grande hoy: **compliance del especialista de extremo a extremo** — ex
 
 ---
 
+## 2. Verificación E2E del compliance del especialista (12 ítems) — ciclo 2
+
+**Contexto**: tras cerrar la implementación (ciclo 1), se ejecutó la prueba manual de punta a punta del checklist de aceptación (12 ítems). Resultado: **12/12 ✅**. Evidencia completa en `docs/pruebas/2026-08-18_compliance_e2e.md` (plan en `docs/plans/2026-08-18_verificacion_compliance_especialista.md`). Se usó una cuenta nueva (`esp.compliance1@test.com`) registrada en la app.
+
+### Flujo probado y resultados
+- A–E (ítems 1–10): subida de documentos → revisión admin → notificación de rechazo → re-subida (v2) → aprobados permanecen → bloqueo de marketplace (sin tarjetas, toggle deshabilitado, `/specialist/map` restringido).
+- F (ítem 11): contra-pruebas SQL del trigger (bloquea APROBADO con expediente incompleto; positivo con expediente completo) → docs aprobados + contrato firmado → checklist verde → admin aprueba → **Verificado** + notificación `VERIFICACION_APROBADA`.
+- G (ítem 12): toggle de disponibilidad habilitado, tarjetas mapa/citas visibles, mapa sin restricción, aceptó solicitud de María González → cita `PROGRAMADA`.
+
+### Bugs fijos en esta verificación
+- **UX documentos (Fase C/D)**: botón "Reintentar" con ancho adaptable, motivo del rechazo resaltado, campanita en el AppBar de Documentos, precedencia de tile `aprobado > enRevision > rechazado > pendiente`, helper `documentosVigentes` (una fila por tipo) y `tiposSubiblesDocumentos` que excluye APROBADOS y PENDIENTES activos.
+- **`_AccesoRestringido` (Fase E)**: "Volver" con `canPop()`/`context.go` para URL directa.
+- **Firma de contrato (Fase F)**: `contratos.version_contrato` era columna de texto → migración `20260818000100_contratos_version_integer.sql` (normaliza a INTEGER) + modelo robusto con `int.tryParse`.
+- **Mapa de especialistas (Fase G)**: doble causa — `profiles(full_name)` ambiguo (fix: hint `profiles!especialistas_usuario_id_fkey`) y **`ubicaciones_especialista` sin FK hacia `especialistas`** (tabla creada a mano en el dashboard) → PostgREST no resolvía el embed. Migración `20260818000200_ubicaciones_especialista_fk.sql` (constraint idempotente + limpieza de huérfanos) + se quitaron los modifiers `order=/limit=` embebidos y se ordena por `created_at` desc en el cliente.
+
+### Hallazgos registrados (doc de pruebas)
+- Deuda: `especialista1-4@test.com` (seed) están `APROBADO` con expediente incompleto (`cumple_requisitos_habilitacion=false`) → `aceptar_solicitud` los rechazaría del marketplace (decidir backfill).
+- UX menor: `obtener_solicitudes_publicadas_geo` no filtra `fecha_expiracion` → el mapa muestra solicitudes vencidas (recomendado filtrarlas).
+
+### Despliegue
+- Commit `6c60f33` pusheado a `main` y desplegado en **Firebase Hosting** (`esteticaybellezastrani.web.app`) con `flutter build web --release` + `firebase deploy --only hosting`.
+
+---
+
 ## Verificación transversal
 
 - `flutter analyze` → sin issues.
 - `flutter test` → 81/81 OK.
-- BD: migraciones aplicadas al remoto hasta `20260818000000` compliance especialista.
+- BD: migraciones aplicadas al remoto hasta `20260818000000` compliance especialista + `20260818000100` (version_contrato integer) + `20260818000200` (FK ubicaciones_especialista).
 
 ### Working tree actual
-- Todo el trabajo del día queda commiteado/pusheado en este ciclo para seguir en laptop.
+- Ciclo 1 (`8e51419`) y ciclo 2 (`6c60f33`) pusheados. App desplegada en `esteticaybellezastrani.web.app` con los cambios del día.
 
 ### Pendientes documentados
 - Push FCM (edge function/webhook) para notificaciones — **fuera de alcance** de esta iteración (solo in-app).
 - Convertir buckets aún públicos (`contratos`, `firmas`, `fotografias-tratamiento`) a privados — pendiente de otro ciclo.
-- Versionar tablas creadas a mano en el dashboard (`disponibilidad_especialista`, `ubicaciones_especialista`, `contratos`) — pendiente de otro ciclo.
+- Versionar tablas creadas a mano en el dashboard (`disponibilidad_especialista`, `contratos`) — pendiente de otro ciclo.
+- Backfill/decisión de producto para `especialista1-4@test.com` (APROBADO legacy con expediente incompleto) — ver doc de pruebas.
+- RPC `obtener_solicitudes_publicadas_geo`: filtrar `fecha_expiracion` para no mostrar solicitudes vencidas en el mapa — pendiente de otro ciclo.

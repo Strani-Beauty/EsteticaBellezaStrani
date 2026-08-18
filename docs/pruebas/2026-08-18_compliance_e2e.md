@@ -14,7 +14,7 @@
 |---|---|---|
 | Administrador | `admin@strani.com` | `Test1234!` |
 | Especialista aprobado | `especialista1@test.com` | `Test1234!` |
-| Especialista nuevo (registrado en la app) | — | — |
+| Especialista nuevo (registrado en la app) | `esp.compliance1@test.com` | `Test1234!` |
 
 ## Checklist de aceptación
 

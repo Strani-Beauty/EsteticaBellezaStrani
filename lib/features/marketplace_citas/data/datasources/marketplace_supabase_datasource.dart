@@ -39,8 +39,8 @@ class MarketplaceSupabaseDataSource {
         .from('especialistas')
         .select(
           'id, disponible, activo, en_linea, '
-          'profiles(full_name), '
-          'ubicaciones_especialista(id, latitud, longitud, order=created_at.desc, limit=1)',
+          'profiles!especialistas_usuario_id_fkey(full_name), '
+          'ubicaciones_especialista(id, latitud, longitud, created_at)',
         )
         .eq('estado_verificacion', AppConstants.estadoAprobado)
         .eq('activo', true)

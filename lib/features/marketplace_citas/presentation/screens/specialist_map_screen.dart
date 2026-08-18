@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
@@ -710,7 +712,16 @@ class _AccesoRestringido extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                // Si se llegó por URL directa (sin pantalla debajo en el
+                // stack), volver al panel en vez de dejar la pantalla en
+                // blanco.
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go(AppRoutes.specialistHome);
+                }
+              },
               icon: const Icon(Icons.arrow_back_rounded),
               label: const Text('Volver'),
             ),

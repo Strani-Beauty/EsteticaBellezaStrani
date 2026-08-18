@@ -111,10 +111,13 @@ class SpecialistsSupabaseDataSource {
 
   /// Lista todos los especialistas (uso administrativo).
   /// Incluye nombre/email del perfil vía join a `profiles` (usuario_id).
+  /// Nota: la FK explícita es obligatoria desde que `especialistas` tiene dos
+  /// relaciones con `profiles` (`usuario_id` y `aprobado_por`) — sin ella
+  /// PostgREST responde PGRST201.
   Future<List<EspecialistaModel>> fetchEspecialistas() async {
     final res = await _client
         .from('especialistas')
-        .select('*, profiles (full_name, email)')
+        .select('*, profiles!especialistas_usuario_id_fkey (full_name, email)')
         .order('created_at');
     return res.map((json) => EspecialistaModel.fromJson(json)).toList();
   }

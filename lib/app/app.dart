@@ -131,6 +131,9 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
           }
         } else if (state is AuthUnauthenticated) {
           sl<PresenceService>().markOffline();
+          // GoRouter solo re-evalúa el redirect ante una navegación; sin este
+          // `go` explícito el usuario se quedaba en la pantalla tras signOut.
+          appRouter.go(AppRoutes.welcome);
         }
       },
       child: MaterialApp.router(

@@ -7,7 +7,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/config/app_routes.dart';
 import '../../../../app/config/app_theme.dart';
+import '../../../../app/core/di/injection.dart';
 import '../../../auth_users/presentation/cubits/auth_cubit.dart';
+import '../../../notifications/presentation/cubits/notifications_cubit.dart';
+import '../../../notifications/presentation/widgets/notificaciones_bell.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
 import '../cubits/specialists_cubit.dart';
 import '../widgets/documentos_requeridos.dart';
@@ -47,6 +50,7 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
       final usuarioId = context.read<AuthCubit>().currentProfile?.id;
       if (usuarioId != null && usuarioId.isNotEmpty) {
         context.read<SpecialistsCubit>().loadDashboard(usuarioId: usuarioId);
+        sl<NotificationsCubit>().load(usuarioId);
       }
     });
   }
@@ -72,6 +76,7 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
             }
           },
         ),
+        actions: const [NotificacionesBell()],
       ),
       body: BlocListener<SpecialistsCubit, SpecialistsState>(
         listener: (context, state) {
@@ -173,13 +178,15 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     final enRevision = docs.any((d) =>
         d.activo && d.estadoRevision == EstadoRevisionDocumento.pendiente);
 
+    // Precedencia: un documento ACTIVO en revisión (re-subida) manda sobre el
+    // rechazo anterior; sin activo, se muestra el rechazo de la última versión.
     _EstadoRequisito estado;
     if (aprobado.isNotEmpty) {
       estado = _EstadoRequisito.completado;
-    } else if (rechazado.isNotEmpty) {
-      estado = _EstadoRequisito.rechazado;
     } else if (enRevision) {
       estado = _EstadoRequisito.enRevision;
+    } else if (rechazado.isNotEmpty) {
+      estado = _EstadoRequisito.rechazado;
     } else {
       estado = _EstadoRequisito.pendiente;
     }
@@ -187,11 +194,12 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     return _DocumentoTile(
       requisito: requisito,
       estado: estado,
-      motivo: rechazado.isNotEmpty ? rechazado.first.observacionRevision : null,
+      motivo:
+          rechazado.isNotEmpty ? rechazado.last.observacionRevision : null,
       cargando: _uploading,
       onSelect: () => _seleccionarArchivo(
         requisito,
-        tipo: rechazado.isNotEmpty ? rechazado.first.tipoDocumento : null,
+        tipo: rechazado.isNotEmpty ? rechazado.last.tipoDocumento : null,
       ),
     );
   }
@@ -200,6 +208,9 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     RequisitoDocumento requisito, {
     TipoDocumento? tipo,
   }) async {
+    // Re-subida de un rechazado: `tipo` viene forzado. Primera carga: si el
+    // requisito tiene alternativas (formación) se pregunta cuál; si no, se usa
+    // el tipo principal directamente.
     var tipoElegido = tipo;
     if (tipoElegido == null && requisito.alternativas.isNotEmpty) {
       final elegido = await showDialog<TipoDocumento>(
@@ -217,7 +228,7 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
       if (elegido == null || !mounted) return;
       tipoElegido = elegido;
     }
-    if (tipoElegido == null) return;
+    tipoElegido ??= requisito.tipo;
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
       type: FileType.any,
@@ -306,10 +317,20 @@ class _DocumentoTile extends StatelessWidget {
                     style: TextStyle(fontSize: 12, color: color),
                   ),
                   if (rechazado && motivo != null && motivo!.isNotEmpty)
-                    Text(
-                      'Motivo: $motivo',
-                      style: const TextStyle(
-                          fontSize: 11, color: Colors.redAccent),
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Motivo: $motivo',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w500),
+                      ),
                     ),
                   if (!subido && requisito.alternativas.isNotEmpty)
                     Text(
@@ -331,15 +352,20 @@ class _DocumentoTile extends StatelessWidget {
             else if (estado == _EstadoRequisito.enRevision)
               const Icon(Icons.schedule_rounded, color: Colors.orange)
             else
-              // Dimensiones fijas: un botón como hijo no-flex de un Row recibe
-              // ancho ilimitado (0..∞) y su mínimo interno (40) colapsa con
-              // `BoxConstraints(w=Infinity)`. Con tamaño finito es inmune.
-              SizedBox(
-                width: 108,
-                height: 40,
-                child: OutlinedButton(
-                  onPressed: onSelect,
-                  child: Text(rechazado ? 'Reintentar' : 'Adjuntar'),
+              // Un botón como hijo no-flex de un Row recibe ancho ilimitado
+              // (0..∞), por lo que se acota con `maxWidth` y deja que crezca
+              // según el texto ('Reintentar' no cabe en un ancho fijo de 108).
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 150),
+                child: SizedBox(
+                  height: 40,
+                  child: OutlinedButton(
+                    onPressed: onSelect,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: Text(rechazado ? 'Reintentar' : 'Adjuntar'),
+                  ),
                 ),
               ),
           ],

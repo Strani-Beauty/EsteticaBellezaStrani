@@ -27,7 +27,8 @@ class ContratoModel {
     return ContratoModel(
       id: json['id'] as String,
       especialistaId: json['especialista_id'] as String,
-      versionContrato: (json['version_contrato'] as num?)?.toInt() ?? 1,
+      versionContrato:
+          int.tryParse('${json['version_contrato'] ?? ''}') ?? 1,
       urlDocumento: json['url_documento'] as String?,
       firmado: json['firmado'] as bool? ?? false,
       fechaFirma: _parseDate(json['fecha_firma']),

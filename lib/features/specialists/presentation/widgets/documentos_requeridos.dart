@@ -69,14 +69,36 @@ bool tieneDocumentosAprobadosRequeridos(
 }
 
 /// Tipos de documento que el especialista puede subir: los que no tienen un
-/// documento APROBADO (primera carga o re-subida de un rechazado). Los tipos ya
-/// aprobados quedan fuera (se conservan y no se pueden re-subir).
+/// documento APROBADO (primera carga o re-subida de un rechazado) ni un
+/// documento ACTIVO pendiente de revisión (el trigger bloquea apilar
+/// PENDIENTES del mismo tipo). Los tipos ya aprobados quedan fuera (se
+/// conservan y no se pueden re-subir).
 Set<TipoDocumento> tiposSubiblesDocumentos(
   List<DocumentoEspecialistaEntity> documentos,
 ) {
-  final aprobados = documentos
-      .where((d) => d.estadoRevision == EstadoRevisionDocumento.aprobado)
+  final noSubibles = documentos
+      .where((d) =>
+          d.estadoRevision == EstadoRevisionDocumento.aprobado ||
+          (d.activo && d.estadoRevision == EstadoRevisionDocumento.pendiente))
       .map((d) => d.tipoDocumento)
       .toSet();
-  return TipoDocumento.values.where((t) => !aprobados.contains(t)).toSet();
+  return TipoDocumento.values.where((t) => !noSubibles.contains(t)).toSet();
+}
+
+/// Devuelve un documento por tipo: el de mayor versión (el vigente). Evita
+/// listar versiones antiguas (rechazadas/inactivas) en la sección del home:
+/// tras re-subir, solo aparece la PENDIENTE, no la anterior RECHAZADA.
+List<DocumentoEspecialistaEntity> documentosVigentes(
+  List<DocumentoEspecialistaEntity> documentos,
+) {
+  final porTipo = <TipoDocumento, DocumentoEspecialistaEntity>{};
+  for (final d in documentos) {
+    final prev = porTipo[d.tipoDocumento];
+    if (prev == null || d.versionDocumento > prev.versionDocumento) {
+      porTipo[d.tipoDocumento] = d;
+    }
+  }
+  final lista = porTipo.values.toList()
+    ..sort((a, b) => a.tipoDocumento.index.compareTo(b.tipoDocumento.index));
+  return lista;
 }

@@ -28,6 +28,7 @@ class DocumentosSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiposSubibles = tiposSubiblesDocumentos(documentos);
+    final visibles = documentosVigentes(documentos);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -48,14 +49,14 @@ class DocumentosSection extends StatelessWidget {
                   ),
               ],
             ),
-            if (documentos.isEmpty)
+            if (visibles.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: Text('No has subido documentos todavía.',
                     style: TextStyle(color: AppTheme.cMutedText)),
               )
             else
-              ...documentos.map((doc) => Padding(
+              ...visibles.map((doc) => Padding(
                     padding: const EdgeInsets.only(bottom: 2),
                     child: _DocumentoFila(
                       documento: doc,

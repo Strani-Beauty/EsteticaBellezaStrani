@@ -19,6 +19,10 @@ import 'package:esteticaybellezastrani/features/specialists/presentation/screens
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_profile_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/contract_signature_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_dashboard_screen.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/admin_catalog_cubit.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/admin_catalog_screen.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/admin_servicio_detail_screen.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/route_guard.dart';
 
@@ -50,6 +54,8 @@ class AppRoutes {
   static const String adminDashboard       = '/admin';
   static const String adminUsuarios        = '/admin/usuarios';
   static const String adminCuestionario    = '/admin/cuestionario';
+  static const String adminCatalog         = '/admin/catalog';
+  static const String adminCatalogServicio = '/admin/catalog/servicio';
   static const String specialistHome       = '/specialist';
   static const String specialistProfile    = '/specialist/profile';
   static const String specialistDocuments  = '/specialist/documents';
@@ -206,6 +212,21 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.adminCuestionario,
       name: 'adminCuestionario',
       builder: (context, state) => const AdminCuestionarioScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.adminCatalog,
+      name: 'adminCatalog',
+      builder: (context, state) => BlocProvider<AdminCatalogCubit>.value(
+        value: sl<AdminCatalogCubit>(),
+        child: const AdminCatalogScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminCatalogServicio,
+      name: 'adminCatalogServicio',
+      builder: (context, state) => AdminServicioDetailScreen(
+        servicio: state.extra is ServicioEntity ? state.extra as ServicioEntity : null,
+      ),
     ),
     GoRoute(
       path: AppRoutes.faceMapQuestionnaire,

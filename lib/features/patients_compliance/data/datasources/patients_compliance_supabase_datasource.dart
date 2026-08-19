@@ -248,6 +248,21 @@ class PatientsComplianceSupabaseDataSource {
     return EvaluacionSaludModel.fromJson(res);
   }
 
+  /// ¿El paciente autenticado tiene una evaluación APTO para el cuestionario?
+  Future<bool> fetchTieneEvaluacionApta(int cuestionarioId) async {
+    final pacienteId = await _getPacienteId();
+    if (pacienteId == null) return false;
+    final res = await _client
+        .from('evaluaciones_salud')
+        .select('id')
+        .eq('paciente_id', pacienteId)
+        .eq('cuestionario_id', cuestionarioId)
+        .eq('resultado', 'APTO')
+        .limit(1)
+        .maybeSingle();
+    return res != null;
+  }
+
   // ── Validación de telemedicina (autoridad: RPC en BD) ──────────────────────
 
   Future<Map<String, dynamic>> registrarValidacionTelemedicina({

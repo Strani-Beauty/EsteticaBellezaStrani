@@ -165,6 +165,17 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
     }
   }
 
+  @override
+  Future<Either<Failure, bool>> tieneEvaluacionAptaDeCuestionario(
+      int cuestionarioId) async {
+    try {
+      final apta = await _datasource.fetchTieneEvaluacionApta(cuestionarioId);
+      return Right(apta);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo validar el cuestionario del servicio: $e'));
+    }
+  }
+
   // ── Validación de telemedicina ─────────────────────────────────────────────
 
   @override

@@ -17,7 +17,16 @@ import 'package:esteticaybellezastrani/features/catalog_services/data/datasource
 import 'package:esteticaybellezastrani/features/catalog_services/data/repositories/catalog_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias_admin.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_requisitos_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_servicios.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_servicios_admin.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_categoria.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_cuestionarios_servicio.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_especialidades_servicio.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_servicio.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/validar_requisitos_servicio.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/admin_catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/data/datasources/marketplace_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/data/repositories/marketplace_repository_impl.dart';
@@ -316,6 +325,49 @@ void _registerCatalogServices() {
     () => CatalogCubit(
       getCategorias: GetCategorias(sl<ICatalogRepository>()),
       getServicios: GetServicios(sl<ICatalogRepository>()),
+    ),
+  );
+
+  // ── Mantenimiento admin ──────────────────────────────────
+  sl.registerLazySingleton<GetCategoriasAdmin>(
+    () => GetCategoriasAdmin(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<GetServiciosAdmin>(
+    () => GetServiciosAdmin(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<GuardarCategoria>(
+    () => GuardarCategoria(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<GuardarServicio>(
+    () => GuardarServicio(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<GetRequisitosServicio>(
+    () => GetRequisitosServicio(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<GuardarEspecialidadesServicio>(
+    () => GuardarEspecialidadesServicio(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<GuardarCuestionariosServicio>(
+    () => GuardarCuestionariosServicio(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<ValidarRequisitosServicio>(
+    () => ValidarRequisitosServicio(
+      sl<ICatalogRepository>(),
+      sl<IPatientsComplianceRepository>(),
+    ),
+  );
+  sl.registerLazySingleton<AdminCatalogCubit>(
+    () => AdminCatalogCubit(
+      getCategoriasAdmin: GetCategoriasAdmin(sl<ICatalogRepository>()),
+      getServiciosAdmin: GetServiciosAdmin(sl<ICatalogRepository>()),
+      guardarCategoria: GuardarCategoria(sl<ICatalogRepository>()),
+      guardarServicio: GuardarServicio(sl<ICatalogRepository>()),
+      guardarEspecialidadesServicio:
+          GuardarEspecialidadesServicio(sl<ICatalogRepository>()),
+      guardarCuestionariosServicio:
+          GuardarCuestionariosServicio(sl<ICatalogRepository>()),
+      getEspecialidades: GetEspecialidades(sl<ISpecialistsRepository>()),
+      getCuestionarios: GetCuestionarios(sl<IPatientsComplianceRepository>()),
     ),
   );
 }

@@ -8,6 +8,7 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/a
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/validar_requisitos_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/validar_acceso_rn020.dart';
@@ -165,8 +166,93 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
       return;
     }
 
-    // ── 3. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
+    // ── 3. Requisitos de salud por servicio (cuestionarios obligatorios) ──
+    final reqRes = await sl<ValidarRequisitosServicio>()(
+      ValidarRequisitosServicioParams(
+        servicioId: service.id,
+        requiereFotos: service.requiereFotos,
+        requiereConsentimiento: service.requiereConsentimiento,
+      ),
+    );
+    if (!mounted) return;
+    final requisitos = reqRes.fold((_) => null, (r) => r);
+    if (requisitos != null && !requisitos.cumple) {
+      _showRequisitoSaludModal(requisitos);
+      return;
+    }
+
+    // ── 4. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
     _showPaymentOptionsModal(service);
+  }
+
+  /// Modal cuando el servicio tiene cuestionarios de salud obligatorios sin
+  /// evaluación APTO vigente del paciente (Act. 10). Ofrece completar el
+  /// cuestionario para desbloquear la reserva.
+  void _showRequisitoSaludModal(ValidarRequisitosServicioResult requisitos) {
+    final nombres = requisitos.cuestionariosPendientes
+        .map((c) => c.nombre ?? 'Cuestionario')
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.health_and_safety_rounded, color: AppTheme.cDeepAccent),
+            SizedBox(width: 10),
+            Expanded(child: Text('Requisito de salud pendiente')),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Para reservar este servicio necesitas completar tu evaluación de salud:',
+                style: TextStyle(fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 10),
+              for (final nombre in nombres)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline,
+                          size: 18, color: AppTheme.cGoldAccent),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(nombre)),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 4),
+              const Text(
+                'Al completarla con evaluación APTO, podrás continuar con la reserva.',
+                style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Más tarde'),
+          ),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.push(AppRoutes.estadoSalud);
+            },
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+            label: const Text('Completar cuestionario'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Aviso para visitantes sin cuenta: para seleccionar un servicio deben
@@ -299,6 +385,21 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                 service.descripcion ?? '',
                 style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
               ),
+              if (service.duracionEstimada != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule_rounded,
+                        size: 14, color: AppTheme.cMutedText),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Duración estimada: ${service.duracionEstimada} min',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.cMutedText),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -961,6 +1062,21 @@ class _ServiceCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: AppTheme.cDeepAccent),
                       ),
+                    ),
+                  ],
+                  if (service.duracionEstimada != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule_rounded,
+                            size: 14, color: AppTheme.cMutedText),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${service.duracionEstimada} min',
+                          style: const TextStyle(
+                              fontSize: 11, color: AppTheme.cMutedText),
+                        ),
+                      ],
                     ),
                   ],
                   const SizedBox(height: 8),

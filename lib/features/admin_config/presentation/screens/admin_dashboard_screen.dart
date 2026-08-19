@@ -272,6 +272,36 @@ class _VerificacionDeLicencias extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            color: AppTheme.cSurface,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              side: const BorderSide(color: Colors.black12),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppTheme.cBrandGreen.withValues(alpha: 0.15),
+                child: const Icon(Icons.storefront_rounded,
+                    color: AppTheme.cBrandGreen),
+              ),
+              title: const Text(
+                'Catálogo de Servicios',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.cDarkText,
+                ),
+              ),
+              subtitle: const Text(
+                'Categorías, servicios, especialidades y requisitos',
+                style: TextStyle(color: AppTheme.cMutedText, fontSize: 12),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.go(AppRoutes.adminCatalog),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text('Verificación de Licencias',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),

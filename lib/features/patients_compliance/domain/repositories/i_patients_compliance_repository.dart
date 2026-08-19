@@ -77,6 +77,12 @@ abstract class IPatientsComplianceRepository {
   /// Última evaluación de salud del paciente.
   Future<Either<Failure, EvaluacionSaludEntity?>> getUltimaEvaluacion();
 
+  /// ¿El paciente autenticado tiene una evaluación con resultado APTO para el
+  /// cuestionario indicado? (se usa para validar requisitos por servicio).
+  Future<Either<Failure, bool>> tieneEvaluacionAptaDeCuestionario(
+    int cuestionarioId,
+  );
+
   // ── Validación de telemedicina ─────────────────────────────────────────────
 
   /// Registra la validación de telemedicina vía RPC segura

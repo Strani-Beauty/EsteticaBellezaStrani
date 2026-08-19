@@ -73,10 +73,15 @@ class AppRoutes {
   static String misCitasDetalleDe(String citaId) => '$misCitas/$citaId';
 }
 
+/// Observador de rutas para que las pantallas reaccionen al volver a quedar
+/// visibles (p.ej. el catálogo re-valida el estado médico tras la renovación).
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
 /// GoRouter con guards de navegación basados en estado de AuthCubit
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.welcome,
   debugLogDiagnostics: false,
+  observers: [routeObserver],
   redirect: (BuildContext context, GoRouterState state) {
     final authCubit = context.read<AuthCubit>();
     return resolveAuthRedirect(

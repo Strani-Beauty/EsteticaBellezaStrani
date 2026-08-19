@@ -142,8 +142,8 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     final result = await _crearNuevaVersion(
       CrearNuevaVersionCuestionarioParams(versionActualId),
     );
-    result.fold(
-      (f) => emit(AdminCuestionarioError(f.message)),
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
       (nueva) async {
         if (state is AdminCuestionarioLoaded) {
           final current = state as AdminCuestionarioLoaded;
@@ -162,8 +162,8 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     final result = await _activarVersion(
       ActivarVersionCuestionarioParams(cuestionarioId),
     );
-    result.fold(
-      (f) => emit(AdminCuestionarioError(f.message)),
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
       (_) async {
         if (state is AdminCuestionarioLoaded) {
           final current = state as AdminCuestionarioLoaded;
@@ -192,8 +192,8 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
       riesgo: riesgo,
       activo: activo,
     ));
-    result.fold(
-      (f) => emit(AdminCuestionarioError(f.message)),
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
       (_) async {
         if (state is AdminCuestionarioLoaded) {
           final current = state as AdminCuestionarioLoaded;

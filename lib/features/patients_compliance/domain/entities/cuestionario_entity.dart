@@ -162,7 +162,7 @@ class PreguntaEntity extends Equatable {
   });
 
   @override
-  List<Object?> get props => [id, texto, tipo, orden];
+  List<Object?> get props => [id, texto, tipo, opciones, riesgo, obligatoria, activo, orden];
 }
 
 /// Relación M:N cuestionario-pregunta con orden.

@@ -39,6 +39,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   LatLng _selectedLocation = kDefaultLocation; // Houston, TX por defecto
   bool _searchingLocation = false;
   bool _isLoadingInitialData = true;
+  // true cuando se llega con `?pago=1` (renovación): salta directo al pago $30.
+  bool _soloPago = false;
   String? _addressError;
   String? _avatarUrl;
   DateTime? _fechaNacimiento;
@@ -48,6 +50,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   void initState() {
     super.initState();
     _loadExistingProfileData();
+  }
+
+  bool _depsReady = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_depsReady) {
+      _depsReady = true;
+      _soloPago = GoRouterState.of(context).uri.queryParameters['pago'] == '1';
+    }
   }
 
   @override
@@ -92,6 +105,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _genero = paciente?.genero;
       _isLoadingInitialData = false;
     });
+
+    // Renovación: los datos ya están cargados → ir directo al pago de $30.
+    if (_soloPago && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showStripeModal();
+      });
+    }
   }
 
   /// Geocodificación centralizada con apertura automática de ventana emergente del mapa

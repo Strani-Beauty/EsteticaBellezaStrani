@@ -1,7 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/cuestionario_entity.dart';
@@ -50,6 +50,11 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.cDeepAccent),
+          tooltip: 'Volver al panel admin',
+          onPressed: () => context.go(AppRoutes.adminDashboard),
+        ),
         title: const Text('Cuestionario de Salud'),
         centerTitle: true,
       ),
@@ -431,8 +436,8 @@ class _EditarPreguntaDialog extends StatefulWidget {
 
 class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
   late final TextEditingController _textoCtrl;
-  late final TextEditingController _opcionesCtrl;
-  late final TextEditingController _riesgoCtrl;
+  late final TextEditingController _nuevaOpcionCtrl;
+  late List<String> _opciones;
   late bool _obligatoria;
   late bool _activo;
 
@@ -440,8 +445,8 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
   void initState() {
     super.initState();
     _textoCtrl = TextEditingController(text: widget.pregunta.texto);
-    _opcionesCtrl = TextEditingController(text: widget.pregunta.opciones.join('\n'));
-    _riesgoCtrl = TextEditingController(text: _riesgoToText(widget.pregunta.riesgo));
+    _nuevaOpcionCtrl = TextEditingController();
+    _opciones = List.of(widget.pregunta.opciones);
     _obligatoria = widget.pregunta.obligatoria;
     _activo = widget.pregunta.activo;
   }
@@ -449,34 +454,43 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
   @override
   void dispose() {
     _textoCtrl.dispose();
-    _opcionesCtrl.dispose();
-    _riesgoCtrl.dispose();
+    _nuevaOpcionCtrl.dispose();
     super.dispose();
   }
 
-  String _riesgoToText(RiesgoSentinel? r) {
-    if (r == null) return '';
-    return '{"detonante": "${r.detonante ?? ''}", "patron": "${r.patron ?? ''}", '
-        '"etiqueta": "${r.etiqueta}", "critico": ${r.critico}}';
+  void _agregarOpcion() {
+    final nueva = _nuevaOpcionCtrl.text.trim();
+    if (nueva.isEmpty) return;
+    setState(() {
+      if (!_opciones.contains(nueva)) _opciones.add(nueva);
+      _nuevaOpcionCtrl.clear();
+    });
   }
 
-  Map<String, dynamic>? _parseRiesgo(String raw) {
-    final t = raw.trim();
-    if (t.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(t);
-      if (decoded is! Map) return null;
-      return Map<String, dynamic>.from(decoded);
-    } catch (_) {
-      return null;
-    }
+  void _quitarOpcion(String opcion) {
+    setState(() => _opciones.remove(opcion));
   }
 
   @override
   Widget build(BuildContext context) {
+    final esOpciones =
+        widget.pregunta.tipo == TipoRespuestaPregunta.lista ||
+        widget.pregunta.tipo == TipoRespuestaPregunta.multiple;
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-      title: const Text('Editar pregunta'),
+      constraints: const BoxConstraints(maxWidth: 480),
+      title: Row(
+        children: [
+          const Icon(Icons.edit_outlined, color: AppTheme.cDeepAccent, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Editar pregunta · ${widget.pregunta.tipo.label}',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -484,24 +498,83 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
             TextField(
               controller: _textoCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Texto de la pregunta'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _opcionesCtrl,
-              maxLines: 4,
               decoration: const InputDecoration(
-                labelText: 'Opciones (una por línea)',
-                hintText: 'Sí\nNo',
+                labelText: 'Texto de la pregunta',
+                hintText: 'El enunciado que verá el paciente (no es una opción)',
               ),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _riesgoCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Regla de riesgo (JSON)',
-                hintText: '{"detonante":"SI","etiqueta":"Alergia","critico":false}',
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(color: AppTheme.cDeepAccent, width: 1.2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Opciones de respuesta',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.cDeepAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    esOpciones
+                        ? 'Toca la X para quitar una opción. El paciente podrá seleccionarlas como chips.'
+                        : 'Se guardan como opciones de la pregunta.',
+                    style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_opciones.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        'Sin opciones todavía.',
+                        style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final op in _opciones)
+                          InputChip(
+                            label: Text(op, style: const TextStyle(fontSize: 12)),
+                            onDeleted: () => _quitarOpcion(op),
+                            deleteIconColor: AppTheme.cError,
+                            backgroundColor: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                            ),
+                          ),
+                      ],
+                    ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _nuevaOpcionCtrl,
+                    onSubmitted: (_) => _agregarOpcion(),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      filled: true,
+                      fillColor: Colors.white,
+                      labelText: esOpciones ? 'Nuevo síntoma / opción' : 'Nueva opción',
+                      hintText: esOpciones
+                          ? 'Escribe el síntoma y presiona Enter'
+                          : 'Escribe la opción y presiona Enter',
+                      prefixIcon: const Icon(Icons.add_rounded, size: 18),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                        borderSide: const BorderSide(color: AppTheme.cDeepAccent),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -528,16 +601,11 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
           onPressed: () {
-            final opciones = _opcionesCtrl.text
-                .split('\n')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
             widget.onGuardar(
               _textoCtrl.text.trim(),
               _obligatoria,
-              opciones.isEmpty ? null : opciones,
-              _parseRiesgo(_riesgoCtrl.text),
+              _opciones.isEmpty ? null : _opciones,
+              null,
               _activo,
             );
             Navigator.pop(context);

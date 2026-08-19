@@ -203,7 +203,7 @@ class PatientsComplianceSupabaseDataSource {
     bool? activo,
   }) async {
     final payload = <String, dynamic>{
-      'texto': ?texto,
+      'pregunta': ?texto,
       'tipo_respuesta': ?tipoRespuesta,
       'obligatoria': ?obligatoria,
       'opciones': ?opciones,

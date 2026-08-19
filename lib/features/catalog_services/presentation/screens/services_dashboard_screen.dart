@@ -27,7 +27,7 @@ class ServicesDashboardScreen extends StatefulWidget {
   State<ServicesDashboardScreen> createState() => _ServicesDashboardScreenState();
 }
 
-class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
+class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with RouteAware {
   bool _isLoadingStatus = true;
   String _evaluationStatus = 'PENDIENTE';
   String _proveedorEvaluacion = 'Telemedicina';
@@ -40,6 +40,28 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CatalogCubit>().load();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Al volver a quedar visible (p.ej. tras la renovación/evaluación) se
+  /// re-valida el estado médico para que el banner no quede desactualizado.
+  @override
+  void didPopNext() {
+    _loadFlowStatus();
   }
 
   Future<void> _loadFlowStatus() async {
@@ -495,7 +517,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
             onPressed: () {
               Navigator.pop(ctx);
-              context.push(AppRoutes.completeProfile);
+              context.push('${AppRoutes.completeProfile}?pago=1');
             },
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Pagar \$30 USD y Renovar'),

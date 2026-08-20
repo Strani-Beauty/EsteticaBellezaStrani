@@ -505,7 +505,7 @@ class _FaceMapQuestionnaireScreenState
               onPressed: () {
                 Navigator.of(ctx).pop();
                 if (context.canPop()) {
-                  context.pop();
+                  context.pop('continuar');
                 } else {
                   context.go('/services');
                 }

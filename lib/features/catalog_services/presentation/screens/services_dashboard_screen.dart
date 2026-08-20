@@ -155,13 +155,16 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
           _showPaymentOptionsModal(service);
         }
       } else {
-        await context.push(
+        final resultado = await context.push(
           AppRoutes.faceMapQuestionnaire,
           extra: FaceMapParams(
             servicioId: service.id,
             puntosIniciales: tieneMapa ? puntos : null,
           ),
         );
+        if (resultado == 'continuar' && mounted) {
+          _showPaymentOptionsModal(service);
+        }
       }
       return;
     }

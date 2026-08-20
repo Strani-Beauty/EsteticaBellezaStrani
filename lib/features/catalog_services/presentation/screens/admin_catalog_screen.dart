@@ -122,11 +122,18 @@ class _AdminCatalogViewState extends State<_AdminCatalogView>
           return FloatingActionButton(
             backgroundColor: AppTheme.cDeepAccent,
             tooltip: esCategorias ? 'Nueva categoría' : 'Nuevo servicio',
-            onPressed: () {
+            onPressed: () async {
               if (esCategorias) {
                 _editarCategoriaDialog(context, null);
               } else {
-                context.push(AppRoutes.adminCatalogServicio, extra: null);
+                final cubit = context.read<AdminCatalogCubit>();
+                final res = await context.push<ServicioEntity>(
+                  AppRoutes.adminCatalogServicio,
+                  extra: null,
+                );
+                if (res != null) {
+                  cubit.load();
+                }
               }
             },
             child: const Icon(Icons.add_rounded, color: Colors.white),
@@ -168,10 +175,15 @@ class _AdminCatalogViewState extends State<_AdminCatalogView>
               ),
               _ServiciosTab(
                 servicios: state.servicios,
-                onAbrir: (s) => context.push(
-                  AppRoutes.adminCatalogServicio,
-                  extra: s,
-                ),
+                onAbrir: (s) async {
+                  final res = await context.push<ServicioEntity>(
+                    AppRoutes.adminCatalogServicio,
+                    extra: s,
+                  );
+                  if (res != null) {
+                    cubit.load();
+                  }
+                },
                 onActivar: (s) => cubit.guardarServicio(
                       id: s.id,
                       categoriaId: s.categoriaId,

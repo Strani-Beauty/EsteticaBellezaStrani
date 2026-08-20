@@ -145,12 +145,15 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       activo: _activo,
     );
     if (creado == null) {
-      setState(() => _guardando = false);
+      if (mounted) {
+        setState(() => _guardando = false);
+        _mostrarErrorGuardado();
+      }
       return;
     }
 
     final servicioId = creado.id;
-    await cubit.guardarEspecialidadesServicio(
+    final okEspecialidades = await cubit.guardarEspecialidadesServicio(
       servicioId,
       _especialidadIds.toList(),
     );
@@ -164,11 +167,30 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
         orden: orden++,
       ));
     });
-    await cubit.guardarCuestionariosServicio(servicioId, items);
+    final okCuestionarios =
+        await cubit.guardarCuestionariosServicio(servicioId, items);
 
     if (!mounted) return;
     setState(() => _guardando = false);
-    Navigator.of(context).pop();
+
+    if (!okEspecialidades || !okCuestionarios) {
+      _mostrarErrorGuardado();
+      return;
+    }
+
+    Navigator.of(context).pop(creado);
+  }
+
+  /// Muestra el error del guardado guardado en el estado del cubit (si existe)
+  /// o un mensaje genérico, sin cerrar la pantalla.
+  void _mostrarErrorGuardado() {
+    final state = sl<AdminCatalogCubit>().state;
+    final mensaje = state is AdminCatalogLoaded && state.error != null
+        ? state.error!
+        : 'No se pudo guardar el servicio. Intenta de nuevo.';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje)),
+    );
   }
 
   @override

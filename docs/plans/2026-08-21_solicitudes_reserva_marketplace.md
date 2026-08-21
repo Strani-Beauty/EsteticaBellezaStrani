@@ -90,13 +90,15 @@ Estado actual (revisado en código y BD):
 
 1. **`transacciones.tipo_transaccion` CHECK** creado fuera del repo con valores acentuados (`DEPÓSITO`/`PAGO_FINAL`); la app usa ASCII (`DEPOSITO`/`PAGO_TOTAL`/`SALDO`). Fix `20260821000200_fix_transacciones_tipo_transaccion_check.sql`: normaliza el CHECK a `(DEPOSITO, PAGO_TOTAL, SALDO, REEMBOLSO, AJUSTE)` + backfill (tabla vacía).
 2. **`pagos.estado` es enum `estado_pago_enum`**: el `CASE` del UPDATE en `confirmar_deposito_solicitud` devolvía `text` → 42804. Fix `20260821000300_fix_confirmar_pagos_estado_cast.sql` (cast `::estado_pago_enum`).
-3. **`tr_log_cita_estado` previo en `citas`** (también fuera del repo) ya registra historial CITA en INSERT/UPDATE → `aceptar_solicitud` duplicaba. Fix `20260821000400_quitar_historial_cita_duplicado.sql`.
-4. **Deuda pre-existente (no corregida, documentada)**: la app (`treatment_execution._insertHistorial`) inserta historial CITA manualmente además del trigger `tr_log_cita_estado` → doble registro en el ciclo de ejecución de citas. Requiere refactor del módulo (fuera de alcance de este plan).
+3. **`tr_log_cita_estado` previo en `citas`** (también fuera del repo) ya registraba historial CITA en INSERT/UPDATE → `aceptar_solicitud` duplicaba. Fix `20260821000400_quitar_historial_cita_duplicado.sql`.
+4. **Deuda pre-existente corregida**: la app (`treatment_execution._insertHistorial`) insertaba historial CITA manualmente además del trigger `tr_log_cita_estado` → doble registro en el ciclo de ejecución de citas. **Corregido** con `20260821000500_eliminar_tr_log_cita_estado.sql`: se elimina el trigger y su función, y se restaura en `aceptar_solicitud` el registro de la cita creada (PROGRAMADA). Fuente única: creación → `aceptar_solicitud`; transiciones → app (`_insertHistorial`).
 
 ## Notas
 
 - **Pruebas sin dinero real**: Stripe test mode (4242) y `enforce_pago_real='false'`
   para E2E simulado (el app llama `confirmar_deposito_solicitud` directamente).
 - El historial de SOLICITUD queda cubierto por `trg_log_solicitud_estado` (SECURITY
-  DEFINER, no reintroduce el 42501); el de CITA por `tr_log_cita_estado` (previo).
+  DEFINER, no reintroduce el 42501); el de CITA por `aceptar_solicitud` (creación)
+  y la app (`_insertHistorial`, transiciones) — se eliminó el trigger duplicado
+  `tr_log_cita_estado` (00500).
 - El pooler del proyecto responde en el puerto **6543** (el 5432 dio timeout).

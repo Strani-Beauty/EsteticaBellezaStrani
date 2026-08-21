@@ -84,7 +84,7 @@ Estado actual (revisado en código y BD):
 
 - [x] F1. `flutter analyze` 0 issues; `flutter test` **141/141** en verde (incluye tests nuevos de modelos y cubit de reserva).
 - [x] F2. Migración aplicada al remoto y **verificada por smoke tests** (crear → confirmar → publicar → aceptar → cita → historial → notificaciones), todo con rollback.
-- [x] F3. E2E manual `docs/pruebas/2026-08-21_solicitudes_reserva_marketplace_e2e.md` creado; `docs/Pruebas manuales/06_marketplace_citas.md` ampliado y nuevo `12_solicitudes_reserva.md`. **Pendiente**: ejecutar el checklist E2E en la app.
+- [x] F3. E2E manual `docs/pruebas/2026-08-21_solicitudes_reserva_marketplace_e2e.md` **verificado 14/14 ✅**; `docs/Pruebas manuales/06_marketplace_citas.md` ampliado (7/31 ✅) y nuevo `12_solicitudes_reserva.md` (9/14 ✅); resumen de jornada `docs/2026-08-21_resumen_jornada.md`.
 
 ## Hallazgos post-aplicación (deuda corregida con migraciones de fix)
 

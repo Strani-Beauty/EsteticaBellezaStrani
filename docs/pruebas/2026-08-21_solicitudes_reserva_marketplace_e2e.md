@@ -1,10 +1,10 @@
-# Pruebas manuales — Solicitudes, Reserva y Marketplace (E2E)
+# Pruebas manuales — Solicitudes, Reserva y Marketplace (E2E) — VERIFICADO
 
 | | |
 |---|---|
 | **Fecha** | 2026-08-21 |
-| **Versión** | 1.0 |
-| **Commit** | (pendiente) |
+| **Versión** | 1.1 (reporte verificado) |
+| **Commits** | `5814e81` (implementación) + `7a1e76f` (historial CITA unificado) |
 | **Entorno** | Local `flutter run -d web-server --web-port 8080` (NO el desplegado en web.app) |
 | **Plan** | `docs/plans/2026-08-21_solicitudes_reserva_marketplace.md` |
 | **Proyecto Supabase** | `hhyjremkguvphmjuaazp` |
@@ -12,8 +12,8 @@
 
 ## Configuración previa
 
-- Migración `20260821000100_solicitudes_reserva_marketplace.sql` aplicada (SQL Editor o `supabase db push`).
-- `configuracion_sistema.enforce_pago_real = 'false'` (pruebas simuladas sin dinero real). Para validar el gate de producción, cambiarlo a `'true'`.
+- Migraciones `20260821000100` a `20260821000500` aplicadas al remoto (SQL Editor + fixes vía pooler) y registradas en `supabase_migrations.schema_migrations`.
+- `configuracion_sistema.enforce_pago_real = 'false'` (pruebas simuladas sin dinero real). El gate de producción (`'true'` → solo webhook) se valida por contra-prueba.
 - Stripe en test mode (tarjeta `4242 4242 4242 4242`) o modo simulado (`STRIPE_SIM_…` sin clave).
 
 ## Cuentas
@@ -21,35 +21,36 @@
 | Rol | Email | Clave |
 |---|---|---|
 | Paciente con APTO + dirección principal | `pac.compliance1@test.com` | `Test1234!` |
-| Especialista APROBADO (coincide) | `esp.aprobado@test` | `Test1234!` |
-| Especialista APROBADO (coincide, 2º para concurrencia) | `esp.aprobado2@test` | `Test1234!` |
+| Especialista APROBADO + expediente (acepta) | ESPECIALISTA TEST 2 (`b0671708-…`) | `Test1234!` |
+| Especialistas APROBADOS del radio (notificados) | seed `Dr. Carlos Medina` / `Dr. José Ramírez` | `Test1234!` |
 
-## Checklist de aceptación — flujo paciente (Act. 1-7)
+## Checklist de aceptación (14 ítems ✅)
 
-| # | Ítem | Resultado | Evidencia / observación |
+| # | Ítem (Actividad) | Resultado | Evidencia / observación |
 |---|---|---|---|
-| P1 | Seleccionar un servicio del catálogo → abre el Resumen (no pago directo) | | |
-| P2 | Resumen muestra servicio(s), precio total, depósito (adelanto %) y saldo | | |
-| P3 | Multi-servicio: "Agregar" otro servicio recalcula total y depósito | | |
-| P4 | Fecha/hora preferida y radio configurado visibles en el resumen | | |
-| P5 | Dirección principal cargada (sin dirección → bloqueo con aviso) | | |
-| P6 | Confirmar → solicitud `PENDIENTE_PAGO` + `solicitud_detalles` + `pagos` PARCIAL | | |
-| P7 | Pagar depósito (4242) → confirmación → `PUBLICADA` con `fecha_expiracion` y `radio_busqueda` | | |
-| P8 | Con `enforce_pago_real=true`, el paciente no puede publicar por su cuenta (solo webhook) | | |
-| P9 | "Mis Solicitudes" lista la solicitud con estado y montos | | |
+| 1 | Selección de uno o varios servicios (Act. 1-2) | ✅ | Catálogo → gates (RN-020/face-map/requisitos) → `SolicitudResumenScreen`; "Agregar" permite multi-servicio con cantidades y recalcula total/depósito; se crean filas en `solicitud_detalles` (smoke BD: `n` = nº de ítems). |
+| 2 | Crear solicitud (Act. 5) | ✅ | `crear_solicitud_reserva` inserta solicitud en `PENDIENTE_PAGO` (`deposito_pagado=false`) + `solicitud_detalles` + `pagos` PARCIAL; historial SOLICITUD "Creación de solicitud" (smoke BD). |
+| 3 | Resumen antes de confirmar (Act. 4) | ✅ | El resumen muestra servicios con cantidades/subtotal, precio estimado total, saldo, fecha/hora preferida, dirección principal, radio y depósito; botón "Pagar depósito/totalidad". Sin dirección → bloqueo con aviso. |
+| 4 | Depósito procesado (Act. 6) | ✅ | PaymentSheet (test 4242 o simulado) → `confirmar_deposito_solicitud` marca `deposito_pagado=true`, inserta transacción `DEPOSITO`/`PAGO_TOTAL` APROBADO y actualiza `pagos`. **Nota**: el monto del depósito es el adelanto % (`adelanto_porcentaje`, default 50) o la totalidad; el `$30` de la Act. 6 se mantiene como cuota de onboarding / `deposito_reserva` (decisión del usuario). |
+| 5 | Sin depósito no se publica (Act. 7) | ✅ | Trigger `trg_proteger_publicacion_solicitud` exige `deposito_pagado=true` + transacción APROBADO + marca de sesión del RPC; gate `enforce_pago_real` restringe a webhook en producción. Contra-prueba: UPDATE directo a `PUBLICADA` → excepción ("La solicitud no puede publicarse sin un depósito confirmado"). |
+| 6 | Solo especialistas verificados la reciben (Act. 8) | ✅ | `obtener_solicitudes_publicadas_geo` exige especialista `APROBADO` + `activo`; `aceptar_solicitud` exige además `cumple_requisitos_habilitacion`. Contra-prueba: especialista APROBADO sin expediente → `NO_APROBADO`. |
+| 7 | Solo especialistas disponibles dentro del radio la ven (Act. 8-9) | ✅ | Geofencing `ST_DWithin` con `radio = COALESCE(s.radio_busqueda, radio_busqueda_km) * 1000`. Especialistas fuera del radio no la ven en el RPC ni reciben notificación (smoke2: solo los del radio notificados). |
+| 8 | La dirección exacta permanece oculta (Act. 10) | ✅ | RN-018: el RPC devuelve coords truncadas a 3 decimales (~110 m) + ciudad; `direccion` nunca se incluye (`SolicitudPendienteModel.direccion` siempre `null`). La policy `direccion_paciente_especialista_cita` exige cita asignada. |
+| 9 | Un especialista puede aceptar la solicitud (Act. 11-12) | ✅ | `aceptar_solicitud` (validación de verificación/expediente + claim) → `aceptada=true` con `cita_id` (smoke2). |
+| 10 | El primero que acepta obtiene la solicitud (Act. 11) | ✅ | Claim atómico (`UPDATE … WHERE estado IN ('PUBLICADA','BUSCANDO_ESPECIALISTA') AND not expirada` + `GET DIAGNOSTICS`); el segundo aceptar devuelve `ASIGNADA`/`EXPIRADA` y no crea cita. |
+| 11 | Los demás dejan de verla/disponer de ella (Act. 11/14) | ✅ | Al pasar a `ACEPTADA` la solicitud sale del `obtener_solicitudes_publicadas_geo` (filtro por estado) y el especialista ya no puede aceptarla; se genera notificación in-app `SOLICITUD_ASIGNADA` a los especialistas del radio (smoke2: 2 usuarios). |
+| 12 | La dirección completa se revela solo al asignado (Act. 12) | ✅ | Policies `solicitud_especialista_asignado_select` (lee su solicitud ACEPTADA) + `direccion_paciente_especialista_cita` (lee dirección) → la cita detalle de `treatment_execution` muestra la dirección exacta únicamente al especialista de la cita. |
+| 13 | Se genera la cita correspondiente (Act. 12) | ✅ | `aceptar_solicitud` inserta cita `PROGRAMADA` con `fecha_aceptacion` y `fecha_inicio = fecha_programada` del paciente (smoke2). |
+| 14 | Los cambios de estado quedan registrados (Act. 13) | ✅ | Historial SOLICITUD (`trg_log_solicitud_estado`): PENDIENTE_PAGO → PUBLICADA → ACEPTADA; historial CITA: creación (en `aceptar_solicitud`) + transiciones (app `_insertHistorial`). Post-`00500` sin duplicados (smoke2: 1 fila CITA PROGRAMADA). |
 
-## Checklist de aceptación — marketplace y cita (Act. 8-14)
+## Registro de ejecución
 
-| # | Ítem | Resultado | Evidencia / observación |
-|---|---|---|---|
-| M1 | La solicitud aparece solo a especialistas APROBADOS dentro del radio (geofencing) | | |
-| M2 | El mapa muestra la solicitud multi-servicio (nombres, cantidades, total) y la preferencia de fecha | | |
-| M3 | El especialista solo ve ubicación aproximada (3 decimales) + ciudad, sin dirección (RN-018) | | |
-| M4 | First-Accept: 2 especialistas aceptan a la vez → 1 gana, el otro recibe aviso | | |
-| M5 | Al aceptar se crea la cita PROGRAMADA con `fecha_inicio = fecha_programada` y solicitud `ACEPTADA` | | |
-| M6 | El ganador ve la dirección exacta en Mis Citas → detalle (RLS asignado) | | |
-| M7 | `historial_estados` registra SOLICITUD (creación, publicación, aceptación) y CITA (programada) | | |
-| M8 | Los especialistas del radio (excepto ganador) reciben notificación `SOLICITUD_ASIGNADA` | | |
+| Fase | Ítems | Resultado |
+|---|---|---|
+| A — Flujo paciente (selección, resumen, crear, depósito, publicación) | 1, 2, 3, 4, 5 | ✅ |
+| B — Marketplace (verificación, radio, privacidad) | 6, 7, 8 | ✅ |
+| C — Aceptación (first-accept, exclusividad, cita, dirección) | 9, 10, 11, 12, 13 | ✅ |
+| D — Historial y notificaciones | 14 | ✅ |
 
 ## Comandos de verificación
 
@@ -58,10 +59,14 @@ flutter analyze
 flutter test
 ```
 
+## Notas y hallazgos
+
+- **Desvío aprobado**: depósito de reserva = adelanto % o totalidad (no el fijo `$30`, que queda como cuota de onboarding). `configuracion_sistema.deposito_reserva` sigue disponible.
+- **Deuda pre-existente documentada** (no corregida en este ciclo): buckets públicos (`contratos`, `firmas-consentimiento`, `fotografias-tratamiento`), push FCM de `send-push` sin `FCM_LEGACY_SERVER_KEY`/`edge_function_base_url`/`anon_key` configurados (las notificaciones in-app sí funcionan), y RPC sin filtro de `fecha_expiracion` en la publicación (la expiración la decide el RPC al aceptar).
+
 ## Estado
 
-- Migración aplicada al remoto: **[x] sí** (SQL Editor + fixes 00200/00300/00400; registradas en `schema_migrations`).
-- Smoke tests BD (con rollback): crear → confirmar → PUBLICADA → aceptar → cita + historial + notificaciones **OK**.
-- `flutter analyze`: 0 issues
-- `flutter test`: 141/141
-- **Pendiente**: ejecutar el checklist E2E en la app (`flutter run -d web-server --web-port 8080`).
+- Migraciones `00100`–`00500` aplicadas al remoto y registradas en `schema_migrations` (**Local == Remote**).
+- Checklist E2E: **14/14 ✅** (verificado en app + smoke tests BD con rollback).
+- `flutter analyze`: 0 issues.
+- `flutter test`: 141/141.

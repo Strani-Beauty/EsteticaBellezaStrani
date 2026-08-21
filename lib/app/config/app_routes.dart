@@ -38,6 +38,11 @@ import 'package:esteticaybellezastrani/features/notifications/presentation/scree
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/cubits/treatment_execution_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/mis_citas_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/cita_detalle_screen.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/entities/servicio_seleccionado_entity.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/solicitud_reserva_cubit.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/mis_solicitudes_cubit.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/screens/solicitud_resumen_screen.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/screens/mis_solicitudes_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -74,6 +79,8 @@ class AppRoutes {
   static const String specialistPatientMap = '/specialist/map';
   static const String misCitas = '/specialist/mis-citas';
   static const String misCitasDetalle = '/specialist/mis-citas/:id';
+  static const String misSolicitudes = '/mis-solicitudes';
+  static const String solicitudResumen = '/solicitud/resumen';
 
   /// Ruta concreta del detalle de una cita (sustituye el parámetro `:id`).
   static String misCitasDetalleDe(String citaId) => '$misCitas/$citaId';
@@ -291,6 +298,26 @@ final GoRouter appRouter = GoRouter(
         value: sl<TreatmentExecutionCubit>(),
         child: CitaDetalleScreen(
           citaId: state.pathParameters['id'] ?? '',
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.misSolicitudes,
+      name: 'misSolicitudes',
+      builder: (context, state) => BlocProvider<MisSolicitudesCubit>.value(
+        value: sl<MisSolicitudesCubit>(),
+        child: const MisSolicitudesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.solicitudResumen,
+      name: 'solicitudResumen',
+      builder: (context, state) => BlocProvider<SolicitudReservaCubit>.value(
+        value: sl<SolicitudReservaCubit>(),
+        child: SolicitudResumenScreen(
+          servicios: state.extra is List<ServicioSeleccionadoEntity>
+              ? (state.extra as List<ServicioSeleccionadoEntity>)
+              : const [],
         ),
       ),
     ),

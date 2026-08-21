@@ -13,9 +13,7 @@ import 'package:esteticaybellezastrani/features/catalog_services/presentation/cu
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/validar_acceso_rn020.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/adelanto_servicio_entity.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/entities/servicio_seleccionado_entity.dart';
 
 /// Dashboard de catálogo de servicios — Vista post-evaluación para clientes/pacientes.
 /// Los servicios y categorías se cargan desde Supabase (`servicios`, `categorias_servicio`).
@@ -152,7 +150,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
           ),
         );
         if (resultado == 'continuar' && mounted) {
-          _showPaymentOptionsModal(service);
+          _irAResumen(service);
         }
       } else {
         final resultado = await context.push(
@@ -163,7 +161,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
           ),
         );
         if (resultado == 'continuar' && mounted) {
-          _showPaymentOptionsModal(service);
+          _irAResumen(service);
         }
       }
       return;
@@ -184,8 +182,24 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
       return;
     }
 
-    // ── 4. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Mostrar Opciones de Pago / Reserva ──
-    _showPaymentOptionsModal(service);
+    // ── 4. Si la evaluación está APROBADA y VIGENTE (< 1 año) → Resumen de solicitud ──
+    _irAResumen(service);
+  }
+
+  /// Navega al resumen de la solicitud de reserva (Act. 4): el paciente revisa
+  /// servicios, precio estimado, fecha/hora y ubicación antes de pagar el
+  /// depósito y publicar la solicitud.
+  void _irAResumen(ServicioEntity service) {
+    context.push(
+      AppRoutes.solicitudResumen,
+      extra: [
+        ServicioSeleccionadoEntity(
+          servicioId: service.id,
+          nombre: service.nombre,
+          precioBase: service.precioBase,
+        ),
+      ],
+    );
   }
 
   /// Modal cuando el servicio tiene cuestionarios de salud obligatorios sin
@@ -339,246 +353,6 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     );
   }
 
-  Future<void> _showPaymentOptionsModal(ServicioEntity service) async {
-    final title = service.nombre;
-    final price = service.precioBase;
-
-    // Adelanto = porcentaje configurado del total (configuracion_sistema).
-    AdelantoServicioEntity? adelanto;
-    try {
-      adelanto = await sl<IPaymentsRepository>().calcularAdelanto(price);
-    } catch (e) {
-      debugPrint('⚠️ [_showPaymentOptionsModal] calcularAdelanto: $e');
-    }
-    final adelantoMonto = adelanto?.monto ?? (price * 0.5);
-    final porcentaje = adelanto?.porcentaje ?? 50;
-
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        constraints: const BoxConstraints(maxWidth: 440),
-        title: Row(
-          children: [
-            const Icon(Icons.payment_rounded, color: AppTheme.cDeepAccent, size: 26),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Cancelar Servicio',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                service.descripcion ?? '',
-                style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-              ),
-              if (service.duracionEstimada != null) ...[
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.schedule_rounded,
-                        size: 14, color: AppTheme.cMutedText),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Duración estimada: ${service.duracionEstimada} min',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.cMutedText),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.cPastelPurple,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Flexible(
-                      child: Text('Precio Total del Servicio:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('\$$price USD', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.cDarkText)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'De acuerdo a tu evaluación médica aprobada ($_proveedorEvaluacion), puedes cancelar un adelanto del ${porcentaje.toStringAsFixed(0)}% o la totalidad:',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _processServicePayment(
-                    servicioId: service.id,
-                    serviceTitle: title,
-                    servicePrice: price,
-                    payFullAmount: false,
-                    montoAPagar: adelantoMonto,
-                  );
-                },
-                icon: const Icon(Icons.bookmark_add_rounded, size: 18),
-                label: Text(
-                  'Pagar Adelanto (\$${adelantoMonto.toStringAsFixed(2)} · ${porcentaje.toStringAsFixed(0)}%)',
-                ),
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _processServicePayment(
-                    servicioId: service.id,
-                    serviceTitle: title,
-                    servicePrice: price,
-                    payFullAmount: true,
-                    montoAPagar: price,
-                  );
-                },
-                icon: const Icon(Icons.check_circle_rounded, size: 18),
-                label: Text('Cancelar Totalidad (\$$price USD)'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _processServicePayment({
-    required String servicioId,
-    required String serviceTitle,
-    required double servicePrice,
-    required bool payFullAmount,
-    required double montoAPagar,
-  }) async {
-    final user = SupabaseService.currentUser;
-    if (user == null) return;
-
-    // Pago real con Stripe (o simulado si no hay clave configurada)
-    final stripeRef = await procesarPagoStripe(
-      monto: montoAPagar,
-      concepto: payFullAmount ? 'PAGO_TOTAL' : 'ADELANTO',
-    );
-    if (stripeRef == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El pago no se completó. Intenta de nuevo.')),
-        );
-      }
-      return;
-    }
-
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator(color: AppTheme.cDeepAccent)),
-      );
-    }
-
-    String? solicitudId;
-    try {
-      solicitudId = await sl<IPaymentsRepository>().createServicePayment(
-        profileId: user.id,
-        servicioId: servicioId,
-        servicePrice: servicePrice,
-        payFullAmount: payFullAmount,
-        montoAPagar: montoAPagar,
-        stripePaymentRef: stripeRef,
-      );
-    } catch (e) {
-      debugPrint('❌ [_processServicePayment] $e');
-    }
-
-    if (mounted) Navigator.pop(context); // cerrar loader
-
-    if (solicitudId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo registrar la solicitud. Intenta de nuevo.')),
-        );
-      }
-      return;
-    }
-
-    if (mounted) {
-      _showPaymentSuccessDialog(serviceTitle, montoAPagar, payFullAmount);
-    }
-  }
-
-  void _showPaymentSuccessDialog(String serviceTitle, double amount, bool isFull) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        constraints: const BoxConstraints(maxWidth: 440),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppTheme.cSuccess, size: 28),
-            SizedBox(width: 10),
-            Expanded(child: Text('¡Pago Registrado!')),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Has cancelado ${isFull ? "la totalidad" : "el depósito"} del servicio "$serviceTitle".',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'La solicitud se ha registrado correctamente en tu expediente y se han generado las transacciones correspondientes en el sistema por \$$amount USD.',
-                style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showExpirationReminderModal() {
     showDialog(
       context: context,
@@ -700,6 +474,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
             ],
           ),
           actions: [
+            IconButton(
+              onPressed: () => context.push(AppRoutes.misSolicitudes),
+              icon: const Icon(Icons.receipt_long_rounded, color: AppTheme.cDeepAccent),
+              tooltip: 'Mis Solicitudes',
+            ),
             IconButton(
               onPressed: () => context.push(AppRoutes.estadoSalud),
               icon: const Icon(Icons.monitor_heart_rounded, color: AppTheme.cDeepAccent),

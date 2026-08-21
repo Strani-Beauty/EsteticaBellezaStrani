@@ -1,16 +1,17 @@
 import { handleOptions, jsonResponse } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Webhook de Stripe: confirma el pago de forma idempotente en la BD.
+// Webhook de Stripe: confirma pagos de forma idempotente en la BD.
 // Se invoca con `verify_jwt = false` (Stripe no autentica con JWT); la
 // autenticidad se valida aquí con la firma `Stripe-Signature`.
 //
 // Eventos atendidos:
 //   - payment_intent.succeeded con metadata.concepto == 'SALDO' (saldo final de
 //     una cita): marca el pago como PAGADO y registra la transacción SALDO.
-//   - Otros conceptos (DEPÓSITO / PAGO_TOTAL / PAGO_SERVICIO): el app ya crea
-//     la cadena solicitudes → pagos → transacciones al confirmar el PaymentSheet,
-//     así que el webhook solo acusa recibo (idempotencia por metadata).
+//   - payment_intent.succeeded con concepto ADELANTO/DEPOSITO/PAGO_TOTAL y
+//     solicitud_id: publica la solicitud vía `confirmar_deposito_solicitud`
+//     (requisito del flujo de reserva: solo se publica cuando el depósito fue
+//     procesado). El RPC es idempotente.
 
 function hmacSha256Hex(key: ArrayBuffer, data: ArrayBuffer): Promise<string> {
   return crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']).then(
@@ -88,15 +89,38 @@ Deno.serve(async (req) => {
   const solicitudId = metadata.solicitud_id;
   const citaId = metadata.cita_id;
 
-  // El app ya registra la cadena de depósitos/pagos totales al confirmar;
-  // aquí confirmamos únicamente el SALDO final para que sea idempotente.
+  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  if (!serviceRole || !url) return jsonResponse({ error: 'Servidor mal configurado' }, 503);
+  const supabase = createClient(url, serviceRole);
+
+  // ── 1. Depósito / adelanto de reserva: publica la solicitud (idempotente) ──
+  const DEPOSIT_CONCEPTOS = ['ADELANTO', 'DEPOSITO', 'PAGO_TOTAL'];
+  if (DEPOSIT_CONCEPTOS.includes(concepto) && solicitudId) {
+    const monto = (pi.amount ?? 0) / 100;
+
+    const yaConfirmada = await supabase
+      .from('transacciones')
+      .select('id')
+      .eq('solicitud_id', solicitudId)
+      .eq('estado', 'APROBADO')
+      .in('tipo_transaccion', DEPOSIT_CONCEPTOS)
+      .maybeSingle();
+    if (yaConfirmada.data) return jsonResponse({ received: 'already_processed' });
+
+    const { error: confirmError } = await supabase.rpc('confirmar_deposito_solicitud', {
+      p_solicitud_id: solicitudId,
+      p_stripe_payment_id: pi.id,
+      p_concepto: concepto,
+      p_monto: monto,
+    });
+    if (confirmError) return jsonResponse({ error: confirmError.message }, 500);
+
+    return jsonResponse({ received: 'deposito_confirmado', solicitud_id: solicitudId });
+  }
+
+  // ── 2. Saldo final al terminar la cita (idempotente) ──────────────────────
   if (concepto === 'SALDO' && solicitudId && citaId) {
-    const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const url = Deno.env.get('SUPABASE_URL') ?? '';
-    if (!serviceRole || !url) return jsonResponse({ error: 'Servidor mal configurado' }, 503);
-
-    const supabase = createClient(url, serviceRole);
-
     const yaRegistrada = await supabase
       .from('transacciones')
       .select('id')

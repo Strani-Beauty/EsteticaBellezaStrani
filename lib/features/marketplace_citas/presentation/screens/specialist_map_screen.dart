@@ -550,10 +550,59 @@ class _PatientDetailSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            _DetailRow(icon: Icons.medical_services_outlined, label: 'Servicio', value: solicitud.servicioNombre),
+            if (solicitud.servicios.isNotEmpty) ...[
+              ...solicitud.servicios.map(
+                (s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.medical_services_outlined,
+                          size: 18, color: AppTheme.cMutedText),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          s.nombre,
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Text(
+                        s.cantidad > 1 ? 'x${s.cantidad}' : '',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.cMutedText),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '\$${s.subtotal.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else ...[
+              _DetailRow(
+                  icon: Icons.medical_services_outlined,
+                  label: 'Servicio',
+                  value: solicitud.servicioNombre),
+              const SizedBox(height: 8),
+            ],
+            _DetailRow(
+                icon: Icons.payments_outlined,
+                label: 'Precio',
+                value: '\$${solicitud.total.toStringAsFixed(2)} USD'),
             const SizedBox(height: 8),
-            _DetailRow(icon: Icons.payments_outlined, label: 'Precio', value: '\$${solicitud.precio} USD'),
-            const SizedBox(height: 8),
+            if (solicitud.fechaProgramada != null) ...[
+              _DetailRow(
+                icon: Icons.schedule_rounded,
+                label: 'Preferencia',
+                value: _formatFecha(solicitud.fechaProgramada!),
+              ),
+              const SizedBox(height: 8),
+            ],
             _DetailRow(
               icon: Icons.near_me_outlined,
               label: 'Distancia',
@@ -655,7 +704,7 @@ class _PatientListSheet extends StatelessWidget {
               leading: const Icon(Icons.person_pin_circle_rounded, color: AppTheme.cBrandGreen, size: 32),
               title: Text(s.pacienteNombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               subtitle: Text(
-                '${s.servicioNombre} · \$${s.precio} · ${dist != null ? "${dist.toStringAsFixed(1)} km" : "sin ubicación"}',
+                '${_resumenServicios(s)} · \$${s.total.toStringAsFixed(2)} · ${dist != null ? "${dist.toStringAsFixed(1)} km" : "sin ubicación"}',
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: state.aceptandoId == s.id
@@ -730,4 +779,21 @@ class _AccesoRestringido extends StatelessWidget {
       ),
     );
   }
+}
+
+String _resumenServicios(SolicitudPendienteEntity solicitud) {
+  if (solicitud.servicios.isEmpty) return solicitud.servicioNombre;
+  final nombres = solicitud.servicios
+      .map((s) => s.cantidad > 1 ? '${s.nombre} x${s.cantidad}' : s.nombre)
+      .join(' · ');
+  return nombres;
+}
+
+String _formatFecha(DateTime fecha) {
+  final local = fecha.toLocal();
+  final dia = local.day.toString().padLeft(2, '0');
+  final mes = local.month.toString().padLeft(2, '0');
+  final hora = local.hour.toString().padLeft(2, '0');
+  final min = local.minute.toString().padLeft(2, '0');
+  return '$dia/$mes/${local.year} $hora:$min';
 }

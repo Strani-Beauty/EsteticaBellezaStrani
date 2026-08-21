@@ -91,6 +91,16 @@ import 'package:esteticaybellezastrani/features/specialists/domain/usecases/soli
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_especialista.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/update_perfil_especialista.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/data/datasources/solicitudes_reserva_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/data/repositories/solicitudes_reserva_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/repositories/i_solicitudes_reserva_repository.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/usecases/confirmar_pago_deposito.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/usecases/crear_solicitud_reserva.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/usecases/get_config_reserva.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/usecases/get_mi_direccion_principal.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/usecases/get_mis_solicitudes.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/mis_solicitudes_cubit.dart';
+import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/solicitud_reserva_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/datasources/treatment_photos_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/repositories/treatment_photos_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/repositories/i_treatment_photos_repository.dart';
@@ -153,6 +163,9 @@ void setupDependencies() {
 
   // ── Features: Payments Stripe ─────────────────────────────
   _registerPaymentsStripe();
+
+  // ── Features: Solicitudes Reserva ─────────────────────────
+  _registerSolicitudesReserva();
 
   // ── Features: Admin Config ────────────────────────────────
   _registerAdminConfig();
@@ -478,3 +491,42 @@ void _registerAdminUsers() {
 
 void _registerAdminConfig() {}
 void _registerReportsDashboards() {}
+
+void _registerSolicitudesReserva() {
+  sl.registerLazySingleton<SolicitudesReservaSupabaseDataSource>(
+    () => SolicitudesReservaSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<ISolicitudesReservaRepository>(
+    () => SolicitudesReservaRepositoryImpl(
+      sl<SolicitudesReservaSupabaseDataSource>(),
+    ),
+  );
+  sl.registerLazySingleton<CrearSolicitudReserva>(
+    () => CrearSolicitudReserva(sl<ISolicitudesReservaRepository>()),
+  );
+  sl.registerLazySingleton<ConfirmarPagoDeposito>(
+    () => ConfirmarPagoDeposito(sl<ISolicitudesReservaRepository>()),
+  );
+  sl.registerLazySingleton<GetMisSolicitudes>(
+    () => GetMisSolicitudes(sl<ISolicitudesReservaRepository>()),
+  );
+  sl.registerLazySingleton<GetMiDireccionPrincipal>(
+    () => GetMiDireccionPrincipal(sl<ISolicitudesReservaRepository>()),
+  );
+  sl.registerLazySingleton<GetConfigReserva>(
+    () => GetConfigReserva(sl<ISolicitudesReservaRepository>()),
+  );
+  sl.registerLazySingleton<SolicitudReservaCubit>(
+    () => SolicitudReservaCubit(
+      getConfigReserva: sl<GetConfigReserva>(),
+      getMiDireccionPrincipal: sl<GetMiDireccionPrincipal>(),
+      crearSolicitudReserva: sl<CrearSolicitudReserva>(),
+      confirmarPagoDeposito: sl<ConfirmarPagoDeposito>(),
+    ),
+  );
+  sl.registerLazySingleton<MisSolicitudesCubit>(
+    () => MisSolicitudesCubit(
+      getMisSolicitudes: sl<GetMisSolicitudes>(),
+    ),
+  );
+}

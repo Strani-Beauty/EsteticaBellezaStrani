@@ -3,17 +3,17 @@
 | | |
 |---|---|
 | **Módulo** | marketplace_citas (mapa de solicitudes y aceptación de citas) |
-| **Estado del código** | COMPLETO (datasource con RPCs + MarketplaceCubit en DI) |
-| **Fecha** | 2026-08-14 |
-| **Versión** | 1.0 |
+| **Estado del código** | COMPLETO (datasource con RPCs + MarketplaceCubit en DI) + multi-servicio, geofencing y notificaciones (2026-08-21) |
+| **Fecha** | 2026-08-14 (actualizado 2026-08-21) |
+| **Versión** | 1.1 |
 
 ## Alcance
 
-SpecialistMapScreen (`/specialist/map`): restricción de acceso por verificación, mapa FlutterMap (OSM) con solicitudes y especialistas, orden por cercanía (Haversine), RPC `aceptar_solicitud`.
+SpecialistMapScreen (`/specialist/map`): restricción de acceso por verificación, mapa FlutterMap (OSM) con solicitudes y especialistas, orden por cercanía (Haversine), RPC `aceptar_solicitud`. Desde 2026-08-21: solicitudes **multi-servicio** (jsonb) con precio total y preferencia de fecha, **geofencing** server-side por radio (`ST_DWithin`) y notificación in-app a los especialistas del radio cuando otra acepta.
 
 ## Fuera de alcance
 
-Ejecución de la cita aceptada (doc 09), publicación de solicitudes vía pagos (docs 05/08).
+Ejecución de la cita aceptada (doc 09), publicación de solicitudes vía depósito de reserva (doc 12).
 
 ## Precondiciones generales
 
@@ -76,8 +76,20 @@ Ejecución de la cita aceptada (doc 09), publicación de solicitudes vía pagos 
 | MK-S-02 | Fold que ignora failures | Fallo de red en `aceptar` | 1. Aceptar sin red | **Confirmar bug**: `res.fold((f) => null, …)` no maneja el error; verificar si la UI queda sin feedback o bloqueada | Alta | | |
 | MK-S-03 | Getter `expirada` sin uso | Solicitud expirada en lista | 1. Observar si la UI marca expiradas antes del RPC | El getter de la entidad no se usa; la expiración solo la decide el RPC al aceptar | Baja | | |
 
+## 7. Nuevo (2026-08-21): multi-servicio, geofencing y notificaciones
+
+| ID | Título | Precondiciones | Pasos | Resultado esperado | Prioridad | Resultado | Notas |
+|---|---|---|---|---|---|---|---|
+| MK-M-01 | Solicitud multi-servicio | Solicitud con `solicitud_detalles` PUBLICADA | 1. Ver detalle del paciente en el mapa | Lista de servicios con cantidad y subtotal; total agregado | Alta | | |
+| MK-M-02 | Preferencia de fecha | Solicitud con `fecha_programada` | 1. Ver detalle | Muestra la fecha/hora preferida por el paciente | Media | | |
+| MK-M-03 | Geofencing por radio | 2 solicitudes, una fuera del radio configurado | 1. Cargar el mapa | Solo aparece la solicitud dentro del radio del especialista | Crítica | | |
+| MK-M-04 | Radio override por solicitud | Solicitud con `radio_busqueda` propio | 1. Cargar el mapa | Se usa el radio de la solicitud si está definido | Alta | | |
+| MK-M-05 | Notificación a otros | 2 especialistas en el radio | 1. Uno acepta la solicitud | El otro recibe notificación in-app `SOLICITUD_ASIGNADA` | Crítica | | |
+| MK-M-06 | Dirección exacta revelada | Cita asignada | 1. Entrar a Mis Citas → detalle | Se revela la dirección exacta (RLS `solicitud_especialista_asignado_select`) | Crítica | | |
+| MK-M-07 | Historial SOLICITUD | Solicitud creada/publicada/aceptada | 1. Consultar `historial_estados` (tipo_entidad=SOLICITUD) | Registra creaciones y cambios de estado | Alta | | |
+
 ## Resumen de ejecución
 
 | Total | Pasa | Falla | Bloqueado | Pendiente |
 |---|---|---|---|---|
-| 24 | | | | 24 |
+| 31 | | | | 31 |

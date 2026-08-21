@@ -200,7 +200,7 @@ class PaymentsSupabaseDataSource {
     await _client.from('transacciones').insert({
       'solicitud_id': solicitudId,
       'paciente_id': pacienteId,
-      'tipo_transaccion': 'DEPÓSITO',
+      'tipo_transaccion': AppConstants.txDeposito,
       'monto': deposito,
       'moneda': 'USD',
       'estado': 'APROBADO',

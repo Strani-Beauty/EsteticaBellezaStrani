@@ -90,6 +90,15 @@ class AppConstants {
       'buscar_especialistas_cercanos';
   static const String rpcObtenerSolicitudesPublicadasGeo =
       'obtener_solicitudes_publicadas_geo';
+  static const String rpcCrearSolicitudReserva = 'crear_solicitud_reserva';
+  static const String rpcConfirmarDepositoSolicitud =
+      'confirmar_deposito_solicitud';
+
+  // ── Conceptos de pago (metadata de Stripe) ────────────────
+  static const String conceptoAdelanto = 'ADELANTO';
+  static const String conceptoPagoTotal = 'PAGO_TOTAL';
+  static const String conceptoDeposito = 'DEPOSITO';
+  static const String conceptoSaldo = 'SALDO';
 
   // ── Presencia (online/offline) ─────────────────────────────
   /// Intervalo del heartbeat de presencia mientras la app está en foreground.

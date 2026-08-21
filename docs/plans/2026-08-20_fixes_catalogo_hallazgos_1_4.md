@@ -94,6 +94,12 @@ Fix:
 - [x] `flutter analyze` 0 issues + `flutter test` 130/130 en verde.
 - [x] Actualizar reporte E2E (hallazgos 1-4 → resueltos) y este plan.
 - [x] Anotar la migración nueva en `supabase migration list` (Local == Remote, 44).
+- [x] Prueba manual en app de los 3 fixes de UI (2026-08-21): Fix 1, Fix 2 y Fix 3 confirmados ✅.
+      Hallazgo adicional durante la prueba: `duracion_estimada` NOT NULL no validado en el
+      formulario admin (el `ListView` perezoso deja el campo fuera del viewport y `Form.validate()`
+      no lo registra → `valido=true` con duración vacía). **Fix**: guarda explícita en `_guardar`
+      con snackbar "La duración estimada es requerida" / "debe ser un número entero".
+      Documentado como Hallazgo 7 en el reporte E2E.
 
 ## Entorno / comandos
 

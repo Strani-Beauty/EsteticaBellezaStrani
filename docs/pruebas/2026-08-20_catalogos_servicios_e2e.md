@@ -52,6 +52,15 @@
 4. **El guardado de servicio no daba feedback de error (corregido)**. Si el INSERT fallaba (p.ej. `categoria_id` NOT NULL → `23502`), `_guardar` retornaba silenciosamente sin snackbar. **Fix**: si `creado == null` se muestra snackbar con el `error` del estado del cubit; si falla el reemplazo de especialidades/cuestionarios (`false`), también se muestra el error sin cerrar la pantalla.
 5. **Post-face map nuevo no abría el modal de pago (corregido)**. Al completar un face map **nuevo** (rama `else` de `_onServiceSelected`), el "Aceptar" del diálogo "Mapeo Registrado" hacía `pop` sin valor → el paciente debía volver a tocar el servicio. **Fix**: ese "Aceptar" ahora devuelve `'continuar'` (`pop('continuar')`) y la rama `else` del dashboard captura el resultado y abre `_showPaymentOptionsModal` si es `'continuar'` → flujo continuo hasta el pago, igual que en modo solo lectura.
 6. **Nota 1 — re-link a v2 (resuelto por migración)**. Los 5 servicios inactivos (Toxina Botulínica `11111111`, Ácido Hialurónico `22222222`, Peelings Médicos `33333333`, Microneedling `44444444`, Lipólisis Alta Frecuencia `55555555`) quedaron re-enlazados de "Cuestionario de Salud" **v1 (id=4, inactiva)** → **v2 (id=5, activa)** vía `20260820000400_relink_servicios_cuestionario_v2.sql` (UPDATE idempotente con `NOT EXISTS`, conserva `obligatorio`/`orden`, respeta el índice único). Verificado por API: **0 filas con id=4, 18 con id=5**.
+7. **`duracion_estimada` NOT NULL sin validar en el formulario admin (corregido)**. Al guardar un servicio con duración vacía, la BD rechazaba con `23502` ("null value in column duracion_estimada"). Se añadió `validator` al campo, pero **el `Form.validate()` no lo dispara**: el formulario usa un `ListView` perezoso y el campo queda fuera del viewport → no se registra en el `Form`, por lo que `validate()` devuelve `true` aunque esté vacío (confirmado por diagnóstico en runtime: `valido=true durRaw=""`). **Fix**: guarda explícita en `_guardar` (`admin_servicio_detail_screen.dart:122`): si la duración está vacía → snackbar "La duración estimada es requerida"; si no es entero → "debe ser un número entero". Verificado en app: con duración vacía el guardado se bloquea y muestra el snackbar; con duración válida guarda, refresca y aparece en el listado.
+
+## Verificación manual post-fixes (prueba en app, 2026-08-21)
+
+| Fix | Ítem | Resultado |
+|---|---|---|
+| 1 | Listado admin refresca tras guardar servicio (crear y editar) | ✅ Aparece el servicio nuevo en el listado sin recargar |
+| 2 | Feedback de error al guardar: sin categoría y con duración vacía | ✅ Snackbar "La duración estimada es requerida" / error de BD; pantalla se queda abierta |
+| 3 | Post-face map nuevo abre el modal de pago | ✅ Con `pac.compliance1` en "Desintoxicación Facial Profunda": tras "Mapeo Registrado" → Aceptar → se abre el modal de opciones de pago |
 
 ## Contra-pruebas (triggers/RLS/RPC)
 
@@ -69,6 +78,8 @@
 | Act. 13 — Flujo completo (A-H) | ✅ |
 | Contra-pruebas (aceptar_solicitud, geo, RLS, trigger) | ✅ |
 | Hallazgos del E2E 1-4 (refresh listado, feedback error, post-face map, re-link v2) | ✅ resueltos (plan `2026-08-20_fixes_catalogo_hallazgos_1_4.md`) |
+| Hallazgo 7 (duración NOT NULL sin validar en form admin) | ✅ corregido + verificado en app |
+| Verificación manual de los 3 fixes de UI (2026-08-21) | ✅ Fix 1, Fix 2 y Fix 3 confirmados en app |
 | Servicio de prueba `TEST E2E Sin FaceMap` | ✅ creado y dejado **desactivado** (Decisión 3 del plan) |
 | Data de prueba residual | ✅ limpiada (solicitudes 0, direcciones de prueba borradas, TEST-R5 borrado, cita de prueba borrada) |
 | `flutter analyze` / `flutter test` | ✅ 0 issues / 130 tests |

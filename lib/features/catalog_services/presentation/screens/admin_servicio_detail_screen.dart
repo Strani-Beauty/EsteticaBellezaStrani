@@ -121,7 +121,21 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
 
   Future<void> _guardar() async {
     if (_guardando) return;
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final valido = _formKey.currentState?.validate() ?? false;
+    final durTrim = _duracionCtrl.text.trim();
+    final durEsNumero = int.tryParse(durTrim) != null;
+    if (!valido || durTrim.isEmpty || !durEsNumero) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(durTrim.isEmpty
+                ? 'La duración estimada es requerida'
+                : 'La duración estimada debe ser un número entero'),
+          ),
+        );
+      }
+      return;
+    }
 
     final cubit = sl<AdminCatalogCubit>();
     setState(() => _guardando = true);
@@ -238,8 +252,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
                         : const Icon(Icons.save_rounded),
                     label: Text(
                       _guardando ? 'Guardando...' : 'Guardar servicio',
-                    ),
-                  ),
+                    ),                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -347,9 +360,16 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
               controller: _duracionCtrl,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Duración estimada (minutos)',
+                labelText: 'Duración estimada (minutos) *',
                 border: OutlineInputBorder(),
               ),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'Requerido';
+                if (int.tryParse(v.trim()) == null) {
+                  return 'Debe ser un número entero';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 8),
             SwitchListTile(

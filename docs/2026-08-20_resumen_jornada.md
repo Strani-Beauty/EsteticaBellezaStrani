@@ -9,7 +9,8 @@ Dos ciclos hoy: **E2E del catálogo (Act. 12-13)** y después los **4 fixes post
 | Ciclo | Estado | Commit |
 |---|---|---|
 | 1. E2E catálogo (Act. 12-13): relaciones + flujo completo + fix trigger huérfano | ✅ Pusheado | `48012e4` |
-| 2. Fixes post-E2E (hallazgos 1-4): refresh listado, feedback de error, continuar al pago tras face map, re-link cuestionario v2 | ✅ (este commit) | `(por confirmar)` |
+| 2. Fixes post-E2E (hallazgos 1-4): refresh listado, feedback de error, continuar al pago tras face map, re-link cuestionario v2 | ✅ Pusheado | `5bb3e90` |
+| 3. Prueba manual de los 3 fixes de UI (2026-08-21) + hallazgo 7 (duración NOT NULL) | ✅ Verificado en app (sin commit propio) | — |
 
 ---
 
@@ -74,6 +75,18 @@ Cita `d5fe2e7e` (invisible para admin por RLS, borrada como especialista), solic
 
 ---
 
+## 3. Prueba manual de los fixes (2026-08-21) + Hallazgo 7
+
+Se ejecutó la prueba manual en app (que quedó pendiente el 20-08) y apareció un hallazgo nuevo:
+
+- **Fix 1** (listado admin refresca tras guardar) → ✅ confirmado en app.
+- **Fix 2** (feedback de error al guardar) → ✅ confirmado en app.
+- **Fix 3** (post-face map nuevo abre el modal de pago) → ✅ confirmado en app con `pac.compliance1`.
+- **Hallazgo 7 — `duracion_estimada` NOT NULL sin validar (corregido)**: al guardar con duración vacía, la BD rechazaba con `23502`. Se añadió `validator` al campo pero `Form.validate()` no lo dispara: el formulario es un `ListView` perezoso, el campo queda fuera del viewport y no se registra en el `Form` (diagnóstico en runtime: `valido=true durRaw=""`). **Fix**: guarda explícita en `_guardar` (`admin_servicio_detail_screen.dart:122`) con snackbar "La duración estimada es requerida" / "debe ser un número entero". Verificado en app.
+- Quedó limpio: se eliminaron el botón "V2" y el snackbar de diagnóstico usados durante la investigación.
+
+---
+
 ## Verificación transversal
 
 - `flutter analyze` → sin issues.
@@ -84,4 +97,4 @@ Cita `d5fe2e7e` (invisible para admin por RLS, borrada como especialista), solic
 
 - **Hallazgo 2** (nota de producto, no bug): todos los servicios con cues 5 tienen `requiere_face_map=true` y el face map corre antes que la validación de requisitos en `_onServiceSelected` → para ejercitar el modal de requisitos hay que crear un servicio sin face map.
 - Deuda pre-existente (no tocada hoy): buckets públicos (`contratos`, `firmas`, `fotografias-tratamiento`), tablas creadas a mano sin versionar, RPC `obtener_solicitudes_publicadas_geo` sin filtro de `fecha_expiracion`, push FCM de notificaciones.
-- Prueba manual en app de los 3 fixes de UI (Fix 1-3) pendiente: `flutter run -d web-server --web-port 8080`.
+- Prueba manual en app de los 3 fixes de UI (Fix 1-3) → ✅ **COMPLETADA el 21-08-2026** (Fix 1, 2 y 3 confirmados; hallazgo 7 de duración NOT NULL corregido en el mismo ciclo).

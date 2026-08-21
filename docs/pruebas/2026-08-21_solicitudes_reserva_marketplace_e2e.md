@@ -62,7 +62,7 @@ flutter test
 ## Notas y hallazgos
 
 - **Desvío aprobado**: depósito de reserva = adelanto % o totalidad (no el fijo `$30`, que queda como cuota de onboarding). `configuracion_sistema.deposito_reserva` sigue disponible.
-- **Deuda pre-existente documentada** (no corregida en este ciclo): buckets públicos (`contratos`, `firmas-consentimiento`, `fotografias-tratamiento`), push FCM de `send-push` sin `FCM_LEGACY_SERVER_KEY`/`edge_function_base_url`/`anon_key` configurados (las notificaciones in-app sí funcionan), y RPC sin filtro de `fecha_expiracion` en la publicación (la expiración la decide el RPC al aceptar).
+- **Deuda pre-existente documentada** (no corregida en este ciclo): buckets públicos (`contratos`, `firmas-consentimiento`, `fotografias-tratamiento`), y RPC sin filtro de `fecha_expiracion` en la publicación (la expiración la decide el RPC al aceptar). El push FCM quedó **configurado** (`edge_function_base_url` + `anon_key` en `configuracion_sistema`); solo falta el secret `FCM_LEGACY_SERVER_KEY` en la edge function para el envío real (las notificaciones in-app funcionan).
 
 ## Estado
 

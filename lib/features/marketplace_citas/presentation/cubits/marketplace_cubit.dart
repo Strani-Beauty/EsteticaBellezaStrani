@@ -195,7 +195,17 @@ class MarketplaceCubit extends Cubit<MarketplaceState> {
   Future<void> _refrescar() async {
     final res = await _getSolicitudesPendientes();
     res.fold(
-      (f) => null,
+      (f) {
+        // No se pierde el estado del mapa: se conserva la lista y se avisa
+        // para que el especialista recargue (MK-S-02).
+        if (state is MarketplaceLoaded) {
+          final current = state as MarketplaceLoaded;
+          emit(current.copyWith(
+            aceptandoId: null,
+            feedback: 'No se pudo actualizar el mapa: ${f.message}',
+          ));
+        }
+      },
       (solicitudes) {
         if (state is MarketplaceLoaded) {
           final current = state as MarketplaceLoaded;

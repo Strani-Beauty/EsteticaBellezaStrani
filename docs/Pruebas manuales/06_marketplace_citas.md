@@ -73,7 +73,7 @@ Ejecución de la cita aceptada (doc 09), publicación de solicitudes vía depós
 | ID | Título | Precondiciones | Pasos | Resultado esperado | Prioridad | Resultado | Notas |
 |---|---|---|---|---|---|---|---|
 | MK-S-01 | ⚑ Concurrencia de aceptación | 2 especialistas ante la misma solicitud | 1. Ambos pulsan "Aceptar" casi a la vez | "Primer aviso gana": uno recibe `aceptada`, el otro `ASIGNADA`; sin doble cita | Crítica | ✅ | E2E ítems 10-11 (claim atómico) |
-| MK-S-02 | Fold que ignora failures | Fallo de red en `aceptar` | 1. Aceptar sin red | **Confirmar bug**: `res.fold((f) => null, …)` no maneja el error; verificar si la UI queda sin feedback o bloqueada | Alta | ⬜ | Pendiente de prueba específica |
+| MK-S-02 | Fold que ignora failures | Fallo de red en `aceptar` | 1. Aceptar sin red | **Confirmar bug**: `res.fold((f) => null, …)` no maneja el error; verificar si la UI queda sin feedback o bloqueada | Alta | ✅ | **Corregido 2026-08-21**: `_refrescar` conserva el mapa y avisa "No se pudo actualizar el mapa: …"; test `marketplace_cubit_test` (MK-S-02) |
 | MK-S-03 | Getter `expirada` sin uso | Solicitud expirada en lista | 1. Observar si la UI marca expiradas antes del RPC | El getter de la entidad no se usa; la expiración solo la decide el RPC al aceptar | Baja | ⬜ | Pendiente de prueba específica |
 
 ## 7. Nuevo (2026-08-21): multi-servicio, geofencing y notificaciones
@@ -92,4 +92,4 @@ Ejecución de la cita aceptada (doc 09), publicación de solicitudes vía depós
 
 | Total | Pasa | Falla | Bloqueado | Pendiente |
 |---|---|---|---|---|
-| 31 | 7 | 0 | 0 | 24 |
+| 31 | 8 | 0 | 0 | 23 |

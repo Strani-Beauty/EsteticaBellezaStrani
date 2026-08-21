@@ -44,10 +44,18 @@ Checklist completo en `docs/pruebas/2026-08-21_solicitudes_reserva_marketplace_e
 ## Verificación transversal
 
 - `flutter analyze` → sin issues.
-- `flutter test` → **141/141** OK.
+- `flutter test` → **144/144** OK.
 - BD: migraciones `00100`–`00500` aplicadas al remoto y registradas en `schema_migrations` (Local == Remote).
 
 ### Pendientes documentados
 
-- Pruebas manuales específicas aún ⬜ en `docs/Pruebas manuales/12_solicitudes_reserva.md` (pago totalidad, pago cancelado, depósito mínimo, RLS detalles, radio override) y `06_marketplace_citas.md` (24/31).
-- Deuda pre-existente (no tocada): buckets públicos (`contratos`, `firmas-consentimiento`, `fotografias-tratamiento`), push FCM de `send-push` sin `FCM_LEGACY_SERVER_KEY`/`edge_function_base_url`/`anon_key` configurados (las notificaciones in-app sí funcionan), RPC sin filtro de `fecha_expiracion` en la publicación.
+- Pruebas manuales específicas aún ⬜ en `docs/Pruebas manuales/12_solicitudes_reserva.md` (pago totalidad, pago cancelado, depósito mínimo, RLS detalles, radio override) y `06_marketplace_citas.md` (23/31).
+- Deuda pre-existente (no tocada): buckets públicos (`contratos`, `firmas-consentimiento`, `fotografias-tratamiento`), RPC sin filtro de `fecha_expiracion` en la publicación.
+- **Push FCM**: `send-push` desplegado y configs `edge_function_base_url` + `anon_key` seteadas en `configuracion_sistema` (2026-08-21); **pendiente** el secret `FCM_LEGACY_SERVER_KEY` en la edge function (Firebase Console → Project settings → Cloud Messaging → Server key) para que el push real funcione. Las notificaciones in-app ya funcionan.
+
+---
+
+## 4. Seguimiento post-documentación (2026-08-21): fix MK-S-02 + push FCM
+
+- **MK-S-02 corregido**: `marketplace_cubit._refrescar` ignoraba el error del refresco tras una aceptación perdida (`fold((f) => null)`). Ahora conserva la lista y avisa "No se pudo actualizar el mapa: …". Añadido `test/features/marketplace_citas/presentation/cubits/marketplace_cubit_test.dart` (3 tests). `flutter analyze` 0 issues; `flutter test` **144/144**.
+- **Push FCM configurado (parcial)**: se insertaron `edge_function_base_url` y `anon_key` en `configuracion_sistema` para que el hook `pg_net → send-push` tenga base y auth. Falta únicamente `FCM_LEGACY_SERVER_KEY` (secret de la edge function) para el envío real.

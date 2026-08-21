@@ -51,11 +51,11 @@ Checklist completo en `docs/pruebas/2026-08-21_solicitudes_reserva_marketplace_e
 
 - Pruebas manuales específicas aún ⬜ en `docs/Pruebas manuales/12_solicitudes_reserva.md` (pago totalidad, pago cancelado, depósito mínimo, RLS detalles, radio override) y `06_marketplace_citas.md` (23/31).
 - Deuda pre-existente (no tocada): buckets públicos (`contratos`, `firmas-consentimiento`, `fotografias-tratamiento`), RPC sin filtro de `fecha_expiracion` en la publicación.
-- **Push FCM**: `send-push` desplegado y configs `edge_function_base_url` + `anon_key` seteadas en `configuracion_sistema` (2026-08-21); **pendiente** el secret `FCM_LEGACY_SERVER_KEY` en la edge function (Firebase Console → Project settings → Cloud Messaging → Server key) para que el push real funcione. Las notificaciones in-app ya funcionan.
+- **Push FCM OPERATIVO (2026-08-21)**: `send-push` usa **FCM HTTP v1** (la API legacy devuelve 404); se setearon los secrets `FCM_SERVICE_ACCOUNT` (service account de Firebase) y las configs `edge_function_base_url` + `anon_key`; se habilitó `pg_net` (migración `20260821000600`). Verificado de punta a punta: hook BD → pg_net → `send-push` → FCM v1 → **HTTP 200** (token falso rechazado por-token). Con un token real de dispositivo se entregarían. Las notificaciones in-app ya funcionaban.
 
 ---
 
 ## 4. Seguimiento post-documentación (2026-08-21): fix MK-S-02 + push FCM
 
 - **MK-S-02 corregido**: `marketplace_cubit._refrescar` ignoraba el error del refresco tras una aceptación perdida (`fold((f) => null)`). Ahora conserva la lista y avisa "No se pudo actualizar el mapa: …". Añadido `test/features/marketplace_citas/presentation/cubits/marketplace_cubit_test.dart` (3 tests). `flutter analyze` 0 issues; `flutter test` **144/144**.
-- **Push FCM configurado (parcial)**: se insertaron `edge_function_base_url` y `anon_key` en `configuracion_sistema` para que el hook `pg_net → send-push` tenga base y auth. Falta únicamente `FCM_LEGACY_SERVER_KEY` (secret de la edge function) para el envío real.
+- **Push FCM → FCM HTTP v1 (OPERATIVO)**: al probar el envío con la clave legacy se detectó que **Google descontinuó la API legacy** (`https://fcm.googleapis.com/fcm/send` → **HTTP 404**). Se reescribió `send-push` para usar la API v1 (`/v1/projects/<project>/messages:send`) con OAuth2 por service account (JWT RS256 + token en caché ~1h). Se setearon el secret `FCM_SERVICE_ACCOUNT` y las configs `edge_function_base_url` + `anon_key`; se habilitó `pg_net` (migración `20260821000600`). **Verificación E2E**: hook BD → pg_net → `send-push` → FCM v1 → **HTTP 200** con rechazo por-token del token falso (`InvalidRegistration`), que confirma auth OAuth + API v1 correctos.

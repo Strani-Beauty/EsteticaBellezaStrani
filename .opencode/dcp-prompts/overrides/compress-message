@@ -1,0 +1,1 @@
+Al comprimir un mensaje individual, conserva lo esencial: instrucciones del usuario, decisiones, archivos/migraciones/RLS relevantes y errores con su fix. Descarta ruido (logs extensos, contenido duplicado). Resumen conciso en español, sin inventar información.

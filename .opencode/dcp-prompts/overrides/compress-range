@@ -1,0 +1,8 @@
+Al compactar un rango de la conversación en este repo, conserva SIEMPRE:
+- Decisiones de arquitectura y estado del trabajo (archivos tocados, migraciones aplicadas, pendientes).
+- Rutas de features, archivos y funciones clave (p.ej. `lib/features/...`).
+- Policies RLS, triggers, RPCs, seeds y migraciones mencionadas (nombres de archivo y versiones).
+- Convenciones del proyecto (commits en español, preguntar antes de commitear).
+- Errores importantes con causa/fix.
+
+Elimina solo ruido (logs largos, salidas repetidas). No pierdas contexto crítico.

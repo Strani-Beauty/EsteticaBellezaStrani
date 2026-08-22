@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Opencode-DCP/opencode-dynamic-context-pruning/master/dcp.schema.json",
+  // Config de proyecto: prioridad máxima sobre el global.
+  "enabled": true,
+  "experimental": {
+    "allowSubAgents": false,
+    "customPrompts": true
+  },
+  // Protege contexto crítico de ESTE repo de la poda.
+  "protectedFilePatterns": [
+    "**/AGENTS.md",
+    "**/.env",
+    "**/.env.example",
+    "**/supabase/migrations/**",
+    "**/docs/plans/**",
+    "**/docs/pruebas/**"
+  ],
+  "compress": {
+    "mode": "range",
+    "permission": "allow",
+    "minContextLimit": 20000,
+    "maxContextLimit": 50000,
+    "nudgeForce": "soft"
+  },
+  "strategies": {
+    "deduplication": { "enabled": true, "protectedTools": [] },
+    "purgeErrors": { "enabled": true, "turns": 4, "protectedTools": [] }
+  },
+  "turnProtection": { "enabled": true, "turns": 4 }
+}

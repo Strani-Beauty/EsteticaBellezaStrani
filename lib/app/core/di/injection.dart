@@ -101,6 +101,24 @@ import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/useca
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/usecases/get_mis_solicitudes.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/mis_solicitudes_cubit.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/solicitud_reserva_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_config/data/datasources/admin_config_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/admin_config/data/repositories/admin_config_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/admin_config/domain/repositories/i_admin_config_repository.dart';
+import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_admin_kpis.dart';
+import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_config_sistema.dart';
+import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/update_config_sistema.dart';
+import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_dashboard_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_configuracion_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/data/datasources/admin_master_data_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/data/repositories/admin_master_data_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/domain/repositories/i_admin_master_data_repository.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/domain/usecases/especialidades_usecases.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/domain/usecases/financiero_usecases.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/domain/usecases/roles_usecases.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_comisiones_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_especialidades_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_medicos_regentes_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_roles_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/datasources/treatment_photos_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/repositories/treatment_photos_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/repositories/i_treatment_photos_repository.dart';
@@ -167,8 +185,11 @@ void setupDependencies() {
   // ── Features: Solicitudes Reserva ─────────────────────────
   _registerSolicitudesReserva();
 
-  // ── Features: Admin Config ────────────────────────────────
+  // ── Features: Admin Config (dashboard) ────────────────────
   _registerAdminConfig();
+
+  // ── Features: Admin Master Data ───────────────────────────
+  _registerAdminMasterData();
 
   // ── Features: Reports Dashboards ─────────────────────────
   _registerReportsDashboards();
@@ -489,7 +510,106 @@ void _registerAdminUsers() {
   );
 }
 
-void _registerAdminConfig() {}
+void _registerAdminConfig() {
+  sl.registerLazySingleton<AdminConfigSupabaseDataSource>(
+    () => AdminConfigSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IAdminConfigRepository>(
+    () => AdminConfigRepositoryImpl(sl<AdminConfigSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<GetAdminKpis>(
+    () => GetAdminKpis(sl<IAdminConfigRepository>()),
+  );
+  sl.registerLazySingleton<GetConfigSistema>(
+    () => GetConfigSistema(sl<IAdminConfigRepository>()),
+  );
+  sl.registerLazySingleton<UpdateConfigSistema>(
+    () => UpdateConfigSistema(sl<IAdminConfigRepository>()),
+  );
+  sl.registerLazySingleton<AdminDashboardCubit>(
+    () => AdminDashboardCubit(getKpis: sl<GetAdminKpis>()),
+  );
+  sl.registerLazySingleton<AdminConfiguracionCubit>(
+    () => AdminConfiguracionCubit(
+      getConfiguracion: sl<GetConfigSistema>(),
+      updateConfiguracion: sl<UpdateConfigSistema>(),
+    ),
+  );
+}
+
+void _registerAdminMasterData() {
+  sl.registerLazySingleton<AdminMasterDataSupabaseDataSource>(
+    () => AdminMasterDataSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IAdminMasterDataRepository>(
+    () => AdminMasterDataRepositoryImpl(
+      sl<AdminMasterDataSupabaseDataSource>(),
+    ),
+  );
+  sl.registerLazySingleton<GetRoles>(
+    () => GetRoles(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetPermisos>(
+    () => GetPermisos(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GuardarRol>(
+    () => GuardarRol(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<SetRolActivo>(
+    () => SetRolActivo(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<AsignarPermisoRol>(
+    () => AsignarPermisoRol(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<QuitarPermisoRol>(
+    () => QuitarPermisoRol(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetEspecialidadesAdmin>(
+    () => GetEspecialidadesAdmin(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GuardarEspecialidad>(
+    () => GuardarEspecialidad(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<SetEspecialidadActivo>(
+    () => SetEspecialidadActivo(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetLiquidaciones>(
+    () => GetLiquidaciones(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetPagosEspecialistas>(
+    () => GetPagosEspecialistas(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<AdminRolesCubit>(
+    () => AdminRolesCubit(
+      getRoles: sl<GetRoles>(),
+      getPermisos: sl<GetPermisos>(),
+      guardarRol: sl<GuardarRol>(),
+      setRolActivo: sl<SetRolActivo>(),
+      asignarPermiso: sl<AsignarPermisoRol>(),
+      quitarPermiso: sl<QuitarPermisoRol>(),
+    ),
+  );
+  sl.registerLazySingleton<AdminEspecialidadesCubit>(
+    () => AdminEspecialidadesCubit(
+      getEspecialidades: sl<GetEspecialidadesAdmin>(),
+      guardarEspecialidad: sl<GuardarEspecialidad>(),
+      setActivo: sl<SetEspecialidadActivo>(),
+    ),
+  );
+  sl.registerLazySingleton<AdminComisionesCubit>(
+    () => AdminComisionesCubit(
+      getLiquidaciones: sl<GetLiquidaciones>(),
+      getPagos: sl<GetPagosEspecialistas>(),
+    ),
+  );
+  sl.registerLazySingleton<AdminMedicosRegentesCubit>(
+    () => AdminMedicosRegentesCubit(
+      getMedicos: GetMedicosRegentes(sl<ISpecialistsRepository>()),
+      createMedico: CreateMedicoRegente(sl<ISpecialistsRepository>()),
+      aprobarMedico: AprobarMedicoRegente(sl<ISpecialistsRepository>()),
+    ),
+  );
+}
 void _registerReportsDashboards() {}
 
 void _registerSolicitudesReserva() {

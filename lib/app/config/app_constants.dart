@@ -93,6 +93,7 @@ class AppConstants {
   static const String rpcCrearSolicitudReserva = 'crear_solicitud_reserva';
   static const String rpcConfirmarDepositoSolicitud =
       'confirmar_deposito_solicitud';
+  static const String rpcAdminResumenKpis = 'admin_resumen_kpis';
 
   // ── Conceptos de pago (metadata de Stripe) ────────────────
   static const String conceptoAdelanto = 'ADELANTO';

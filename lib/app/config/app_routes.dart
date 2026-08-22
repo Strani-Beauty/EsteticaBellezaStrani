@@ -43,6 +43,19 @@ import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/mis_solicitudes_cubit.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/screens/solicitud_resumen_screen.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/screens/mis_solicitudes_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_dashboard_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_configuracion_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_licencias_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_config/presentation/screens/admin_configuracion_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_roles_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_especialidades_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_comisiones_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_medicos_regentes_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_datos_maestros_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_roles_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_especialidades_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_comisiones_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_medicos_regentes_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -61,6 +74,13 @@ class AppRoutes {
   static const String adminCuestionario    = '/admin/cuestionario';
   static const String adminCatalog         = '/admin/catalog';
   static const String adminCatalogServicio = '/admin/catalog/servicio';
+  static const String adminLicencias       = '/admin/licencias';
+  static const String adminConfiguracion   = '/admin/configuracion';
+  static const String adminDatosMaestros   = '/admin/datos-maestros';
+  static const String adminRoles           = '/admin/datos-maestros/roles';
+  static const String adminComisiones      = '/admin/datos-maestros/comisiones';
+  static const String adminEspecialidades  = '/admin/datos-maestros/especialidades';
+  static const String adminMedicosRegentes = '/admin/datos-maestros/medicos-regentes';
   static const String specialistHome       = '/specialist';
   static const String specialistProfile    = '/specialist/profile';
   static const String specialistDocuments  = '/specialist/documents';
@@ -202,8 +222,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.adminDashboard,
       name: 'adminDashboard',
-      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
-        value: sl<SpecialistsCubit>(),
+      builder: (context, state) => BlocProvider<AdminDashboardCubit>.value(
+        value: sl<AdminDashboardCubit>(),
         child: const AdminDashboardScreen(),
       ),
     ),
@@ -233,6 +253,62 @@ final GoRouter appRouter = GoRouter(
       name: 'adminCatalogServicio',
       builder: (context, state) => AdminServicioDetailScreen(
         servicio: state.extra is ServicioEntity ? state.extra as ServicioEntity : null,
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminLicencias,
+      name: 'adminLicencias',
+      builder: (context, state) => BlocProvider<SpecialistsCubit>.value(
+        value: sl<SpecialistsCubit>(),
+        child: const AdminLicenciasScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminConfiguracion,
+      name: 'adminConfiguracion',
+      builder: (context, state) =>
+          BlocProvider<AdminConfiguracionCubit>.value(
+        value: sl<AdminConfiguracionCubit>(),
+        child: const AdminConfiguracionScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminDatosMaestros,
+      name: 'adminDatosMaestros',
+      builder: (context, state) => const AdminDatosMaestrosScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.adminRoles,
+      name: 'adminRoles',
+      builder: (context, state) => BlocProvider<AdminRolesCubit>.value(
+        value: sl<AdminRolesCubit>(),
+        child: const AdminRolesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminComisiones,
+      name: 'adminComisiones',
+      builder: (context, state) => BlocProvider<AdminComisionesCubit>.value(
+        value: sl<AdminComisionesCubit>(),
+        child: const AdminComisionesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminEspecialidades,
+      name: 'adminEspecialidades',
+      builder: (context, state) =>
+          BlocProvider<AdminEspecialidadesCubit>.value(
+        value: sl<AdminEspecialidadesCubit>(),
+        child: const AdminEspecialidadesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminMedicosRegentes,
+      name: 'adminMedicosRegentes',
+      builder: (context, state) =>
+          BlocProvider<AdminMedicosRegentesCubit>.value(
+        value: sl<AdminMedicosRegentesCubit>(),
+        child: const AdminMedicosRegentesScreen(),
       ),
     ),
     GoRoute(

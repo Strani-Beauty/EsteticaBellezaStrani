@@ -79,3 +79,8 @@ Maestros. `admin_config` y `reports_dashboards` son stubs.
   usuarios autenticados" en evaluaciones/validaciones/cuestionarios/especialidades) →
   endurecer en plan futuro.
 - Auditoría: fuera de alcance (futuro).
+- **Fix post-verificación (2026-08-22)**: faltaban FKs para los select embebidos de PostgREST
+  (`rol_permisos.rol_id → roles.id`, `liquidaciones/pagos_especialistas.especialista_id →
+  especialistas.id`) → PGRST200 "Could not find a relationship". Se añadieron con la migración
+  `20260822000200_fk_master_data.sql` (idempotente) y se desambiguó el join a `profiles`
+  (`profiles!especialistas_usuario_id_fkey`) en el datasource de Datos Maestros.

@@ -173,7 +173,7 @@ class AdminMasterDataSupabaseDataSource {
   Future<List<LiquidacionEntity>> fetchLiquidaciones() async {
     final res = await _client.from('liquidaciones_especialistas').select('''
       *,
-      especialistas(usuario_id, profiles(full_name))
+      especialistas(usuario_id, profiles!especialistas_usuario_id_fkey(full_name))
     ''').order('fecha_inicio', ascending: false);
     return res.map((json) => _liquidationFromJson(json)).toList();
   }
@@ -205,7 +205,7 @@ class AdminMasterDataSupabaseDataSource {
   Future<List<PagoEspecialistaEntity>> fetchPagosEspecialistas() async {
     final res = await _client.from('pagos_especialistas').select('''
       *,
-      especialistas(usuario_id, profiles(full_name))
+      especialistas(usuario_id, profiles!especialistas_usuario_id_fkey(full_name))
     ''').order('fecha_pago', ascending: false);
     return res.map((json) {
       final esp = json['especialistas'];

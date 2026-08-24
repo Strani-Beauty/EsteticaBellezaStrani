@@ -27,19 +27,19 @@
 
 | # | Ítem | Resultado | Evidencia / observación |
 |---|---|---|---|
-| 1 | `/specialist/mis-citas` muestra 2 tabs: **Activas** (pendientes/próximas) e **Historial** (finalizadas/canceladas/no completadas) | | |
-| 2 | En detalle de cita (PROGRAMADA) aparece "Comenzar desplazamiento" y "Navegar al domicilio" | | |
-| 3 | Al pulsar "Navegar al domicilio" se abre la app de mapas con el destino (lat/lon del domicilio; fallback a búsqueda por dirección) | | |
-| 4 | La dirección exacta del paciente NO se muestra en el mapa de solicitudes públicas (solo lat/lon aproximada ~110 m); se ve completa solo en la cita aceptada | | |
-| 5 | "Comenzar desplazamiento" → estado EN_CAMINO; historial CITA con registro | | |
-| 6 | En EN_CAMINO: "Llegué al domicilio" pide permiso de ubicación (GPS), pasa a LLEGO y registra `latitud_llegada/longitud_llegada/distancia_recorrida` (mensaje con distancia en m) | | |
+| 1 | `/specialist/mis-citas` muestra 2 tabs: **Activas** (pendientes/próximas) e **Historial** (finalizadas/canceladas/no completadas) | ✔ PASS | Control manual 2026-08-24 |
+| 2 | En detalle de cita (PROGRAMADA) aparece "Comenzar desplazamiento" y "Navegar al domicilio" | ✔ PASS | Control manual 2026-08-24 |
+| 3 | Al pulsar "Navegar al domicilio" se abre la app de mapas con el destino (lat/lon del domicilio; fallback a búsqueda por dirección) | ✔ PASS | Control manual 2026-08-24 |
+| 4 | La dirección exacta del paciente NO se muestra en el mapa de solicitudes públicas (solo lat/lon aproximada ~110 m); se ve completa solo en la cita aceptada | ✔ PASS | Control manual 2026-08-24 |
+| 5 | "Comenzar desplazamiento" → estado EN_CAMINO; historial CITA con registro | ✔ PASS | Control manual 2026-08-24 |
+| 6 | En EN_CAMINO: "Llegué al domicilio" pide permiso de ubicación (GPS), pasa a LLEGO y registra `latitud_llegada/longitud_llegada/distancia_recorrida` (mensaje con distancia en m) | ✔ PASS | Control manual 2026-08-24 |
 | 7 | Si se niega el permiso de ubicación, NO se avanza de estado y se muestra el motivo | | |
-| 8 | En LLEGO: "Iniciar servicio" pasa a EN_PROCESO y crea el tratamiento | | |
-| 9 | Saltos inválidos de estado (p.ej. PROGRAMADA→EN_PROCESO directo vía SQL/REST) son rechazados por el trigger (RAISE EXCEPTION) | | |
-| 10 | "Cancelar cita" disponible en estados activos: exige motivo, pasa a CANCELADA y registra historial con `motivo_cancelacion` y `usuario_id` | | |
-| 11 | Paciente recibe notificación in-app (campana) en cada cambio de estado de su cita (EN_CAMINO, LLEGO, EN_PROCESO, FINALIZADA, CANCELADA) | | |
-| 12 | Push FCM: con `push_notifications=true` y dispositivo registrado, el paciente recibe push en los mismos cambios | | |
-| 13 | Paciente en `/mis-solicitudes` ve el estado de la cita (En camino / En el lugar / En proceso / Finalizada / Cancelada) | | |
+| 8 | En LLEGO: "Iniciar servicio" pasa a EN_PROCESO y crea el tratamiento | ✔ PASS | Control manual 2026-08-24 |
+| 9 | Saltos inválidos de estado (p.ej. PROGRAMADA→EN_PROCESO directo vía SQL/REST) son rechazados por el trigger (RAISE EXCEPTION) | ✔ PASS | Control manual 2026-08-24 |
+| 10 | "Cancelar cita" disponible en estados activos: exige motivo, pasa a CANCELADA y registra historial con `motivo_cancelacion` y `usuario_id` | ✔ PASS | Control manual 2026-08-24 |
+| 11 | Paciente recibe notificación in-app (campana) en cada cambio de estado de su cita (EN_CAMINO, LLEGO, EN_PROCESO, FINALIZADA, CANCELADA) | ✔ PASS | Control manual 2026-08-24 |
+| 12 | Push FCM: con `push_notifications=true` y dispositivo registrado, el paciente recibe push en los mismos cambios | ✔ PASS | Control manual 2026-08-24 |
+| 13 | Paciente en `/mis-solicitudes` ve el estado de la cita (En camino / En el lugar / En proceso / Finalizada / Cancelada) | ✔ PASS | Control manual 2026-08-24 |
 | 14 | No se puede crear una segunda cita activa para una solicitud ya ACEPTADA (claim atómico de `aceptar_solicitud`) | | |
 
 ## Comandos de verificación
@@ -53,4 +53,5 @@ flutter test
 
 - `flutter analyze`: 0 issues.
 - `flutter test`: 148/148.
-- Migración `20260824000100` aplicada al remoto vía `supabase db push` (pooler sesión 6543) el 2026-08-24. Queda pendiente ejecutar el checklist manual de aceptación en un dispositivo con permisos de ubicación.
+- Migración `20260824000100` aplicada al remoto vía `supabase db push` (pooler sesión 6543) el 2026-08-24.
+- **Control manual 2026-08-24: 12/14 ítems PASS** (1-6, 8-13). Pendientes: ítem 7 (permiso de ubicación denegado) e ítem 14 (doble claim de solicitud) por verificar en revisión posterior.

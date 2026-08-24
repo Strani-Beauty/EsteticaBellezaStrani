@@ -28,6 +28,17 @@ class TreatmentExecutionRepositoryImpl
   }
 
   @override
+  Future<Either<Failure, List<CitaEjecucionEntity>>> getCitasHistorial(
+      String especialistaId) async {
+    try {
+      final models = await _dataSource.fetchCitasHistorial(especialistaId);
+      return Right(models.map((m) => m.toEntity()).toList());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, CitaEjecucionEntity>> getCitaDetalle(
       String citaId) async {
     try {
@@ -204,6 +215,37 @@ class TreatmentExecutionRepositoryImpl
         observacionesFinales: observacionesFinales,
         recomendacionesPostTratamiento: recomendacionesPostTratamiento,
       );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, double?>> registrarLlegada({
+    required String citaId,
+    required double latitud,
+    required double longitud,
+  }) async {
+    try {
+      final distancia = await _dataSource.registrarLlegada(
+        citaId: citaId,
+        latitud: latitud,
+        longitud: longitud,
+      );
+      return Right(distancia);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> cancelarCita({
+    required String citaId,
+    String? motivo,
+  }) async {
+    try {
+      await _dataSource.cancelarCita(citaId: citaId, motivo: motivo);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

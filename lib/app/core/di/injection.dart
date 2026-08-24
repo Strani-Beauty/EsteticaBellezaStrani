@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:esteticaybellezastrani/app/core/utils/geo_service.dart';
 import 'package:esteticaybellezastrani/features/admin_users/data/datasources/admin_users_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/admin_users/data/repositories/admin_users_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/repositories/i_admin_users_repository.dart';
@@ -133,14 +134,17 @@ import 'package:esteticaybellezastrani/features/treatment_execution/domain/repos
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/actualizar_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/agregar_producto.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/avanzar_estado_cita.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/cancelar_cita.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/eliminar_producto.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/finalizar_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_cita_detalle.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_citas_historial.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_consentimiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_mis_citas.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_productos.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/iniciar_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/registrar_consentimiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/registrar_llegada.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/subir_firma.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/cubits/treatment_execution_cubit.dart';
 
@@ -151,6 +155,9 @@ final GetIt sl = GetIt.instance;
 void setupDependencies() {
   // ── Supabase Client (singleton) ────────────────────────────
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
+
+  // ── Core: Geo Service (GPS en vivo) ────────────────────────
+  sl.registerLazySingleton<GeoService>(() => GeoService());
 
   // ── Features: Auth Users ───────────────────────────────────
   _registerAuthUsers();
@@ -455,6 +462,9 @@ void _registerTreatmentExecution() {
       finalizarTratamiento: FinalizarTratamiento(
         sl<ITreatmentExecutionRepository>(),
       ),
+      getCitasHistorial: GetCitasHistorial(sl<ITreatmentExecutionRepository>()),
+      registrarLlegada: RegistrarLlegada(sl<ITreatmentExecutionRepository>()),
+      cancelarCita: CancelarCita(sl<ITreatmentExecutionRepository>()),
     ),
   );
 }

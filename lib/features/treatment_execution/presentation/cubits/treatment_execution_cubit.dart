@@ -12,11 +12,14 @@ import '../../domain/usecases/eliminar_producto.dart';
 import '../../domain/usecases/finalizar_tratamiento.dart';
 import '../../domain/usecases/actualizar_tratamiento.dart';
 import '../../domain/usecases/get_cita_detalle.dart';
+import '../../domain/usecases/get_citas_historial.dart';
 import '../../domain/usecases/get_consentimiento.dart';
 import '../../domain/usecases/get_mis_citas.dart';
 import '../../domain/usecases/get_productos.dart';
 import '../../domain/usecases/iniciar_tratamiento.dart';
 import '../../domain/usecases/registrar_consentimiento.dart';
+import '../../domain/usecases/cancelar_cita.dart';
+import '../../domain/usecases/registrar_llegada.dart';
 import '../../domain/usecases/subir_firma.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,6 +40,7 @@ class TreatmentExecutionLoading extends TreatmentExecutionState {
 
 class TreatmentExecutionLoaded extends TreatmentExecutionState {
   final List<CitaEjecucionEntity> citas;
+  final List<CitaEjecucionEntity> citasHistorial;
   final CitaEjecucionEntity? cita;
   final List<ProductoAplicadoEntity> productos;
   final ConsentimientoTratamientoEntity? consentimiento;
@@ -44,6 +48,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
 
   const TreatmentExecutionLoaded({
     this.citas = const [],
+    this.citasHistorial = const [],
     this.cita,
     this.productos = const [],
     this.consentimiento,
@@ -52,6 +57,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
 
   TreatmentExecutionLoaded copyWith({
     List<CitaEjecucionEntity>? citas,
+    List<CitaEjecucionEntity>? citasHistorial,
     CitaEjecucionEntity? cita,
     List<ProductoAplicadoEntity>? productos,
     ConsentimientoTratamientoEntity? consentimiento,
@@ -59,6 +65,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
   }) {
     return TreatmentExecutionLoaded(
       citas: citas ?? this.citas,
+      citasHistorial: citasHistorial ?? this.citasHistorial,
       cita: cita ?? this.cita,
       productos: productos ?? this.productos,
       consentimiento: consentimiento ?? this.consentimiento,
@@ -89,6 +96,9 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
   final RegistrarConsentimiento _registrarConsentimiento;
   final SubirFirma _subirFirma;
   final FinalizarTratamiento _finalizarTratamiento;
+  final GetCitasHistorial _getCitasHistorial;
+  final RegistrarLlegada _registrarLlegada;
+  final CancelarCita _cancelarCita;
 
   TreatmentExecutionCubit({
     required GetMisCitas getMisCitas,
@@ -103,6 +113,9 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     required RegistrarConsentimiento registrarConsentimiento,
     required SubirFirma subirFirma,
     required FinalizarTratamiento finalizarTratamiento,
+    required GetCitasHistorial getCitasHistorial,
+    required RegistrarLlegada registrarLlegada,
+    required CancelarCita cancelarCita,
   })  : _getMisCitas = getMisCitas,
         _getCitaDetalle = getCitaDetalle,
         _getProductos = getProductos,
@@ -115,18 +128,39 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
         _registrarConsentimiento = registrarConsentimiento,
         _subirFirma = subirFirma,
         _finalizarTratamiento = finalizarTratamiento,
+        _getCitasHistorial = getCitasHistorial,
+        _registrarLlegada = registrarLlegada,
+        _cancelarCita = cancelarCita,
         super(const TreatmentExecutionInitial());
 
   TreatmentExecutionLoaded? get _loaded =>
       state is TreatmentExecutionLoaded ? state as TreatmentExecutionLoaded : null;
 
-  /// Carga las citas pendientes del especialista.
+  /// Carga las citas pendientes del especialista (preservando el historial).
   Future<void> loadCitas({required String especialistaId}) async {
-    emit(const TreatmentExecutionLoading());
+    if (_loaded == null) emit(const TreatmentExecutionLoading());
     final result = await _getMisCitas(GetMisCitasParams(especialistaId));
     result.fold(
       (f) => emit(TreatmentExecutionError(f.message)),
-      (citas) => emit(TreatmentExecutionLoaded(citas: citas)),
+      (citas) => emit(TreatmentExecutionLoaded(
+        citas: citas,
+        citasHistorial: _loaded?.citasHistorial ?? const [],
+      )),
+    );
+  }
+
+  /// Carga todas las citas del especialista (incl. finalizadas y canceladas),
+  /// preservando la lista de citas activas.
+  Future<void> loadCitasHistorial({required String especialistaId}) async {
+    if (_loaded == null) emit(const TreatmentExecutionLoading());
+    final result =
+        await _getCitasHistorial(GetCitasHistorialParams(especialistaId));
+    result.fold(
+      (f) => emit(TreatmentExecutionError(f.message)),
+      (citas) => emit(TreatmentExecutionLoaded(
+        citas: _loaded?.citas ?? const [],
+        citasHistorial: citas,
+      )),
     );
   }
 
@@ -157,6 +191,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
 
     emit(TreatmentExecutionLoaded(
       citas: current?.citas ?? const [],
+      citasHistorial: current?.citasHistorial ?? const [],
       cita: cita,
       productos: productos,
       consentimiento: consentimiento,
@@ -321,6 +356,44 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
       tratamientoId: tratamientoId,
       observacionesFinales: observacionesFinales,
       recomendacionesPostTratamiento: recomendacionesPostTratamiento,
+    ));
+    result.fold(
+      (f) => emit(TreatmentExecutionError(f.message)),
+      (_) => emit(current.copyWith(trabajando: false)),
+    );
+  }
+
+  /// Registra la llegada del especialista (GPS) y devuelve la distancia en metros.
+  Future<double?> registrarLlegada({
+    required String citaId,
+    required double latitud,
+    required double longitud,
+  }) async {
+    final current = _loaded;
+    if (current == null) return null;
+    emit(current.copyWith(trabajando: true));
+    final result = await _registrarLlegada(RegistrarLlegadaParams(
+      citaId: citaId,
+      latitud: latitud,
+      longitud: longitud,
+    ));
+    double? distancia;
+    result.fold(
+      (f) => emit(TreatmentExecutionError(f.message)),
+      (d) => distancia = d,
+    );
+    emit(current.copyWith(trabajando: false));
+    return distancia;
+  }
+
+  /// Cancela la cita registrando el motivo.
+  Future<void> cancelar({required String citaId, String? motivo}) async {
+    final current = _loaded;
+    if (current == null) return;
+    emit(current.copyWith(trabajando: true));
+    final result = await _cancelarCita(CancelarCitaParams(
+      citaId: citaId,
+      motivo: motivo,
     ));
     result.fold(
       (f) => emit(TreatmentExecutionError(f.message)),

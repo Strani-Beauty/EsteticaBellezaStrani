@@ -52,6 +52,20 @@ class TreatmentExecutionSupabaseDataSource {
     return CitaEjecucionModel.fromJson(res);
   }
 
+  /// Todas las citas del especialista (incluye finalizadas, canceladas y no
+  /// completadas), para el historial de la lista "Mis citas".
+  Future<List<CitaEjecucionModel>> fetchCitasHistorial(
+      String especialistaId) async {
+    final res = await _client
+        .from('citas')
+        .select(_citaSelect)
+        .eq('especialista_id', especialistaId)
+        .order('fecha_aceptacion', ascending: true);
+    return res
+        .map((json) => CitaEjecucionModel.fromJson(json))
+        .toList();
+  }
+
   Future<List<ProductoAplicadoModel>> fetchProductos(
       String tratamientoId) async {
     final res = await _client
@@ -281,20 +295,41 @@ class TreatmentExecutionSupabaseDataSource {
     );
   }
 
-  /// Cancela la cita y la deja sin valor (estado CANCELADA).
+  /// Cancela la cita y la deja sin valor (estado CANCELADA) vía RPC, que valida
+  /// la transición y registra el motivo + usuario en `historial_estados`.
   Future<void> cancelarCita({
     required String citaId,
     String? motivo,
   }) async {
-    await _client.from('citas').update({
-      'estado': AppConstants.citaCancelada,
-      'observaciones': motivo,
-    }).eq('id', citaId);
-    await _insertHistorial(
-      citaId: citaId,
-      estado: AppConstants.citaCancelada,
-      observaciones: motivo,
-      motivo: motivo,
-    );
+    final res = await _client.rpc('cancelar_cita', params: {
+      'p_cita_id': citaId,
+      'p_motivo': motivo,
+    });
+    final ok = res is Map && res['ok'] == true;
+    if (!ok) {
+      throw Exception(
+          'No se pudo cancelar la cita: ${res is Map ? res['motivo'] : 'error'}');
+    }
+  }
+
+  /// Registra la llegada del especialista al domicilio vía RPC, escribiendo
+  /// latitud_llegada/longitud_llegada/distancia_recorrida. Devuelve la
+  /// distancia recorrida en metros (o null si no se pudo calcular).
+  Future<double?> registrarLlegada({
+    required String citaId,
+    required double latitud,
+    required double longitud,
+  }) async {
+    final res = await _client.rpc('registrar_llegada_especialista', params: {
+      'p_cita_id': citaId,
+      'p_latitud': latitud,
+      'p_longitud': longitud,
+    });
+    if (res is Map && res['ok'] == true) {
+      final dist = res['distancia_recorrida_m'];
+      return dist is num ? dist.toDouble() : null;
+    }
+    throw Exception(
+        'No se pudo registrar la llegada: ${res is Map ? res['motivo'] : 'error'}');
   }
 }

@@ -15,6 +15,12 @@ abstract class ITreatmentExecutionRepository {
     String especialistaId,
   );
 
+  /// Todas las citas del especialista (incluye finalizadas, canceladas y no
+  /// completadas), para el historial de "Mis citas".
+  Future<Either<Failure, List<CitaEjecucionEntity>>> getCitasHistorial(
+    String especialistaId,
+  );
+
   /// Detalle de una cita (con paciente, servicio y tratamiento asociado).
   Future<Either<Failure, CitaEjecucionEntity>> getCitaDetalle(String citaId);
 
@@ -83,5 +89,19 @@ abstract class ITreatmentExecutionRepository {
     required String tratamientoId,
     String? observacionesFinales,
     String? recomendacionesPostTratamiento,
+  });
+
+  /// Registra la llegada del especialista al domicilio (geo) y devuelve la
+  /// distancia recorrida en metros (o null si no se pudo calcular).
+  Future<Either<Failure, double?>> registrarLlegada({
+    required String citaId,
+    required double latitud,
+    required double longitud,
+  });
+
+  /// Cancela la cita registrando el motivo y el usuario responsable.
+  Future<Either<Failure, void>> cancelarCita({
+    required String citaId,
+    String? motivo,
   });
 }

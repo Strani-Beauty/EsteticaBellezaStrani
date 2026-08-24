@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
+import 'package:esteticaybellezastrani/app/core/utils/geo_service.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/pago_entity.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
@@ -75,7 +77,7 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
             children: [
               _InfoHeader(cita: cita),
               const SizedBox(height: 16),
-              if (cita.estado == EstadoCitaEjecucion.programada)
+              if (cita.estado == EstadoCitaEjecucion.programada) ...[
                 _AccionButton(
                   icon: Icons.directions_walk_rounded,
                   label: 'Comenzar desplazamiento',
@@ -84,15 +86,26 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                     nuevoEstado: EstadoCitaEjecucion.enCamino,
                   ),
                 ),
-              if (cita.estado == EstadoCitaEjecucion.enCamino)
+                const SizedBox(height: 8),
+                _AccionSecundaria(
+                  icon: Icons.navigation_outlined,
+                  label: 'Navegar al domicilio',
+                  onPressed: () => _abrirNavegacion(cita),
+                ),
+              ],
+              if (cita.estado == EstadoCitaEjecucion.enCamino) ...[
                 _AccionButton(
                   icon: Icons.pin_drop_rounded,
                   label: 'Llegué al domicilio',
-                  onPressed: () => cubit.avanzar(
-                    citaId: cita.id,
-                    nuevoEstado: EstadoCitaEjecucion.llego,
-                  ),
+                  onPressed: () => _llegarAlDomicilio(cita),
                 ),
+                const SizedBox(height: 8),
+                _AccionSecundaria(
+                  icon: Icons.navigation_outlined,
+                  label: 'Navegar al domicilio',
+                  onPressed: () => _abrirNavegacion(cita),
+                ),
+              ],
               if (cita.estado == EstadoCitaEjecucion.llego)
                 _AccionButton(
                   icon: Icons.play_circle_outline_rounded,
@@ -106,6 +119,16 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                       await cubit.iniciarTratamiento(citaId: cita.id);
                     }
                   },
+                ),
+              if (cita.estado.esPendienteDeEjecucion)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: _AccionSecundaria(
+                    icon: Icons.cancel_outlined,
+                    label: 'Cancelar cita',
+                    color: Theme.of(context).colorScheme.error,
+                    onPressed: () => _dialogoCancelar(cubit, cita),
+                  ),
                 ),
               if (cita.estado == EstadoCitaEjecucion.enProceso) ...[
                 if (tratamiento != null) ...[
@@ -309,6 +332,99 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
     } catch (e) {
       _mensaje('No se pudo consultar el estado de pago: $e');
       return null;
+    }
+  }
+
+  /// Act. 6: abre la navegación hacia el domicilio del paciente (url_launcher).
+  Future<void> _abrirNavegacion(CitaEjecucionEntity cita) async {
+    final lat = cita.latitud;
+    final lng = cita.longitud;
+    final Uri uri;
+    if (lat != null && lng != null) {
+      uri = Uri.parse('google.navigation:q=$lat,$lng');
+    } else {
+      final q = Uri.encodeComponent(
+          '${cita.direccion ?? ''}${cita.ciudad != null ? ', ${cita.ciudad}' : ''}');
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$q');
+    }
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        _mensaje('No se pudo abrir la aplicación de mapas.');
+      }
+    } catch (_) {
+      if (mounted) _mensaje('No se pudo abrir la aplicación de mapas.');
+    }
+  }
+
+  /// Act. 8: registra la llegada del especialista con GPS (estado LLEGO +
+  /// latitud/longitud/distancia del domicilio).
+  Future<void> _llegarAlDomicilio(CitaEjecucionEntity cita) async {
+    final cubit = context.read<TreatmentExecutionCubit>();
+    try {
+      final pos = await sl<GeoService>().obtenerPosicionActual();
+      if (!mounted) return;
+      await cubit.avanzar(
+        citaId: cita.id,
+        nuevoEstado: EstadoCitaEjecucion.llego,
+      );
+      if (!mounted) return;
+      final distancia = await cubit.registrarLlegada(
+        citaId: cita.id,
+        latitud: pos.latitud,
+        longitud: pos.longitud,
+      );
+      if (!mounted) return;
+      _mensaje(distancia != null
+          ? 'Llegada registrada a ${distancia.toStringAsFixed(0)} m del domicilio.'
+          : 'Llegada registrada.');
+    } on GeoServiceException catch (e) {
+      _mensaje('No se pudo obtener tu ubicación: ${e.message}');
+    }
+  }
+
+  /// Act. 10: cancela la cita registrando motivo y usuario (RPC `cancelar_cita`).
+  Future<void> _dialogoCancelar(
+    TreatmentExecutionCubit cubit,
+    CitaEjecucionEntity cita,
+  ) async {
+    final motivo = TextEditingController();
+    final cancelar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar cita'),
+        content: TextField(
+          controller: motivo,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Motivo de cancelación *',
+            hintText: 'Obligatorio para la trazabilidad.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Volver'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancelar cita'),
+          ),
+        ],
+      ),
+    );
+    if (cancelar == true && mounted) {
+      final m = motivo.text.trim();
+      if (m.isEmpty) {
+        _mensaje('El motivo de cancelación es obligatorio.');
+        return;
+      }
+      await cubit.cancelar(citaId: cita.id, motivo: m);
+      if (mounted) cubit.loadDetalle(citaId: cita.id);
     }
   }
 }
@@ -652,6 +768,36 @@ class _AccionButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: color,
           padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+      ),
+    );
+  }
+}
+
+class _AccionSecundaria extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final Color? color;
+  const _AccionSecundaria({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color ?? AppTheme.cDeepAccent,
+          side: BorderSide(color: color ?? AppTheme.cDeepAccent),
+          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
         onPressed: onPressed,
         icon: Icon(icon),

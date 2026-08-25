@@ -137,6 +137,7 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                   icon: Icons.play_circle_outline_rounded,
                   label: 'Iniciar servicio',
                   onPressed: () async {
+                    final navigator = Navigator.of(context);
                     await cubit.avanzar(
                       citaId: cita.id,
                       nuevoEstado: EstadoCitaEjecucion.enProceso,
@@ -145,8 +146,7 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                       await cubit.iniciarTratamiento(citaId: cita.id);
                     }
                     if (!mounted) return;
-                    final s =
-                        context.read<TreatmentExecutionCubit>().state;
+                    final s = cubit.state;
                     final t = s is TreatmentExecutionLoaded
                         ? s.cita?.tratamiento
                         : null;
@@ -154,7 +154,7 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                     // nació PENDIENTE_FIRMA se abre la captura de firma.
                     if (t != null &&
                         t.estado == EstadoTratamiento.pendienteFirma) {
-                      Navigator.of(context).push(MaterialPageRoute(
+                      navigator.push(MaterialPageRoute(
                         builder: (_) => FirmaConsentimientoScreen(
                           tratamientoId: t.id,
                           pacienteId: t.pacienteId,

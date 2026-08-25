@@ -4,7 +4,7 @@
 |---|---|
 | **Fecha** | 2026-08-25 |
 | **Versión** | 1.0 |
-| **Commit** | (pendiente) |
+| **Commit** | `697322a` |
 | **Entorno** | Local `flutter run -d web-server --web-port 8080` o desplegado en web.app |
 | **Plan** | `docs/plans/2026-08-25_treatment_consentimiento_facemap.md` |
 | **Proyecto Supabase** | `hhyjremkguvphmjuaazp` |

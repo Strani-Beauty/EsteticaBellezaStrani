@@ -38,6 +38,7 @@ import 'package:esteticaybellezastrani/features/notifications/presentation/scree
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/cubits/treatment_execution_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/mis_citas_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/cita_detalle_screen.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/presentation/screens/face_map_especialista_screen.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/domain/entities/servicio_seleccionado_entity.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/solicitud_reserva_cubit.dart';
 import 'package:esteticaybellezastrani/features/solicitudes_reserva/presentation/cubits/mis_solicitudes_cubit.dart';
@@ -92,10 +93,15 @@ class AppRoutes {
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String estadoSalud = '/estado-salud';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
+  static const String faceMapEspecialista = '/tratamiento/:id/face-map';
 
   /// Ruta concreta de fotografías de un tratamiento (sustituye `:id`).
   static String fotografiasTratamientoDe(String tratamientoId) =>
       '/tratamiento/$tratamientoId/fotos';
+
+  /// Ruta concreta del face map del especialista para un tratamiento.
+  static String faceMapEspecialistaDe(String tratamientoId) =>
+      '/tratamiento/$tratamientoId/face-map';
   static const String specialistPatientMap = '/specialist/map';
   static const String misCitas = '/specialist/mis-citas';
   static const String misCitasDetalle = '/specialist/mis-citas/:id';
@@ -336,6 +342,17 @@ final GoRouter appRouter = GoRouter(
         return BlocProvider<TreatmentPhotosCubit>.value(
           value: sl<TreatmentPhotosCubit>(),
           child: FotografiasScreen(tratamientoId: tratamientoId),
+        );
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.faceMapEspecialista,
+      name: 'faceMapEspecialista',
+      builder: (context, state) {
+        final tratamientoId = state.pathParameters['id'] ?? '';
+        return BlocProvider<TreatmentExecutionCubit>.value(
+          value: sl<TreatmentExecutionCubit>(),
+          child: FaceMapEspecialistaScreen(tratamientoId: tratamientoId),
         );
       },
     ),

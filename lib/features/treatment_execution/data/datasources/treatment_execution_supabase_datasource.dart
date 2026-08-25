@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/config/app_constants.dart';
 import '../models/cita_ejecucion_model.dart';
 import '../models/consentimiento_model.dart';
+import '../models/face_map_especialista_model.dart';
 import '../models/producto_aplicado_model.dart';
 import '../models/tratamiento_model.dart';
 
@@ -17,7 +18,7 @@ class TreatmentExecutionSupabaseDataSource {
 
   static const String _citaSelect = '''
     *,
-    solicitudes(id, servicios(nombre, precio_base), pacientes(profiles(full_name, phone)), direcciones_paciente(latitud, longitud, direccion, ciudad)),
+    solicitudes(id, servicios(nombre, precio_base, tipo_precio), pacientes(profiles(full_name, phone)), direcciones_paciente(latitud, longitud, direccion, ciudad)),
     tratamientos(*)
   ''';
 
@@ -131,7 +132,9 @@ class TreatmentExecutionSupabaseDataSource {
 
   // ── Tratamiento ──────────────────────────────────────────────
 
-  /// Devuelve el tratamiento existente de la cita o crea uno `INICIADO`.
+  /// Devuelve el tratamiento existente de la cita o crea uno `PENDIENTE_FIRMA`
+  /// (la firma del consentimiento es el primer paso obligatorio antes de
+  /// continuar con la ejecución).
   Future<TratamientoModel> asegurarTratamiento({
     required String citaId,
     String? evaluacionInicial,
@@ -166,7 +169,7 @@ class TreatmentExecutionSupabaseDataSource {
       'paciente_id': pacienteId,
       'especialista_id': especialistaId,
       'fecha_inicio': now,
-      'estado': AppConstants.tratamientoIniciado,
+      'estado': AppConstants.tratamientoPendienteFirma,
       'evaluacion_inicial': evaluacionInicial,
       'created_at': now,
       'updated_at': now,
@@ -250,19 +253,19 @@ class TreatmentExecutionSupabaseDataSource {
     return ConsentimientoModel.fromJson(res);
   }
 
-  /// Sube los bytes de la firma al bucket y devuelve la URL pública.
+  /// Sube los bytes de la firma al bucket (privado) y devuelve el PATH del
+  /// objeto en storage para guardarlo en `firma_url`. La URL firmada se genera
+  /// al leer (createSignedUrl).
   Future<String> subirFirma({
     required String tratamientoId,
     required Uint8List bytes,
   }) async {
     final path =
         '$tratamientoId/firma_${DateTime.now().millisecondsSinceEpoch}.png';
-    final upload = await _client.storage
+    await _client.storage
         .from(AppConstants.bucketFirmas)
         .uploadBinary(path, bytes);
-    return _client.storage
-        .from(AppConstants.bucketFirmas)
-        .getPublicUrl(upload);
+    return path;
   }
 
   // ── Finalizar ────────────────────────────────────────────────
@@ -331,5 +334,116 @@ class TreatmentExecutionSupabaseDataSource {
     }
     throw Exception(
         'No se pudo registrar la llegada: ${res is Map ? res['motivo'] : 'error'}');
+  }
+
+  // ── Face map del especialista ────────────────────────────────
+
+  /// Devuelve el face map vinculado al tratamiento (el guardado por el
+  /// especialista) o, si no existe, el mapa pre-tratamiento del paciente
+  /// (face_maps con tratamiento_id nulo del mismo paciente). Carga los
+  /// puntos desde `face_map_puntos`. Devuelve `null` si no hay mapa.
+  Future<FaceMapEspecialistaModel?> fetchFaceMapPorTratamiento(
+      String tratamientoId) async {
+    final tratamiento = await _client
+        .from('tratamientos')
+        .select('id, paciente_id')
+        .eq('id', tratamientoId)
+        .maybeSingle();
+    if (tratamiento == null) return null;
+
+    var mapa = await _client
+        .from('face_maps')
+        .select()
+        .eq('tratamiento_id', tratamientoId)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    final pacienteId = tratamiento['paciente_id'] as String?;
+    if (mapa == null && pacienteId != null) {
+      mapa = await _client
+          .from('face_maps')
+          .select()
+          .eq('paciente_id', pacienteId)
+          .isFilter('tratamiento_id', null)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+    }
+    if (mapa == null) return null;
+
+    final model = FaceMapEspecialistaModel.fromJson(mapa);
+    final puntos = await _client
+        .from('face_map_puntos')
+        .select()
+        .eq('face_map_id', model.id ?? '')
+        .order('created_at', ascending: true);
+    return FaceMapEspecialistaModel(
+      id: model.id,
+      tratamientoId: model.tratamientoId,
+      pacienteId: model.pacienteId,
+      servicioId: model.servicioId,
+      tipoMapa: model.tipoMapa,
+      imagenBaseUrl: model.imagenBaseUrl,
+      observaciones: model.observaciones,
+      puntos: puntos.cast<Map<String, dynamic>>().toList(),
+    );
+  }
+
+  /// Guarda el face map del especialista vinculado al tratamiento: crea o
+  /// actualiza la fila en `face_maps` y reemplaza los puntos en
+  /// `face_map_puntos` (delete + insert, operación idempotente).
+  Future<void> guardarFaceMapPorTratamiento({
+    required String tratamientoId,
+    required String pacienteId,
+    required List<Map<String, dynamic>> puntos,
+    String? observaciones,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    final existente = await _client
+        .from('face_maps')
+        .select('id')
+        .eq('tratamiento_id', tratamientoId)
+        .maybeSingle();
+
+    String faceMapId;
+    if (existente != null) {
+      faceMapId = existente['id'] as String;
+      await _client.from('face_maps').update({
+        'observaciones': observaciones,
+        'updated_at': now,
+      }).eq('id', faceMapId);
+    } else {
+      final res = await _client.from('face_maps').insert({
+        'tratamiento_id': tratamientoId,
+        'paciente_id': pacienteId,
+        'tipo_mapa': 'ROSTRO',
+        'imagen_base_url': '',
+        'observaciones': observaciones,
+        'created_at': now,
+        'updated_at': now,
+      }).select('id').maybeSingle();
+      if (res == null) throw Exception('No se pudo crear el face map');
+      faceMapId = res['id'] as String;
+    }
+
+    await _client
+        .from('face_map_puntos')
+        .delete()
+        .eq('face_map_id', faceMapId);
+
+    if (puntos.isNotEmpty) {
+      final filas = puntos.map((p) => {
+            'face_map_id': faceMapId,
+            'zona_anatomica': p['zona_anatomica'],
+            'punto_id': p['punto_id'],
+            'vista': p['vista'],
+            'coordenada_x': p['coordenada_x'],
+            'coordenada_y': p['coordenada_y'],
+            'cantidad': 1,
+            'unidad_medida': 'unidad',
+          }).toList();
+      await _client.from('face_map_puntos').insert(filas);
+    }
   }
 }

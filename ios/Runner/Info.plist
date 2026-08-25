@@ -30,6 +30,10 @@
 	<string>Tu ubicación se usa para registrar tu llegada al domicilio del paciente durante las citas asignadas.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Tu ubicación se usa para registrar tu llegada al domicilio del paciente durante las citas asignadas.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>La cámara se usa para capturar las fotografías de evidencia (PRE/POST) del tratamiento.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>La galería se usa para seleccionar fotografías de evidencia (PRE/POST) del tratamiento.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -46,6 +46,19 @@ class FotografiaTratamientoModel {
     };
   }
 
+  FotografiaTratamientoModel copyWith({String? archivoUrl}) {
+    return FotografiaTratamientoModel(
+      id: id,
+      tratamientoId: tratamientoId,
+      tipoFotografia: tipoFotografia,
+      archivoUrl: archivoUrl ?? this.archivoUrl,
+      fechaCaptura: fechaCaptura,
+      descripcion: descripcion,
+      createdAt: createdAt,
+      tipoFoto: tipoFoto,
+    );
+  }
+
   FotografiaTratamientoEntity toEntity() {
     return FotografiaTratamientoEntity(
       id: id,

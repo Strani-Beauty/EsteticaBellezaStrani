@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import '../entities/cita_ejecucion_entity.dart';
 import '../entities/consentimiento_tratamiento_entity.dart';
+import '../entities/face_map_especialista_entity.dart';
 import '../entities/producto_aplicado_entity.dart';
 import '../entities/tratamiento_entity.dart';
 
@@ -40,7 +41,7 @@ abstract class ITreatmentExecutionRepository {
     String? observaciones,
   });
 
-  /// Crea el tratamiento `INICIADO` vinculado a la cita (si no existe).
+  /// Crea el tratamiento `PENDIENTE_FIRMA` vinculado a la cita (si no existe).
   Future<Either<Failure, TratamientoEntity>> iniciarTratamiento({
     required String citaId,
     String? evaluacionInicial,
@@ -52,6 +53,7 @@ abstract class ITreatmentExecutionRepository {
     String? evaluacionInicial,
     String? observacionesFinales,
     String? recomendacionesPostTratamiento,
+    String? estado,
   });
 
   /// Agrega un producto aplicado al tratamiento.
@@ -77,7 +79,8 @@ abstract class ITreatmentExecutionRepository {
     required String firmaUrl,
   });
 
-  /// Sube los bytes de la firma al bucket y devuelve la URL pública.
+  /// Sube los bytes de la firma al bucket (privado) y devuelve el PATH del
+  /// objeto en storage para guardarlo en `firma_url`.
   Future<Either<Failure, String>> subirFirma({
     required String tratamientoId,
     required Uint8List bytes,
@@ -103,5 +106,20 @@ abstract class ITreatmentExecutionRepository {
   Future<Either<Failure, void>> cancelarCita({
     required String citaId,
     String? motivo,
+  });
+
+  /// Devuelve el face map del especialista para el tratamiento (o el del
+  /// paciente pre-tratamiento si el especialista aún no guarda uno), con sus
+  /// puntos. `null` si no existe ningún mapa.
+  Future<Either<Failure, FaceMapEspecialistaEntity?>> getFaceMapPorTratamiento(
+      String tratamientoId);
+
+  /// Guarda el face map del especialista vinculado al tratamiento (crea o
+  /// actualiza `face_maps` y reemplaza los puntos en `face_map_puntos`).
+  Future<Either<Failure, void>> guardarFaceMapPorTratamiento({
+    required String tratamientoId,
+    required String pacienteId,
+    required List<Map<String, dynamic>> puntos,
+    String? observaciones,
   });
 }

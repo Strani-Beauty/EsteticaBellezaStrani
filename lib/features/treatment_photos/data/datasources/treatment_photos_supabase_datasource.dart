@@ -23,15 +23,38 @@ class TreatmentPhotosSupabaseDataSource {
         .select()
         .eq('tratamiento_id', tratamientoId)
         .order('fecha_captura', ascending: false);
-    return res
+    final fotografias = res
         .map((json) => FotografiaTratamientoModel.fromJson(json))
         .toList();
+    return Future.wait(
+        fotografias.map((foto) => _withSignedUrl(foto)).toList());
+  }
+
+  /// Devuelve el modelo con `archivoUrl` apuntando a una URL firmada cuando la
+  /// fila guarda un path de storage privado (no una URL http externa).
+  Future<FotografiaTratamientoModel> _withSignedUrl(
+      FotografiaTratamientoModel foto) async {
+    final path = foto.archivoUrl;
+    if (path.isEmpty || path.startsWith('http')) return foto;
+    final url = await _signedUrl(path);
+    return foto.copyWith(archivoUrl: url);
+  }
+
+  Future<String> _signedUrl(String path) async {
+    try {
+      final res = await _client.storage
+          .from(AppConstants.bucketFotografias)
+          .createSignedUrl(path, 3600);
+      return res;
+    } catch (_) {
+      return path;
+    }
   }
 
   // ── Escritura ───────────────────────────────────────────────
 
-  /// Sube los bytes de la imagen al bucket y registra la fila en la BD.
-  /// Devuelve la URL pública del objeto ya guardado.
+  /// Sube los bytes de la imagen al bucket (privado) y guarda el PATH del
+  /// objeto en `archivo_url` (la URL firmada se genera al leer).
   Future<FotografiaTratamientoModel> subirFotografia({
     required String tratamientoId,
     required TipoFotografia tipoFotografia,
@@ -45,15 +68,12 @@ class TreatmentPhotosSupabaseDataSource {
     final uploadResult = await _client.storage
         .from(AppConstants.bucketFotografias)
         .uploadBinary(path, bytes);
-    final publicUrl = _client.storage
-        .from(AppConstants.bucketFotografias)
-        .getPublicUrl(uploadResult);
 
     final now = DateTime.now().toIso8601String();
     final payload = <String, dynamic>{
       'tratamiento_id': tratamientoId,
       'tipo_fotografia': tipoFotografia.toDb,
-      'archivo_url': publicUrl,
+      'archivo_url': uploadResult,
       'fecha_captura': now,
       'descripcion': descripcion,
       'created_at': now,

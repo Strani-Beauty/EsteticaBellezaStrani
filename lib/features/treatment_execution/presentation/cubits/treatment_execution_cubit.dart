@@ -3,8 +3,12 @@ import 'dart:typed_data';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Los usecases se inyectan por nombre; esta regla no aplica aquí.
 // ignore_for_file: prefer_initializing_formals
+import '../../../../app/config/app_constants.dart';
+import '../../../treatment_photos/domain/entities/fotografia_tratamiento_entity.dart';
+import '../../../treatment_photos/domain/usecases/get_fotografias.dart';
 import '../../domain/entities/cita_ejecucion_entity.dart';
 import '../../domain/entities/consentimiento_tratamiento_entity.dart';
+import '../../domain/entities/face_map_especialista_entity.dart';
 import '../../domain/entities/producto_aplicado_entity.dart';
 import '../../domain/usecases/agregar_producto.dart';
 import '../../domain/usecases/avanzar_estado_cita.dart';
@@ -14,6 +18,8 @@ import '../../domain/usecases/actualizar_tratamiento.dart';
 import '../../domain/usecases/get_cita_detalle.dart';
 import '../../domain/usecases/get_citas_historial.dart';
 import '../../domain/usecases/get_consentimiento.dart';
+import '../../domain/usecases/get_face_map_por_tratamiento.dart';
+import '../../domain/usecases/guardar_face_map_por_tratamiento.dart';
 import '../../domain/usecases/get_mis_citas.dart';
 import '../../domain/usecases/get_productos.dart';
 import '../../domain/usecases/iniciar_tratamiento.dart';
@@ -44,6 +50,8 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
   final CitaEjecucionEntity? cita;
   final List<ProductoAplicadoEntity> productos;
   final ConsentimientoTratamientoEntity? consentimiento;
+  final List<FotografiaTratamientoEntity> fotografias;
+  final FaceMapEspecialistaEntity? faceMap;
   final bool trabajando;
 
   const TreatmentExecutionLoaded({
@@ -52,6 +60,8 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
     this.cita,
     this.productos = const [],
     this.consentimiento,
+    this.fotografias = const [],
+    this.faceMap,
     this.trabajando = false,
   });
 
@@ -61,6 +71,8 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
     CitaEjecucionEntity? cita,
     List<ProductoAplicadoEntity>? productos,
     ConsentimientoTratamientoEntity? consentimiento,
+    List<FotografiaTratamientoEntity>? fotografias,
+    FaceMapEspecialistaEntity? faceMap,
     bool? trabajando,
   }) {
     return TreatmentExecutionLoaded(
@@ -69,6 +81,8 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
       cita: cita ?? this.cita,
       productos: productos ?? this.productos,
       consentimiento: consentimiento ?? this.consentimiento,
+      fotografias: fotografias ?? this.fotografias,
+      faceMap: faceMap ?? this.faceMap,
       trabajando: trabajando ?? this.trabajando,
     );
   }
@@ -99,6 +113,9 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
   final GetCitasHistorial _getCitasHistorial;
   final RegistrarLlegada _registrarLlegada;
   final CancelarCita _cancelarCita;
+  final GetFotografias _getFotografias;
+  final GetFaceMapPorTratamiento _getFaceMapPorTratamiento;
+  final GuardarFaceMapPorTratamiento _guardarFaceMapPorTratamiento;
 
   TreatmentExecutionCubit({
     required GetMisCitas getMisCitas,
@@ -116,6 +133,9 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     required GetCitasHistorial getCitasHistorial,
     required RegistrarLlegada registrarLlegada,
     required CancelarCita cancelarCita,
+    required GetFotografias getFotografias,
+    required GetFaceMapPorTratamiento getFaceMapPorTratamiento,
+    required GuardarFaceMapPorTratamiento guardarFaceMapPorTratamiento,
   })  : _getMisCitas = getMisCitas,
         _getCitaDetalle = getCitaDetalle,
         _getProductos = getProductos,
@@ -131,6 +151,9 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
         _getCitasHistorial = getCitasHistorial,
         _registrarLlegada = registrarLlegada,
         _cancelarCita = cancelarCita,
+        _getFotografias = getFotografias,
+        _getFaceMapPorTratamiento = getFaceMapPorTratamiento,
+        _guardarFaceMapPorTratamiento = guardarFaceMapPorTratamiento,
         super(const TreatmentExecutionInitial());
 
   TreatmentExecutionLoaded? get _loaded =>
@@ -177,11 +200,14 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
 
     List<ProductoAplicadoEntity> productos = [];
     ConsentimientoTratamientoEntity? consentimiento;
+    List<FotografiaTratamientoEntity> fotografias = [];
     if (cita?.tratamiento != null) {
       final p = await _getProductos(cita!.tratamiento!.id);
       p.fold((_) {}, (v) => productos = v);
       final c = await _getConsentimiento(cita!.tratamiento!.id);
       c.fold((_) {}, (v) => consentimiento = v);
+      final f = await _getFotografias(GetFotografiasParams(cita!.tratamiento!.id));
+      f.fold((_) {}, (v) => fotografias = v);
     }
 
     if (error != null) {
@@ -195,6 +221,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
       cita: cita,
       productos: productos,
       consentimiento: consentimiento,
+      fotografias: fotografias,
     ));
   }
 
@@ -337,7 +364,21 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     );
     result.fold(
       (f) => emit(TreatmentExecutionError(f.message)),
-      (c) => emit(current.copyWith(consentimiento: c, trabajando: false)),
+      (c) async {
+        // La firma era el primer paso obligatorio: el tratamiento pasa a EN_PROCESO.
+        final upd = await _actualizarTratamiento(ActualizarTratamientoParams(
+          tratamientoId: tratamientoId,
+          estado: AppConstants.tratamientoEnProceso,
+        ));
+        upd.fold(
+          (f) => emit(current.copyWith(consentimiento: c, trabajando: false)),
+          (trat) => emit(current.copyWith(
+            consentimiento: c,
+            cita: current.cita?.copyWith(tratamiento: trat),
+            trabajando: false,
+          )),
+        );
+      },
     );
   }
 
@@ -398,6 +439,50 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     result.fold(
       (f) => emit(TreatmentExecutionError(f.message)),
       (_) => emit(current.copyWith(trabajando: false)),
+    );
+  }
+
+  /// Carga el face map del tratamiento (o el pre-tratamiento del paciente).
+  Future<void> loadFaceMap({required String tratamientoId}) async {
+    final current = _loaded;
+    if (current == null) return;
+    emit(current.copyWith(trabajando: true));
+    final result = await _getFaceMapPorTratamiento(tratamientoId);
+    result.fold(
+      (f) => emit(TreatmentExecutionError(f.message)),
+      (faceMap) => emit(current.copyWith(faceMap: faceMap, trabajando: false)),
+    );
+  }
+
+  /// Guarda (upsert) el face map del tratamiento y sus puntos.
+  Future<void> guardarFaceMap({
+    required String tratamientoId,
+    required String pacienteId,
+    required List<Map<String, dynamic>> puntos,
+    String? observaciones,
+  }) async {
+    final current = _loaded;
+    if (current == null) return;
+    emit(current.copyWith(trabajando: true));
+    final result = await _guardarFaceMapPorTratamiento(
+      GuardarFaceMapPorTratamientoParams(
+        tratamientoId: tratamientoId,
+        pacienteId: pacienteId,
+        puntos: puntos,
+        observaciones: observaciones,
+      ),
+    );
+    result.fold(
+      (f) => emit(TreatmentExecutionError(f.message)),
+      (_) async {
+        final reload = await _getFaceMapPorTratamiento(tratamientoId);
+        reload.fold(
+          (f) => emit(current.copyWith(trabajando: false)),
+          (faceMap) => emit(
+            current.copyWith(faceMap: faceMap, trabajando: false),
+          ),
+        );
+      },
     );
   }
 }

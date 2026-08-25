@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/entities/fotografia_tratamiento_entity.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
 
 /// Galería de fotografías de un tratamiento (PRE / POST / OTRO).
-/// Permite ver las fotos registradas y añadir una nueva por URL.
+/// Permite capturar desde la cámara/galería y ver las fotos registradas.
 class FotografiasScreen extends StatefulWidget {
   final String tratamientoId;
 
@@ -54,6 +55,28 @@ class _FotografiasScreenState extends State<FotografiasScreen> {
         );
     _urlCtrl.clear();
     _descCtrl.clear();
+  }
+
+  Future<void> _pickAndUpload(ImageSource source) async {
+    final cubit = context.read<TreatmentPhotosCubit>();
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1600,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+    await cubit.subirFotografia(
+          tratamientoId: widget.tratamientoId,
+          tipoFotografia: _tipo,
+          bytes: bytes,
+          nombreArchivo: file.name,
+          descripcion: _descCtrl.text.trim().isEmpty
+              ? null
+              : _descCtrl.text.trim(),
+        );
   }
 
   void _confirmDelete(FotografiaTratamientoEntity foto) {
@@ -256,7 +279,7 @@ class _FotografiasScreenState extends State<FotografiasScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Añadir fotografía por URL',
+            'Capturar desde la app',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.cDarkText),
           ),
           const SizedBox(height: 10),
@@ -269,6 +292,41 @@ class _FotografiasScreenState extends State<FotografiasScreen> {
               DropdownMenuItem(value: TipoFotografia.otro, child: Text('OTRO')),
             ],
             onChanged: (v) => setState(() => _tipo = v ?? TipoFotografia.pre),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+                    onPressed: () => _pickAndUpload(ImageSource.camera),
+                    icon: const Icon(Icons.photo_camera, size: 18),
+                    label: const Text('Cámara'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cGoldAccent),
+                    onPressed: () => _pickAndUpload(ImageSource.gallery),
+                    icon: const Icon(Icons.photo_library_outlined, size: 18),
+                    label: const Text('Galería'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: AppTheme.cMutedText),
+          const SizedBox(height: 12),
+          const Text(
+            'Añadir fotografía por URL',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.cDarkText),
           ),
           const SizedBox(height: 10),
           TextField(

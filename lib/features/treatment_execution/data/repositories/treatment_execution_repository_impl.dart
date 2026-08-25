@@ -4,6 +4,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import '../../domain/entities/cita_ejecucion_entity.dart';
 import '../../domain/entities/consentimiento_tratamiento_entity.dart';
+import '../../domain/entities/face_map_especialista_entity.dart';
 import '../../domain/entities/producto_aplicado_entity.dart';
 import '../../domain/entities/tratamiento_entity.dart';
 import '../../domain/repositories/i_treatment_execution_repository.dart';
@@ -112,6 +113,7 @@ class TreatmentExecutionRepositoryImpl
     String? evaluacionInicial,
     String? observacionesFinales,
     String? recomendacionesPostTratamiento,
+    String? estado,
   }) async {
     try {
       final model = await _dataSource.actualizarTratamiento(
@@ -119,6 +121,7 @@ class TreatmentExecutionRepositoryImpl
         evaluacionInicial: evaluacionInicial,
         observacionesFinales: observacionesFinales,
         recomendacionesPostTratamiento: recomendacionesPostTratamiento,
+        estado: estado,
       );
       return Right(model.toEntity());
     } catch (e) {
@@ -246,6 +249,37 @@ class TreatmentExecutionRepositoryImpl
   }) async {
     try {
       await _dataSource.cancelarCita(citaId: citaId, motivo: motivo);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, FaceMapEspecialistaEntity?>> getFaceMapPorTratamiento(
+      String tratamientoId) async {
+    try {
+      final model = await _dataSource.fetchFaceMapPorTratamiento(tratamientoId);
+      return Right(model?.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> guardarFaceMapPorTratamiento({
+    required String tratamientoId,
+    required String pacienteId,
+    required List<Map<String, dynamic>> puntos,
+    String? observaciones,
+  }) async {
+    try {
+      await _dataSource.guardarFaceMapPorTratamiento(
+        tratamientoId: tratamientoId,
+        pacienteId: pacienteId,
+        puntos: puntos,
+        observaciones: observaciones,
+      );
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

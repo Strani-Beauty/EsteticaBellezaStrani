@@ -9,15 +9,17 @@ class ActualizarTratamientoParams {
   final String? evaluacionInicial;
   final String? observacionesFinales;
   final String? recomendacionesPostTratamiento;
+  final String? estado;
   const ActualizarTratamientoParams({
     required this.tratamientoId,
     this.evaluacionInicial,
     this.observacionesFinales,
     this.recomendacionesPostTratamiento,
+    this.estado,
   });
 }
 
-/// Actualiza campos clínicos del tratamiento (evaluación/recomendaciones).
+/// Actualiza campos clínicos del tratamiento (evaluación/recomendaciones/estado).
 class ActualizarTratamiento
     extends UseCase<TratamientoEntity, ActualizarTratamientoParams> {
   final ITreatmentExecutionRepository _repository;
@@ -31,6 +33,7 @@ class ActualizarTratamiento
       evaluacionInicial: params.evaluacionInicial,
       observacionesFinales: params.observacionesFinales,
       recomendacionesPostTratamiento: params.recomendacionesPostTratamiento,
+      estado: params.estado,
     );
   }
 }

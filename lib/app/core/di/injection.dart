@@ -140,6 +140,8 @@ import 'package:esteticaybellezastrani/features/treatment_execution/domain/useca
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_cita_detalle.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_citas_historial.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_consentimiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_face_map_por_tratamiento.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/guardar_face_map_por_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_mis_citas.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_productos.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/iniciar_tratamiento.dart';
@@ -465,6 +467,13 @@ void _registerTreatmentExecution() {
       getCitasHistorial: GetCitasHistorial(sl<ITreatmentExecutionRepository>()),
       registrarLlegada: RegistrarLlegada(sl<ITreatmentExecutionRepository>()),
       cancelarCita: CancelarCita(sl<ITreatmentExecutionRepository>()),
+      getFotografias: GetFotografias(sl<ITreatmentPhotosRepository>()),
+      getFaceMapPorTratamiento: GetFaceMapPorTratamiento(
+        sl<ITreatmentExecutionRepository>(),
+      ),
+      guardarFaceMapPorTratamiento: GuardarFaceMapPorTratamiento(
+        sl<ITreatmentExecutionRepository>(),
+      ),
     ),
   );
 }

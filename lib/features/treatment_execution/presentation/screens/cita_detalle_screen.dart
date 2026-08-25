@@ -3,12 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/utils/geo_service.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/pago_entity.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
+import 'package:esteticaybellezastrani/features/treatment_photos/domain/entities/fotografia_tratamiento_entity.dart';
 import '../../domain/entities/cita_ejecucion_entity.dart';
 import '../../domain/entities/consentimiento_tratamiento_entity.dart';
 import '../../domain/entities/producto_aplicado_entity.dart';
@@ -38,6 +40,30 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// Unidad sugerida para los insumos según el tipo de precio del servicio
+  /// (Act. 12): POR_UNIDAD → unidades, POR_JERINGA → jeringas, etc.
+  String? _unidadSugerida(String? tipoPrecio) {
+    switch (tipoPrecio) {
+      case AppConstants.precioPorUnidad:
+        return 'unidades';
+      case AppConstants.precioPorJeringa:
+        return 'jeringas';
+      case AppConstants.precioPorSesion:
+        return 'sesiones';
+      case AppConstants.precioPorPlan:
+        return 'plan';
+      default:
+        return null;
+    }
+  }
+
+  String _resumenFotos(List<FotografiaTratamientoEntity> fotos) {
+    final pre = fotos.where((f) => f.esPre).length;
+    final post = fotos.where((f) => f.esPost).length;
+    return 'Registra y consulta evidencia PRE/POST del tratamiento. '
+        '($pre PRE · $post POST)';
   }
 
   @override
@@ -118,6 +144,24 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                     if (mounted) {
                       await cubit.iniciarTratamiento(citaId: cita.id);
                     }
+                    if (!mounted) return;
+                    final s =
+                        context.read<TreatmentExecutionCubit>().state;
+                    final t = s is TreatmentExecutionLoaded
+                        ? s.cita?.tratamiento
+                        : null;
+                    // La firma es el primer paso obligatorio: si el tratamiento
+                    // nació PENDIENTE_FIRMA se abre la captura de firma.
+                    if (t != null &&
+                        t.estado == EstadoTratamiento.pendienteFirma) {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => FirmaConsentimientoScreen(
+                          tratamientoId: t.id,
+                          pacienteId: t.pacienteId,
+                          tipoConsentimiento: 'TRATAMIENTO_ESTETICO',
+                        ),
+                      ));
+                    }
                   },
                 ),
               if (cita.estado.esPendienteDeEjecucion)
@@ -132,50 +176,102 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                 ),
               if (cita.estado == EstadoCitaEjecucion.enProceso) ...[
                 if (tratamiento != null) ...[
-                  _EvaluacionCard(
-                    tratamientoId: tratamiento.id,
-                    evaluacion: tratamiento.evaluacionInicial,
-                  ),
-                  const SizedBox(height: 16),
-                  _ProductosSection(
-                    tratamientoId: tratamiento.id,
-                    productos: state.productos,
-                    trabajando: state.trabajando,
-                  ),
-                  const SizedBox(height: 16),
                   _FirmaSection(
                     tratamiento: tratamiento,
                     consentimiento: state.consentimiento,
                   ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.cPastelPurple,
-                          shape: BoxShape.circle,
+                  if (state.consentimiento?.firmado == true) ...[
+                    const SizedBox(height: 16),
+                    _EvaluacionCard(
+                      tratamientoId: tratamiento.id,
+                      evaluacion: tratamiento.evaluacionInicial,
+                    ),
+                    const SizedBox(height: 16),
+                    _ProductosSection(
+                      tratamientoId: tratamiento.id,
+                      productos: state.productos,
+                      trabajando: state.trabajando,
+                      unidadSugerida: _unidadSugerida(cita.tipoPrecio),
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.cPastelPurple,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.photo_library_outlined,
+                              color: AppTheme.cDeepAccent, size: 24),
                         ),
-                        child: const Icon(Icons.photo_library_outlined,
-                            color: AppTheme.cDeepAccent, size: 24),
-                      ),
-                      title: const Text('Fotografías del tratamiento',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: const Text(
-                          'Registra y consulta evidencia PRE/POST del tratamiento.'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => context.push(
-                        AppRoutes.fotografiasTratamientoDe(tratamiento.id),
+                        title: const Text('Fotografías del tratamiento',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(_resumenFotos(state.fotografias)),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push(
+                          AppRoutes.fotografiasTratamientoDe(tratamiento.id),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _AccionButton(
-                    icon: Icons.check_circle_outline_rounded,
-                    label: 'Finalizar tratamiento',
-                    color: AppTheme.cBrandGreen,
-                    onPressed: () => _dialogoFinalizar(cubit, cita, tratamiento.id),
-                  ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.cPastelPurple,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                              Icons.face_retouching_natural_outlined,
+                              color: AppTheme.cDeepAccent,
+                              size: 24),
+                        ),
+                        title: const Text('Face Map / Puntos de aplicación',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: const Text(
+                            'Documenta los puntos de aplicación del tratamiento.'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push(
+                          AppRoutes.faceMapEspecialistaDe(tratamiento.id),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _AccionButton(
+                      icon: Icons.check_circle_outline_rounded,
+                      label: 'Finalizar tratamiento',
+                      color: AppTheme.cBrandGreen,
+                      onPressed: () => _dialogoFinalizar(cubit, cita,
+                          tratamiento.id, state.consentimiento,
+                          state.fotografias),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 16),
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock_outline_rounded,
+                                color: AppTheme.cMutedText),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'La firma del consentimiento es el primer paso '
+                                'obligatorio. Una vez firmado podrás registrar '
+                                'la evaluación, insumos, fotografías y '
+                                'finalizar el tratamiento.',
+                                style:
+                                    TextStyle(color: AppTheme.cMutedText),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
               if (cita.estado == EstadoCitaEjecucion.finalizada)
@@ -195,7 +291,54 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
     TreatmentExecutionCubit cubit,
     CitaEjecucionEntity cita,
     String tratamientoId,
+    ConsentimientoTratamientoEntity? consentimiento,
+    List<FotografiaTratamientoEntity> fotografias,
   ) async {
+    final faltantes = <String>[
+      if (consentimiento?.firmado != true)
+        'Firma del consentimiento del paciente',
+      if (!fotografias.any((f) => f.esPre)) 'Al menos una fotografía PRE',
+      if (cita.tratamiento?.evaluacionInicial == null ||
+          (cita.tratamiento!.evaluacionInicial ?? '').trim().isEmpty)
+        'Evaluación inicial',
+    ];
+    if (faltantes.isNotEmpty) {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('No se puede finalizar el tratamiento'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Faltan requisitos mínimos:',
+                  style: TextStyle(fontSize: 14)),
+              const SizedBox(height: 8),
+              for (final f in faltantes)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          color: AppTheme.cMutedText, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(f)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final observaciones = TextEditingController();
     final recomendaciones = TextEditingController();
     final guardar = await showDialog<bool>(
@@ -565,10 +708,12 @@ class _ProductosSection extends StatelessWidget {
   final String tratamientoId;
   final List<ProductoAplicadoEntity> productos;
   final bool trabajando;
+  final String? unidadSugerida;
   const _ProductosSection({
     required this.tratamientoId,
     required this.productos,
     required this.trabajando,
+    this.unidadSugerida,
   });
 
   @override
@@ -598,7 +743,7 @@ class _ProductosSection extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: FilledButton.tonal(
                 onPressed: () =>
-                    _dialogoProducto(context, tratamientoId),
+                    _dialogoProducto(context, tratamientoId, unidadSugerida),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -615,12 +760,13 @@ class _ProductosSection extends StatelessWidget {
     );
   }
 
-  Future<void> _dialogoProducto(BuildContext context, String tratamientoId) async {
+  Future<void> _dialogoProducto(
+      BuildContext context, String tratamientoId, String? unidadSugerida) async {
     final nombre = TextEditingController();
     final fabricante = TextEditingController();
     final lote = TextEditingController();
     final cantidad = TextEditingController(text: '1');
-    final unidad = TextEditingController();
+    final unidad = TextEditingController(text: unidadSugerida ?? '');
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(

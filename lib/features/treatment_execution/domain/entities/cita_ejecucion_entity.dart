@@ -55,6 +55,7 @@ class CitaEjecucionEntity extends Equatable {
   final String? pacienteTelefono;
   final String servicioNombre;
   final double precioBase;
+  final String? tipoPrecio;
   final String? direccion;
   final String? ciudad;
   final double? latitud;
@@ -74,6 +75,7 @@ class CitaEjecucionEntity extends Equatable {
     this.pacienteTelefono,
     this.servicioNombre = 'Servicio',
     this.precioBase = 0,
+    this.tipoPrecio,
     this.direccion,
     this.ciudad,
     this.latitud,
@@ -93,6 +95,7 @@ class CitaEjecucionEntity extends Equatable {
       pacienteTelefono: pacienteTelefono,
       servicioNombre: servicioNombre,
       precioBase: precioBase,
+      tipoPrecio: tipoPrecio,
       direccion: direccion,
       ciudad: ciudad,
       latitud: latitud,
@@ -113,6 +116,7 @@ class CitaEjecucionEntity extends Equatable {
         pacienteTelefono,
         servicioNombre,
         precioBase,
+        tipoPrecio,
         direccion,
         ciudad,
         latitud,

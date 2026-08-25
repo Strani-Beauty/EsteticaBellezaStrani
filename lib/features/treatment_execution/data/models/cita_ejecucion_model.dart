@@ -17,6 +17,7 @@ class CitaEjecucionModel {
   final String? pacienteTelefono;
   final String servicioNombre;
   final double precioBase;
+  final String? tipoPrecio;
   final String? direccion;
   final String? ciudad;
   final double? latitud;
@@ -35,6 +36,7 @@ class CitaEjecucionModel {
     this.pacienteTelefono,
     this.servicioNombre = 'Servicio',
     this.precioBase = 0,
+    this.tipoPrecio,
     this.direccion,
     this.ciudad,
     this.latitud,
@@ -95,6 +97,9 @@ class CitaEjecucionModel {
       precioBase: servicio is Map<String, dynamic>
           ? (servicio['precio_base'] as num?)?.toDouble() ?? 0
           : 0,
+      tipoPrecio: servicio is Map<String, dynamic>
+          ? servicio['tipo_precio'] as String?
+          : null,
       direccion: mDireccion?['direccion'] as String?,
       ciudad: mDireccion?['ciudad'] as String?,
       latitud: (mDireccion?['latitud'] as num?)?.toDouble(),
@@ -115,6 +120,7 @@ class CitaEjecucionModel {
       pacienteTelefono: pacienteTelefono,
       servicioNombre: servicioNombre,
       precioBase: precioBase,
+      tipoPrecio: tipoPrecio,
       direccion: direccion,
       ciudad: ciudad,
       latitud: latitud,

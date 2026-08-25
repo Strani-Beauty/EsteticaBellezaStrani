@@ -52,6 +52,7 @@ class AppConstants {
 
   // ── Estados de Tratamiento ─────────────────────────────────
   static const String tratamientoIniciado = 'INICIADO';
+  static const String tratamientoPendienteFirma = 'PENDIENTE_FIRMA';
   static const String tratamientoEnProceso = 'EN_PROCESO';
   static const String tratamientoCompletado = 'COMPLETADO';
 

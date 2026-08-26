@@ -7,12 +7,10 @@ import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/utils/geo_service.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/domain/entities/pago_entity.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/entities/fotografia_tratamiento_entity.dart';
 import '../../domain/entities/cita_ejecucion_entity.dart';
 import '../../domain/entities/consentimiento_tratamiento_entity.dart';
+import '../../domain/entities/face_map_especialista_entity.dart';
 import '../../domain/entities/producto_aplicado_entity.dart';
 import '../../domain/entities/tratamiento_entity.dart';
 import '../cubits/treatment_execution_cubit.dart';
@@ -30,6 +28,8 @@ class CitaDetalleScreen extends StatefulWidget {
 }
 
 class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
+  bool _faceMapRequested = false;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +66,28 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
         '($pre PRE · $post POST)';
   }
 
+  /// Resumen de puntos del face map para el subtítulo del card.
+  String _resumenFaceMap(FaceMapEspecialistaEntity? faceMap) {
+    if (faceMap == null || !faceMap.existe) {
+      return 'Sin puntos registrados. Toca para marcar los puntos de aplicación.';
+    }
+    final ids = faceMap.puntos
+        .map((p) => p['punto_id'])
+        .whereType<String>()
+        .toSet();
+    final sinProducto = <String>{};
+    for (final p in faceMap.puntos) {
+      final id = p['punto_id'];
+      final productoOk = p['producto_id'] is String &&
+          (p['producto_id'] as String).isNotEmpty;
+      if (id is String && !productoOk) sinProducto.add(id);
+    }
+    if (sinProducto.isEmpty) {
+      return '${ids.length} puntos registrados con producto y cantidad.';
+    }
+    return '${ids.length} puntos · ${sinProducto.length} sin producto asignado.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<TreatmentExecutionCubit>();
@@ -84,6 +106,15 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
           if (state is TreatmentExecutionLoaded &&
               state.cita?.estado == EstadoCitaEjecucion.finalizada) {
             Navigator.of(context).pop();
+          }
+          if (state is TreatmentExecutionLoaded &&
+              !_faceMapRequested &&
+              state.faceMap == null &&
+              state.cita?.tratamiento != null) {
+            _faceMapRequested = true;
+            context.read<TreatmentExecutionCubit>().loadFaceMap(
+                  tratamientoId: state.cita!.tratamiento!.id,
+                );
           }
         },
         builder: (context, state) {
@@ -230,8 +261,7 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                         ),
                         title: const Text('Face Map / Puntos de aplicación',
                             style: TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: const Text(
-                            'Documenta los puntos de aplicación del tratamiento.'),
+                        subtitle: Text(_resumenFaceMap(state.faceMap)),
                         trailing: const Icon(Icons.chevron_right_rounded),
                         onTap: () => context.push(
                           AppRoutes.faceMapEspecialistaDe(tratamiento.id),
@@ -241,11 +271,14 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                     const SizedBox(height: 16),
                     _AccionButton(
                       icon: Icons.check_circle_outline_rounded,
-                      label: 'Finalizar tratamiento',
+                      label: 'Revisar y finalizar',
                       color: AppTheme.cBrandGreen,
-                      onPressed: () => _dialogoFinalizar(cubit, cita,
-                          tratamiento.id, state.consentimiento,
-                          state.fotografias),
+                      onPressed: () => context.push(
+                        AppRoutes.revisionFinalDe(
+                          tratamiento.id,
+                          cita.id,
+                        ),
+                      ),
                     ),
                   ] else ...[
                     const SizedBox(height: 16),
@@ -285,197 +318,6 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
         },
       ),
     );
-  }
-
-  Future<void> _dialogoFinalizar(
-    TreatmentExecutionCubit cubit,
-    CitaEjecucionEntity cita,
-    String tratamientoId,
-    ConsentimientoTratamientoEntity? consentimiento,
-    List<FotografiaTratamientoEntity> fotografias,
-  ) async {
-    final faltantes = <String>[
-      if (consentimiento?.firmado != true)
-        'Firma del consentimiento del paciente',
-      if (!fotografias.any((f) => f.esPre)) 'Al menos una fotografía PRE',
-      if (cita.tratamiento?.evaluacionInicial == null ||
-          (cita.tratamiento!.evaluacionInicial ?? '').trim().isEmpty)
-        'Evaluación inicial',
-    ];
-    if (faltantes.isNotEmpty) {
-      if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('No se puede finalizar el tratamiento'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Faltan requisitos mínimos:',
-                  style: TextStyle(fontSize: 14)),
-              const SizedBox(height: 8),
-              for (final f in faltantes)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline_rounded,
-                          color: AppTheme.cMutedText, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(f)),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Entendido'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    final observaciones = TextEditingController();
-    final recomendaciones = TextEditingController();
-    final guardar = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Finalizar tratamiento'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: observaciones,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Observaciones finales',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: recomendaciones,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Recomendaciones post tratamiento',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Finalizar'),
-          ),
-        ],
-      ),
-    );
-    if (guardar == true && mounted) {
-      final saldoCobrado = await _pagarSaldoPendiente(cita);
-      if (!saldoCobrado) return;
-      await cubit.finalizar(
-        citaId: cita.id,
-        tratamientoId: tratamientoId,
-        observacionesFinales:
-            observaciones.text.isEmpty ? null : observaciones.text,
-        recomendacionesPostTratamiento: recomendaciones.text.isEmpty
-            ? null
-            : recomendaciones.text,
-      );
-    }
-  }
-
-  /// Cobra el saldo pendiente de la solicitud antes de finalizar el tratamiento.
-  /// Devuelve `false` si el pago se cancela o falla (no se finaliza la cita).
-  Future<bool> _pagarSaldoPendiente(CitaEjecucionEntity cita) async {
-    final solicitudId = cita.solicitudId;
-    if (solicitudId == null) return true; // sin solicitud → nada que cobrar
-
-    final pago = await _consultarPago(solicitudId);
-    if (!mounted) return false;
-    if (pago == null || pago.saldoPendiente <= 0) return true;
-    final monto = pago.saldoPendiente;
-
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cobrar saldo pendiente'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'El paciente aún tiene un saldo pendiente de \$${monto.toStringAsFixed(2)} USD '
-              'por este servicio.',
-              style: const TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Se abrirá el pago con Stripe antes de finalizar el tratamiento.',
-              style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cobrar y Finalizar'),
-          ),
-        ],
-      ),
-    );
-    if (confirmar != true || !mounted) return false;
-
-    final stripeRef = await procesarPagoStripe(
-      monto: monto,
-      concepto: 'SALDO',
-      solicitudId: solicitudId,
-      citaId: cita.id,
-    );
-    if (stripeRef == null) {
-      _mensaje('El pago del saldo no se completó.');
-      return false;
-    }
-
-    try {
-      final registrado = await sl<IPaymentsRepository>().registrarPagoSaldo(
-        citaId: cita.id,
-        solicitudId: solicitudId,
-        monto: monto,
-        stripePaymentRef: stripeRef,
-      );
-      if (registrado) {
-        _mensaje('Saldo de \$${monto.toStringAsFixed(2)} USD cobrado.');
-      }
-      return true;
-    } catch (e) {
-      _mensaje('No se pudo registrar el saldo: $e');
-      return false;
-    }
-  }
-
-  Future<PagoEntity?> _consultarPago(String solicitudId) async {
-    try {
-      return await sl<IPaymentsRepository>().consultarPago(
-        solicitudId: solicitudId,
-      );
-    } catch (e) {
-      _mensaje('No se pudo consultar el estado de pago: $e');
-      return null;
-    }
   }
 
   /// Act. 6: abre la navegación hacia el domicilio del paciente (url_launcher).

@@ -340,16 +340,28 @@ class TreatmentExecutionSupabaseDataSource {
 
   /// Devuelve el face map vinculado al tratamiento (el guardado por el
   /// especialista) o, si no existe, el mapa pre-tratamiento del paciente
-  /// (face_maps con tratamiento_id nulo del mismo paciente). Carga los
-  /// puntos desde `face_map_puntos`. Devuelve `null` si no hay mapa.
+  /// (face_maps con tratamiento_id nulo del mismo paciente y del mismo
+  /// servicio). Carga los puntos desde `face_map_puntos`, con el nombre del
+  /// producto aplicado embebido. Devuelve `null` si no hay mapa.
   Future<FaceMapEspecialistaModel?> fetchFaceMapPorTratamiento(
       String tratamientoId) async {
     final tratamiento = await _client
         .from('tratamientos')
-        .select('id, paciente_id')
+        .select('id, paciente_id, citas(solicitudes(servicios(id)))')
         .eq('id', tratamientoId)
         .maybeSingle();
     if (tratamiento == null) return null;
+
+    final citasJson = tratamiento['citas'];
+    final solicitudesJson = citasJson is Map<String, dynamic>
+        ? citasJson['solicitudes']
+        : null;
+    final serviciosJson = solicitudesJson is Map<String, dynamic>
+        ? solicitudesJson['servicios']
+        : null;
+    final servicioId = serviciosJson is Map<String, dynamic>
+        ? serviciosJson['id'] as String?
+        : null;
 
     var mapa = await _client
         .from('face_maps')
@@ -361,11 +373,15 @@ class TreatmentExecutionSupabaseDataSource {
 
     final pacienteId = tratamiento['paciente_id'] as String?;
     if (mapa == null && pacienteId != null) {
-      mapa = await _client
+      var query = _client
           .from('face_maps')
           .select()
           .eq('paciente_id', pacienteId)
-          .isFilter('tratamiento_id', null)
+          .isFilter('tratamiento_id', null);
+      if (servicioId != null) {
+        query = query.eq('servicio_id', servicioId);
+      }
+      mapa = await query
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -375,7 +391,7 @@ class TreatmentExecutionSupabaseDataSource {
     final model = FaceMapEspecialistaModel.fromJson(mapa);
     final puntos = await _client
         .from('face_map_puntos')
-        .select()
+        .select('*, productos_aplicados(producto_nombre)')
         .eq('face_map_id', model.id ?? '')
         .order('created_at', ascending: true);
     return FaceMapEspecialistaModel(
@@ -433,16 +449,33 @@ class TreatmentExecutionSupabaseDataSource {
         .eq('face_map_id', faceMapId);
 
     if (puntos.isNotEmpty) {
-      final filas = puntos.map((p) => {
-            'face_map_id': faceMapId,
-            'zona_anatomica': p['zona_anatomica'],
-            'punto_id': p['punto_id'],
-            'vista': p['vista'],
-            'coordenada_x': p['coordenada_x'],
-            'coordenada_y': p['coordenada_y'],
-            'cantidad': 1,
-            'unidad_medida': 'unidad',
-          }).toList();
+      final filas = puntos.map((p) {
+        final fila = <String, dynamic>{
+          'face_map_id': faceMapId,
+          'zona_anatomica': p['zona_anatomica'],
+          'punto_id': p['punto_id'],
+          'vista': p['vista'],
+          'coordenada_x': p['coordenada_x'],
+          'coordenada_y': p['coordenada_y'],
+        };
+        final productoId = p['producto_id'];
+        if (productoId is String && productoId.isNotEmpty) {
+          fila['producto_id'] = productoId;
+          final cantidad = p['cantidad'];
+          if (cantidad is num && cantidad > 0) {
+            fila['cantidad'] = cantidad;
+          }
+          final unidad = p['unidad_medida'];
+          if (unidad is String && unidad.trim().isNotEmpty) {
+            fila['unidad_medida'] = unidad;
+          }
+        }
+        final observacion = p['observaciones'];
+        if (observacion is String && observacion.trim().isNotEmpty) {
+          fila['observaciones'] = observacion;
+        }
+        return fila;
+      }).toList();
       await _client.from('face_map_puntos').insert(filas);
     }
   }

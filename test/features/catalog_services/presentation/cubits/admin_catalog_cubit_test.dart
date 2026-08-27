@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
@@ -5,12 +7,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/categoria_servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/eliminar_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias_admin.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_servicios_admin.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_categoria.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_cuestionarios_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_especialidades_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/guardar_servicio.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/subir_imagen_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/admin_catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionarios.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/entities/especialidad_entity.dart';
@@ -26,6 +30,8 @@ class MockGuardarCuestionariosServicio extends Mock
     implements GuardarCuestionariosServicio {}
 class MockGetEspecialidades extends Mock implements GetEspecialidades {}
 class MockGetCuestionarios extends Mock implements GetCuestionarios {}
+class MockEliminarServicio extends Mock implements EliminarServicio {}
+class MockSubirImagenServicio extends Mock implements SubirImagenServicio {}
 
 AdminCatalogCubit _buildCubit({
   required MockGetCategoriasAdmin getCategoriasAdmin,
@@ -36,6 +42,8 @@ AdminCatalogCubit _buildCubit({
   required MockGuardarCuestionariosServicio guardarCuestionariosServicio,
   required MockGetEspecialidades getEspecialidades,
   required MockGetCuestionarios getCuestionarios,
+  required MockEliminarServicio eliminarServicio,
+  required MockSubirImagenServicio subirImagenServicio,
 }) {
   return AdminCatalogCubit(
     getCategoriasAdmin: getCategoriasAdmin,
@@ -46,6 +54,8 @@ AdminCatalogCubit _buildCubit({
     guardarCuestionariosServicio: guardarCuestionariosServicio,
     getEspecialidades: getEspecialidades,
     getCuestionarios: getCuestionarios,
+eliminarServicio: eliminarServicio,
+    subirImagenServicio: subirImagenServicio,
   );
 }
 
@@ -58,6 +68,8 @@ void main() {
   late MockGuardarCuestionariosServicio guardarCuestionariosServicio;
   late MockGetEspecialidades getEspecialidades;
   late MockGetCuestionarios getCuestionarios;
+  late MockEliminarServicio eliminarServicio;
+  late MockSubirImagenServicio subirImagenServicio;
 
   setUp(() {
     getCategoriasAdmin = MockGetCategoriasAdmin();
@@ -68,6 +80,8 @@ void main() {
     guardarCuestionariosServicio = MockGuardarCuestionariosServicio();
     getEspecialidades = MockGetEspecialidades();
     getCuestionarios = MockGetCuestionarios();
+    eliminarServicio = MockEliminarServicio();
+    subirImagenServicio = MockSubirImagenServicio();
   });
 
   setUpAll(() {
@@ -86,6 +100,13 @@ void main() {
     );
     registerFallbackValue(
       const GuardarCuestionariosServicioParams(servicioId: '', items: []),
+    );
+    registerFallbackValue(
+      SubirImagenServicioParams(
+        servicioId: '',
+        bytes: Uint8List(0),
+        nombreArchivo: 'imagen.jpg',
+      ),
     );
   });
 
@@ -122,6 +143,8 @@ void main() {
         guardarCuestionariosServicio: guardarCuestionariosServicio,
         getEspecialidades: getEspecialidades,
         getCuestionarios: getCuestionarios,
+        eliminarServicio: eliminarServicio,
+        subirImagenServicio: subirImagenServicio,
       ),
       setUp: () {
         when(() => getCategoriasAdmin())
@@ -154,6 +177,8 @@ void main() {
         guardarCuestionariosServicio: guardarCuestionariosServicio,
         getEspecialidades: getEspecialidades,
         getCuestionarios: getCuestionarios,
+        eliminarServicio: eliminarServicio,
+        subirImagenServicio: subirImagenServicio,
       ),
       setUp: () {
         when(() => getCategoriasAdmin())
@@ -185,6 +210,8 @@ void main() {
         guardarCuestionariosServicio: guardarCuestionariosServicio,
         getEspecialidades: getEspecialidades,
         getCuestionarios: getCuestionarios,
+        eliminarServicio: eliminarServicio,
+        subirImagenServicio: subirImagenServicio,
       ),
       setUp: () {
         when(() => getCategoriasAdmin())
@@ -226,6 +253,8 @@ void main() {
         guardarCuestionariosServicio: guardarCuestionariosServicio,
         getEspecialidades: getEspecialidades,
         getCuestionarios: getCuestionarios,
+        eliminarServicio: eliminarServicio,
+        subirImagenServicio: subirImagenServicio,
       ),
       setUp: () {
         when(() => guardarCategoria(any()))
@@ -259,6 +288,8 @@ void main() {
         guardarCuestionariosServicio: guardarCuestionariosServicio,
         getEspecialidades: getEspecialidades,
         getCuestionarios: getCuestionarios,
+        eliminarServicio: eliminarServicio,
+        subirImagenServicio: subirImagenServicio,
       ),
       setUp: () {
         when(() => guardarEspecialidadesServicio(any()))

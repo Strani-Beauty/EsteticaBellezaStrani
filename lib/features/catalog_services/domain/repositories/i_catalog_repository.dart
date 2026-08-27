@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import '../entities/categoria_servicio_entity.dart';
@@ -46,6 +48,18 @@ abstract class ICatalogRepository {
     bool requiereFotos = false,
     bool requiereConsentimiento = false,
     bool activo = true,
+    String? imagenUrl,
+  });
+
+  /// Elimina un servicio del catálogo (RPC seguro, solo admin).
+  Future<Either<Failure, void>> eliminarServicio(String servicioId);
+
+  /// Sube la imagen de un servicio al bucket público y guarda la URL en
+  /// `servicios.imagen_url`. Devuelve la URL pública (solo admin).
+  Future<Either<Failure, String>> subirImagenServicio({
+    required String servicioId,
+    required Uint8List bytes,
+    required String nombreArchivo,
   });
 
   /// Requisitos configurados de un servicio (especialidades + cuestionarios).

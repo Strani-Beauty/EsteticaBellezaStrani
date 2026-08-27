@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // Los usecases se inyectan por nombre; esta regla no aplica aquí.
@@ -9,12 +11,14 @@ import '../../../../features/specialists/domain/usecases/get_especialidades.dart
 import '../../domain/entities/categoria_servicio_entity.dart';
 import '../../domain/entities/servicio_cuestionario_entity.dart';
 import '../../domain/entities/servicio_entity.dart';
+import '../../domain/usecases/eliminar_servicio.dart';
 import '../../domain/usecases/get_categorias_admin.dart';
 import '../../domain/usecases/get_servicios_admin.dart';
 import '../../domain/usecases/guardar_categoria.dart';
 import '../../domain/usecases/guardar_cuestionarios_servicio.dart';
 import '../../domain/usecases/guardar_especialidades_servicio.dart';
 import '../../domain/usecases/guardar_servicio.dart';
+import '../../domain/usecases/subir_imagen_servicio.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADOS
@@ -103,6 +107,8 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
   final GetServiciosAdmin _getServiciosAdmin;
   final GuardarCategoria _guardarCategoria;
   final GuardarServicio _guardarServicio;
+  final EliminarServicio _eliminarServicio;
+  final SubirImagenServicio _subirImagenServicio;
   final GuardarEspecialidadesServicio _guardarEspecialidadesServicio;
   final GuardarCuestionariosServicio _guardarCuestionariosServicio;
   final GetEspecialidades _getEspecialidades;
@@ -113,6 +119,8 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
     required GetServiciosAdmin getServiciosAdmin,
     required GuardarCategoria guardarCategoria,
     required GuardarServicio guardarServicio,
+    required EliminarServicio eliminarServicio,
+    required SubirImagenServicio subirImagenServicio,
     required GuardarEspecialidadesServicio guardarEspecialidadesServicio,
     required GuardarCuestionariosServicio guardarCuestionariosServicio,
     required GetEspecialidades getEspecialidades,
@@ -121,6 +129,8 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
         _getServiciosAdmin = getServiciosAdmin,
         _guardarCategoria = guardarCategoria,
         _guardarServicio = guardarServicio,
+        _eliminarServicio = eliminarServicio,
+        _subirImagenServicio = subirImagenServicio,
         _guardarEspecialidadesServicio = guardarEspecialidadesServicio,
         _guardarCuestionariosServicio = guardarCuestionariosServicio,
         _getEspecialidades = getEspecialidades,
@@ -213,6 +223,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
     bool requiereFotos = false,
     bool requiereConsentimiento = false,
     bool activo = true,
+    String? imagenUrl,
   }) async {
     if (state is! AdminCatalogLoaded) return null;
     final base = state as AdminCatalogLoaded;
@@ -231,6 +242,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
       requiereFotos: requiereFotos,
       requiereConsentimiento: requiereConsentimiento,
       activo: activo,
+      imagenUrl: imagenUrl,
     ));
     if (res.isLeft()) {
       emit(base.copyWith(
@@ -252,6 +264,70 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
           id.isEmpty ? 'Servicio creado correctamente' : 'Servicio actualizado',
     ));
     return res.getRight().toNullable();
+  }
+
+  Future<bool> eliminarServicio(String servicioId) async {
+    if (state is! AdminCatalogLoaded) return false;
+    final base = state as AdminCatalogLoaded;
+    emit(base.copyWith(saving: true, clearError: true));
+
+    final res = await _eliminarServicio(servicioId);
+    if (res.isLeft()) {
+      emit(base.copyWith(
+        saving: false,
+        error: res.getLeft().toNullable()?.message,
+      ));
+      return false;
+    }
+
+    final serviciosRes = await _getServiciosAdmin();
+    final servicios = serviciosRes.getRight().toNullable() ?? base.servicios;
+    emit(AdminCatalogLoaded(
+      categorias: base.categorias,
+      servicios: servicios,
+      especialidades: base.especialidades,
+      cuestionarios: base.cuestionarios,
+      saving: false,
+      feedback: 'Servicio eliminado',
+    ));
+    return true;
+  }
+
+  /// Sube la imagen de un servicio al bucket público y actualiza
+  /// `servicios.imagen_url`. Devuelve true si fue exitoso.
+  Future<bool> subirImagenServicio({
+    required String servicioId,
+    required Uint8List bytes,
+    required String nombreArchivo,
+  }) async {
+    if (state is! AdminCatalogLoaded) return false;
+    final base = state as AdminCatalogLoaded;
+    emit(base.copyWith(saving: true, clearError: true));
+
+    final res = await _subirImagenServicio(SubirImagenServicioParams(
+      servicioId: servicioId,
+      bytes: bytes,
+      nombreArchivo: nombreArchivo,
+    ));
+    if (res.isLeft()) {
+      emit(base.copyWith(
+        saving: false,
+        error: res.getLeft().toNullable()?.message,
+      ));
+      return false;
+    }
+
+    final serviciosRes = await _getServiciosAdmin();
+    final servicios = serviciosRes.getRight().toNullable() ?? base.servicios;
+    emit(AdminCatalogLoaded(
+      categorias: base.categorias,
+      servicios: servicios,
+      especialidades: base.especialidades,
+      cuestionarios: base.cuestionarios,
+      saving: false,
+      feedback: 'Imagen del servicio actualizada',
+    ));
+    return true;
   }
 
   Future<bool> guardarEspecialidadesServicio(

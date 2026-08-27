@@ -17,6 +17,7 @@ class GuardarServicioParams {
   final bool requiereFotos;
   final bool requiereConsentimiento;
   final bool activo;
+  final String? imagenUrl;
 
   const GuardarServicioParams({
     this.id = '',
@@ -31,6 +32,7 @@ class GuardarServicioParams {
     this.requiereFotos = false,
     this.requiereConsentimiento = false,
     this.activo = true,
+    this.imagenUrl,
   });
 }
 
@@ -55,6 +57,7 @@ class GuardarServicio extends UseCase<ServicioEntity, GuardarServicioParams> {
       requiereFotos: params.requiereFotos,
       requiereConsentimiento: params.requiereConsentimiento,
       activo: params.activo,
+      imagenUrl: params.imagenUrl,
     );
   }
 }

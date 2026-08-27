@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
@@ -43,6 +46,10 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
   bool _cargandoRequisitos = false;
   bool _guardando = false;
 
+  String? _imagenUrl;
+  Uint8List? _imagenBytes;
+  String? _imagenNombre;
+
   List<CategoriaServicioEntity> get _categorias {
     final state = sl<AdminCatalogCubit>().state;
     if (state is AdminCatalogLoaded) return state.categorias;
@@ -74,6 +81,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       text: s?.duracionEstimada?.toString() ?? '',
     );
     _categoriaId = s?.categoriaId;
+    _imagenUrl = s?.imagenUrl;
     if (s != null) {
       _tipoPrecio = s.tipoPrecio;
       _activo = s.activo;
@@ -157,6 +165,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       requiereFotos: _requiereFotos,
       requiereConsentimiento: _requiereConsentimiento,
       activo: _activo,
+      imagenUrl: _imagenUrl,
     );
     if (creado == null) {
       if (mounted) {
@@ -167,6 +176,22 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
     }
 
     final servicioId = creado.id;
+
+    if (_imagenBytes != null) {
+      final okImagen = await cubit.subirImagenServicio(
+        servicioId: servicioId,
+        bytes: _imagenBytes!,
+        nombreArchivo: _imagenNombre ?? 'imagen.jpg',
+      );
+      if (!okImagen) {
+        if (mounted) {
+          setState(() => _guardando = false);
+          _mostrarErrorGuardado();
+        }
+        return;
+      }
+    }
+
     final okEspecialidades = await cubit.guardarEspecialidadesServicio(
       servicioId,
       _especialidadIds.toList(),
@@ -229,6 +254,8 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
                   _seccionDatosBasicos(),
                   const SizedBox(height: 20),
                   _seccionFlags(),
+                  const SizedBox(height: 20),
+                  _seccionImagen(),
                   const SizedBox(height: 20),
                   _seccionEspecialidades(),
                   const SizedBox(height: 20),
@@ -440,6 +467,104 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
     );
   }
 
+  Widget _seccionImagen() {
+    final hayBytes = _imagenBytes != null;
+    final hayUrl = !hayBytes && _imagenUrl != null && _imagenUrl!.trim().isNotEmpty;
+    return Card(
+      elevation: 0,
+      color: AppTheme.cWhite,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        side: const BorderSide(color: Colors.black12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Imagen del servicio',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.cDarkText,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Opcional. Si no se sube, se usa la imagen por defecto del catálogo.',
+              style: TextStyle(color: AppTheme.cMutedText, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              child: SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: hayBytes
+                    ? Image.memory(_imagenBytes!, fit: BoxFit.cover)
+                    : hayUrl
+                        ? Image.network(
+                            _imagenUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const _ImagenVacia(),
+                          )
+                        : const _ImagenVacia(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _seleccionarImagen,
+                    icon: const Icon(Icons.image_rounded, size: 18),
+                    label: const Text('Seleccionar imagen'),
+                  ),
+                ),
+                if (hayBytes || hayUrl) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => setState(() {
+                      _imagenBytes = null;
+                      _imagenNombre = null;
+                      _imagenUrl = null;
+                    }),
+                    tooltip: 'Quitar imagen',
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: AppTheme.cError),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _seleccionarImagen() async {
+    final result =
+        await FilePicker.platform.pickFiles(allowMultiple: false, type: FileType.image);
+    final picked = result?.files.single;
+    if (picked == null) return;
+    final bytes = picked.bytes;
+    if (bytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo leer la imagen seleccionada.')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _imagenBytes = bytes;
+      _imagenNombre = picked.name;
+      _imagenUrl = null;
+    });
+  }
+
   Widget _seccionEspecialidades() {
     return Card(
       elevation: 0,
@@ -567,5 +692,22 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       case TipoPrecio.porPlan:
         return 'Por plan';
     }
+  }
+}
+
+class _ImagenVacia extends StatelessWidget {
+  const _ImagenVacia();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.cSurface,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.image_outlined,
+        size: 40,
+        color: AppTheme.cMutedText,
+      ),
+    );
   }
 }

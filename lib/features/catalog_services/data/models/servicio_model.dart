@@ -15,6 +15,7 @@ class ServicioModel {
   final bool requiereFotos;
   final bool requiereConsentimiento;
   final bool activo;
+  final String? imagenUrl;
   final CategoriaServicioEntity? categoria;
 
   const ServicioModel({
@@ -30,6 +31,7 @@ class ServicioModel {
     this.requiereFotos = false,
     this.requiereConsentimiento = false,
     this.activo = true,
+    this.imagenUrl,
     this.categoria,
   });
 
@@ -56,6 +58,7 @@ class ServicioModel {
       requiereConsentimiento:
           json['requiere_consentimiento'] as bool? ?? false,
       activo: json['activo'] as bool? ?? true,
+      imagenUrl: json['imagen_url'] as String?,
       categoria: categoria,
     );
   }
@@ -74,6 +77,7 @@ class ServicioModel {
       requiereFotos: requiereFotos,
       requiereConsentimiento: requiereConsentimiento,
       activo: activo,
+      imagenUrl: imagenUrl,
       categoria: categoria,
     );
   }

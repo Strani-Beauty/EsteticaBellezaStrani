@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../app/config/app_constants.dart';
 import '../../domain/entities/servicio_cuestionario_entity.dart';
 import '../../domain/entities/servicio_entity.dart';
 import '../models/categoria_servicio_model.dart';
@@ -111,6 +114,7 @@ class CatalogServicesSupabaseDataSource {
     bool requiereFotos = false,
     bool requiereConsentimiento = false,
     bool activo = true,
+    String? imagenUrl,
   }) async {
     final res = await _client.from('servicios').insert({
       'categoria_id': categoriaId,
@@ -124,6 +128,7 @@ class CatalogServicesSupabaseDataSource {
       'requiere_fotos': requiereFotos,
       'requiere_consentimiento': requiereConsentimiento,
       'activo': activo,
+      'imagen_url': (imagenUrl == null || imagenUrl.isEmpty) ? null : imagenUrl,
     }).select().maybeSingle();
     if (res == null) {
       throw Exception('No se pudo crear el servicio.');
@@ -145,6 +150,7 @@ class CatalogServicesSupabaseDataSource {
     bool requiereFotos = false,
     bool requiereConsentimiento = false,
     bool activo = true,
+    String? imagenUrl,
   }) async {
     final res = await _client.from('servicios').update({
       'categoria_id': categoriaId,
@@ -158,11 +164,61 @@ class CatalogServicesSupabaseDataSource {
       'requiere_fotos': requiereFotos,
       'requiere_consentimiento': requiereConsentimiento,
       'activo': activo,
+      'imagen_url': (imagenUrl == null || imagenUrl.isEmpty) ? null : imagenUrl,
     }).eq('id', id).select().maybeSingle();
     if (res == null) {
       throw Exception('No se pudo actualizar el servicio.');
     }
     return ServicioModel.fromJson(res);
+  }
+
+  /// Elimina un servicio del catálogo vía RPC seguro (solo admin).
+  /// Lanza [Exception] con 'REFERENCIADO' si el servicio tiene historial
+  /// en solicitudes (no se puede eliminar; debe desactivarse).
+  Future<void> eliminarServicio(String id) async {
+    final res = await _client.rpc(
+      'eliminar_servicio',
+      params: {'p_servicio_id': id},
+    );
+    final ok = res is Map<String, dynamic> ? res['ok'] == true : false;
+    if (!ok) {
+      final motivo = res is Map<String, dynamic> ? res['motivo'] : null;
+      throw Exception(motivo == 'REFERENCIADO'
+          ? 'No se puede eliminar: el servicio tiene solicitudes/historial. Desactívelo en su lugar.'
+          : 'No se pudo eliminar el servicio.');
+    }
+  }
+
+  // ── Imagen del servicio (storage) ─────────────────────────
+
+  /// Sube la imagen de un servicio al bucket público `imagenes-servicios`
+  /// (path `<servicioId>/imagen_<ts>.<ext>`), actualiza `servicios.imagen_url`
+  /// con la URL pública y la devuelve. Solo admin vía storage policy.
+  Future<String> subirImagenServicio({
+    required String servicioId,
+    required Uint8List bytes,
+    required String nombreArchivo,
+  }) async {
+    final ext = nombreArchivo.contains('.')
+        ? nombreArchivo.substring(nombreArchivo.lastIndexOf('.'))
+        : '.jpg';
+    final path =
+        '$servicioId/imagen_${DateTime.now().millisecondsSinceEpoch}$ext';
+    await _client.storage
+        .from(AppConstants.bucketImagenesServicios)
+        .uploadBinary(path, bytes);
+    final publicUrl = _client.storage
+        .from(AppConstants.bucketImagenesServicios)
+        .getPublicUrl(path);
+    final url = publicUrl;
+    final res = await _client
+        .from('servicios')
+        .update({'imagen_url': url}).eq('id', servicioId).select('imagen_url')
+        .maybeSingle();
+    if (res == null) {
+      throw Exception('No se pudo guardar la imagen del servicio.');
+    }
+    return url;
   }
 
   // ── Relaciones (servicio_especialidades / servicio_cuestionarios) ────────

@@ -1,4 +1,6 @@
-﻿import 'package:fpdart/fpdart.dart';
+﻿import 'dart:typed_data';
+
+import 'package:fpdart/fpdart.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import '../../domain/entities/categoria_servicio_entity.dart';
 import '../../domain/entities/servicio_cuestionario_entity.dart';
@@ -95,6 +97,7 @@ class CatalogRepositoryImpl implements ICatalogRepository {
     bool requiereFotos = false,
     bool requiereConsentimiento = false,
     bool activo = true,
+    String? imagenUrl,
   }) async {
     try {
       final model = id.isEmpty
@@ -110,6 +113,7 @@ class CatalogRepositoryImpl implements ICatalogRepository {
               requiereFotos: requiereFotos,
               requiereConsentimiento: requiereConsentimiento,
               activo: activo,
+              imagenUrl: imagenUrl,
             )
           : await _dataSource.updateServicio(
               id: id,
@@ -124,8 +128,37 @@ class CatalogRepositoryImpl implements ICatalogRepository {
               requiereFotos: requiereFotos,
               requiereConsentimiento: requiereConsentimiento,
               activo: activo,
+              imagenUrl: imagenUrl,
             );
       return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> eliminarServicio(String servicioId) async {
+    try {
+      await _dataSource.eliminarServicio(servicioId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> subirImagenServicio({
+    required String servicioId,
+    required Uint8List bytes,
+    required String nombreArchivo,
+  }) async {
+    try {
+      final url = await _dataSource.subirImagenServicio(
+        servicioId: servicioId,
+        bytes: bytes,
+        nombreArchivo: nombreArchivo,
+      );
+      return Right(url);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

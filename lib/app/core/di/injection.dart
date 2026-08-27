@@ -17,6 +17,8 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/a
 import 'package:esteticaybellezastrani/features/catalog_services/data/datasources/catalog_services_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/data/repositories/catalog_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/repositories/i_catalog_repository.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/eliminar_servicio.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/subir_imagen_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_categorias_admin.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/get_requisitos_servicio.dart';
@@ -384,6 +386,12 @@ void _registerCatalogServices() {
   sl.registerLazySingleton<GuardarServicio>(
     () => GuardarServicio(sl<ICatalogRepository>()),
   );
+  sl.registerLazySingleton<EliminarServicio>(
+    () => EliminarServicio(sl<ICatalogRepository>()),
+  );
+  sl.registerLazySingleton<SubirImagenServicio>(
+    () => SubirImagenServicio(sl<ICatalogRepository>()),
+  );
   sl.registerLazySingleton<GetRequisitosServicio>(
     () => GetRequisitosServicio(sl<ICatalogRepository>()),
   );
@@ -405,6 +413,8 @@ void _registerCatalogServices() {
       getServiciosAdmin: GetServiciosAdmin(sl<ICatalogRepository>()),
       guardarCategoria: GuardarCategoria(sl<ICatalogRepository>()),
       guardarServicio: GuardarServicio(sl<ICatalogRepository>()),
+      eliminarServicio: EliminarServicio(sl<ICatalogRepository>()),
+      subirImagenServicio: SubirImagenServicio(sl<ICatalogRepository>()),
       guardarEspecialidadesServicio:
           GuardarEspecialidadesServicio(sl<ICatalogRepository>()),
       guardarCuestionariosServicio:

@@ -42,6 +42,7 @@ class ServicioEntity extends Equatable {
   final bool requiereFotos;
   final bool requiereConsentimiento;
   final bool activo;
+  final String? imagenUrl; // URL pública en storage (imagenes-servicios)
   final CategoriaServicioEntity? categoria; // join embebido
 
   const ServicioEntity({
@@ -57,11 +58,13 @@ class ServicioEntity extends Equatable {
     this.requiereFotos = false,
     this.requiereConsentimiento = false,
     this.activo = true,
+    this.imagenUrl,
     this.categoria,
   });
 
   String? get nombreCategoria => categoria?.nombre;
 
   @override
-  List<Object?> get props => [id, categoriaId, nombre, precioBase, tipoPrecio];
+  List<Object?> get props =>
+      [id, categoriaId, nombre, precioBase, tipoPrecio, imagenUrl];
 }

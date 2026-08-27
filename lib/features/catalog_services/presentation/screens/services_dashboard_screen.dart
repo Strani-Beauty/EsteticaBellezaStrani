@@ -884,6 +884,27 @@ class _ServiceCard extends StatelessWidget {
   }
 
   Widget _buildHero() {
+    final imagenUrl = service.imagenUrl;
+    if (imagenUrl != null && imagenUrl.trim().isNotEmpty) {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(AppTheme.radiusLg)),
+        ),
+        child: Image.network(
+          imagenUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildHeroFallback(),
+        ),
+      );
+    }
+
     final slug = _slugify(service.nombre);
 
     return Container(

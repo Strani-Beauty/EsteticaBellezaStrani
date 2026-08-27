@@ -953,7 +953,7 @@ IconData _iconForServicio(ServicioEntity service) {
   return Icons.spa;
 }
 
-const _kServiceAssetExtensions = ['.jpg', '.jfif', '.png', '.webp'];
+const _kServiceAssetExtensions = ['.jpg', '.jfif', '.jpeg', '.png', '.webp'];
 
 /// Widget de hero que intenta cargar `assets/images/service_<slug>` probando
 /// cada extensión soportada. Si ninguna existe, muestra el fallback (gradiente

@@ -198,11 +198,45 @@ class _AdminCatalogViewState extends State<_AdminCatalogView>
                       requiereConsentimiento: s.requiereConsentimiento,
                       activo: !s.activo,
                     ),
+                onEliminar: (s) => _confirmarEliminarServicio(context, cubit, s),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _confirmarEliminarServicio(
+    BuildContext context,
+    AdminCatalogCubit cubit,
+    ServicioEntity servicio,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar servicio'),
+        content: Text(
+          '¿Eliminar "${servicio.nombre}" del catálogo?\n\n'
+          'Se quitarán sus especialidades y cuestionarios asociados. '
+          'Si el servicio tiene solicitudes o historial no se podrá '
+          'eliminar; en ese caso, desactívelo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.cError),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              cubit.eliminarServicio(servicio.id);
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -385,11 +419,13 @@ class _ServiciosTab extends StatelessWidget {
   final List<ServicioEntity> servicios;
   final ValueChanged<ServicioEntity> onAbrir;
   final ValueChanged<ServicioEntity> onActivar;
+  final ValueChanged<ServicioEntity> onEliminar;
 
   const _ServiciosTab({
     required this.servicios,
     required this.onAbrir,
     required this.onActivar,
+    required this.onEliminar,
   });
 
   String _formatPrice(ServicioEntity service) {
@@ -417,6 +453,7 @@ class _ServiciosTab extends StatelessWidget {
             precio: _formatPrice(s),
             onTap: () => onAbrir(s),
             onActivar: () => onActivar(s),
+            onEliminar: () => onEliminar(s),
           ),
           const SizedBox(height: 8),
         ],
@@ -430,12 +467,14 @@ class _ServicioTile extends StatelessWidget {
   final String precio;
   final VoidCallback onTap;
   final VoidCallback onActivar;
+  final VoidCallback onEliminar;
 
   const _ServicioTile({
     required this.servicio,
     required this.precio,
     required this.onTap,
     required this.onActivar,
+    required this.onEliminar,
   });
 
   @override
@@ -495,6 +534,12 @@ class _ServicioTile extends StatelessWidget {
               value: servicio.activo,
               activeTrackColor: AppTheme.cBrandGreen,
               onChanged: (_) => onActivar(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded,
+                  color: AppTheme.cError),
+              tooltip: 'Eliminar servicio',
+              onPressed: onEliminar,
             ),
           ],
         ),

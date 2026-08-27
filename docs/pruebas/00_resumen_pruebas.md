@@ -22,6 +22,8 @@ y el enlace a la evidencia completa.
 | 2026-08-21 | Push FCM real (solicitud asignada) | E2E manual | ⬜ PENDIENTE (requiere dispositivo) | [2026-08-21_push_fcm_verificacion.md](2026-08-21_push_fcm_verificacion.md) |
 | 2026-08-22 | Admin dashboard (KPIs + Datos Maestros) | E2E manual | ✔ migración/RPC verificados; checklist sin marcar | [2026-08-22_admin_dashboard_e2e.md](2026-08-22_admin_dashboard_e2e.md) |
 | 2026-08-24 | Gestión de Citas y Logística | E2E manual | ✔ 12/14 PASS | [2026-08-24_citas_logistica_e2e.md](2026-08-24_citas_logistica_e2e.md) |
+| 2026-08-25 | Ejecución de tratamiento + consentimiento | E2E manual | ⬜ X/12 por completar | [2026-08-25_treatment_execution_e2e.md](2026-08-25_treatment_execution_e2e.md) |
+| 2026-08-26 | Face Map con productos + cierre con evidencia | E2E manual | ✔ 10/10 (12 controles) | [2026-08-26_face_map_productos_cierre_e2e.md](2026-08-26_face_map_productos_cierre_e2e.md) |
 
 ## Resumen por línea
 
@@ -88,6 +90,14 @@ navegación al domicilio, llegada con GPS y distancia, máquina de estados, canc
 con motivo, notificaciones de cambio de estado, vista del paciente). Pendientes:
 ítem 7 (permiso de ubicación denegado) e ítem 14 (doble claim de solicitud).
 
+### 2026-08-26 — Face Map con productos/cantidades + cierre con evidencia
+Cierre del módulo de ejecución (plan `2026-08-26_face_map_puntos_productos_cierre.md`):
+**10/10 ítems PASS** en control manual 2026-08-27 (12 controles). Trazabilidad
+`face_maps → face_map_puntos → productos_aplicados` con FK `producto_id` (migración
+`20260826000100` aplicada), gate de cierre (firma + ≥1 PRE + ≥1 POST + evaluación +
+face map con producto/cantidad por punto), Revisión final y precisión multi-tamaño.
+`flutter analyze` 0 issues, `flutter test` 366/366.
+
 ## Documentos de pruebas manuales por módulo
 
 Ver `docs/Pruebas manuales/00_indice_general.md` (2026-08-14) y los docs 01–13:
@@ -110,6 +120,7 @@ Evolución de la suite `flutter test` (`flutter analyze` siempre 0 issues):
 | 2026-08-20 | 130/130 |
 | 2026-08-21 | 144/144 |
 | 2026-08-22 y 08-24 | 148/148 |
+| 2026-08-25 y 08-26 | 366/366 |
 
 ## Pendientes conocidos
 

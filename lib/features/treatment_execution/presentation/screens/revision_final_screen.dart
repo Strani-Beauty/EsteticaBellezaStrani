@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../app/config/app_constants.dart';
 import '../../../../app/config/app_theme.dart';
 import '../../../../app/core/di/injection.dart';
 import '../../../../features/payments_stripe/domain/entities/pago_entity.dart';
@@ -201,6 +202,8 @@ class _RevisionFinalScreenState extends State<RevisionFinalScreen> {
   }
 
   /// Cobra el saldo pendiente de la solicitud antes de finalizar.
+  /// Un fallo/cancelación del pago NO bloquea el cierre: registra la
+  /// transacción FALLIDA y el saldo queda pendiente.
   Future<bool> _pagarSaldoPendiente(CitaEjecucionEntity cita) async {
     final solicitudId = cita.solicitudId;
     if (solicitudId == null) return true;
@@ -234,7 +237,9 @@ class _RevisionFinalScreenState extends State<RevisionFinalScreen> {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Se abrirá el pago con Stripe antes de finalizar el tratamiento.',
+              'Se abrirá el pago con Stripe antes de finalizar el tratamiento. '
+              'Si el pago no se completa, el saldo quedará pendiente y podrá '
+              'cobrarse después.',
               style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
             ),
           ],
@@ -255,28 +260,63 @@ class _RevisionFinalScreenState extends State<RevisionFinalScreen> {
 
     final stripeRef = await procesarPagoStripe(
       monto: monto,
-      concepto: 'SALDO',
+      concepto: AppConstants.conceptoSaldo,
       solicitudId: solicitudId,
       citaId: cita.id,
     );
     if (stripeRef == null) {
-      _mensaje('El pago del saldo no se completó.');
-      return false;
+      await _registrarFalloSaldo(cita, solicitudId, monto, null);
+      _mensaje('El pago del saldo no se completó. El saldo quedará pendiente.');
+      return true;
     }
+
+    final String motivo;
     try {
-      final registrado = await sl<IPaymentsRepository>().registrarPagoSaldo(
+      motivo = await sl<IPaymentsRepository>().confirmarPagoSaldo(
         citaId: cita.id,
         solicitudId: solicitudId,
         monto: monto,
         stripePaymentRef: stripeRef,
       );
-      if (registrado) {
-        _mensaje('Saldo de \$${monto.toStringAsFixed(2)} USD cobrado.');
-      }
-      return true;
     } catch (e) {
-      _mensaje('No se pudo registrar el saldo: $e');
+      _mensaje('No se pudo confirmar el pago del saldo: $e');
       return false;
+    }
+
+    if (motivo == 'OK') {
+      _mensaje('Saldo de \$${monto.toStringAsFixed(2)} USD cobrado.');
+      return true;
+    }
+    if (motivo != 'YA_REGISTRADA') {
+      await _registrarFalloSaldo(cita, solicitudId, monto, stripeRef);
+    }
+    _mensaje(
+      motivo == 'MONTO_INCORRECTO'
+          ? 'El monto del pago no coincide con el saldo pendiente. '
+              'El saldo quedará pendiente.'
+          : 'El saldo no pudo confirmarse. El saldo quedará pendiente.',
+    );
+    return true;
+  }
+
+  /// Registra la transacción FALLIDA del cobro de saldo (no bloquea el cierre).
+  Future<void> _registrarFalloSaldo(
+    CitaEjecucionEntity cita,
+    String solicitudId,
+    double monto,
+    String? stripeRef,
+  ) async {
+    try {
+      await sl<IPaymentsRepository>().registrarPagoFallido(
+        citaId: cita.id,
+        solicitudId: solicitudId,
+        monto: monto,
+        stripePaymentRef: stripeRef ?? 'CANCELADO_SIN_PAGO',
+        motivo: stripeRef == null ? 'CLIENTE_CANCELO' : 'CONFIRMACION_RECHAZADA',
+        tipo: AppConstants.txSaldo,
+      );
+    } catch (e) {
+      debugPrint('⚠️ [_registrarFalloSaldo] $e');
     }
   }
 

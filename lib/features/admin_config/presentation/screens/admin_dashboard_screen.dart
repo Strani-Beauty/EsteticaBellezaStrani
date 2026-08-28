@@ -208,6 +208,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           onTap: () => context.go(AppRoutes.adminComisiones),
         ),
         _NavCard(
+          icon: Icons.receipt_long_outlined,
+          color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+          title: 'Conciliación de Pagos',
+          subtitle: 'Transacciones, refs de Stripe y detalle financiero por cita',
+          onTap: () => context.go(AppRoutes.adminConciliacion),
+        ),
+        _NavCard(
           icon: Icons.category_outlined,
           color: AppTheme.cBrandGreen.withValues(alpha: 0.15),
           title: 'Especialidades',

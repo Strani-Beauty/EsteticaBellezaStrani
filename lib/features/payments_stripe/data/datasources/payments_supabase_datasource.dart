@@ -3,8 +3,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../app/config/app_constants.dart';
 import '../../domain/entities/adelanto_servicio_entity.dart';
+import '../../domain/entities/comision_entity.dart';
+import '../../domain/entities/detalle_financiero_entity.dart';
 import '../models/pago_model.dart';
 import '../models/payment_intent_model.dart';
+import '../models/transaccion_model.dart';
 
 /// Datasource de Supabase para el módulo de pagos (payments_stripe).
 /// Solo habla con Supabase y devuelve Models.
@@ -294,54 +297,49 @@ class PaymentsSupabaseDataSource {
 
   // ── Saldo final al terminar tratamiento ───────────────────
 
-  /// Cobra el saldo pendiente: actualiza `pagos` a PAGADO y registra la
-  /// transacción SALDO vinculada a la cita.
-  /// Devuelve `false` si no había saldo pendiente (nada que cobrar).
-  Future<bool> registrarPagoSaldo({
+  /// Confirma el cobro del saldo pendiente vía RPC `confirmar_pago_saldo`
+  /// (SECURITY DEFINER): valida autorización (especialista dueño/admin/
+  /// service_role), monto == saldo_pendiente e idempotencia, marca `pagos`
+  /// PAGADO y registra la transacción SALDO con las refs de Stripe.
+  /// Devuelve el `motivo` del RPC: 'OK', 'YA_REGISTRADA', 'MONTO_INCORRECTO',
+  /// 'NO_ENCONTRADO' o 'NO_AUTORIZADO'.
+  Future<String> confirmarPagoSaldo({
     required String citaId,
     required String solicitudId,
     required double monto,
     required String stripePaymentRef,
   }) async {
-    final sol = await _client
-        .from('solicitudes')
-        .select('paciente_id')
-        .eq('id', solicitudId)
-        .maybeSingle();
-    final pacienteId = sol?['paciente_id'] as String?;
-    if (pacienteId == null) {
-      throw Exception('No se encontró la solicitud de la cita.');
-    }
-
-    final pagoRes = await _client
-        .from('pagos')
-        .select('saldo_pendiente')
-        .eq('solicitud_id', solicitudId)
-        .maybeSingle();
-    final saldo = (pagoRes?['saldo_pendiente'] as num?)?.toDouble() ?? 0.0;
-    if (saldo <= 0) return false; // ya está cubierto
-
-    final now = DateTime.now().toIso8601String();
-    await _client.from('pagos').update({
-      'estado': 'PAGADO',
-      'saldo_pendiente': 0,
-      'updated_at': now,
-    }).eq('solicitud_id', solicitudId);
-
-    await _client.from('transacciones').insert({
-      'solicitud_id': solicitudId,
-      'cita_id': citaId,
-      'paciente_id': pacienteId,
-      'tipo_transaccion': AppConstants.txSaldo,
-      'monto': monto,
-      'moneda': 'USD',
-      'estado': 'APROBADO',
-      'stripe_payment_id': stripePaymentRef,
-      'stripe_payment_intent': stripePaymentRef,
-      'fecha_transaccion': now,
+    final res = await _client.rpc(AppConstants.rpcConfirmarPagoSaldo, params: {
+      'p_solicitud_id': solicitudId,
+      'p_cita_id': citaId,
+      'p_monto': monto,
+      'p_stripe_payment_id': stripePaymentRef,
     });
+    final map = res is Map ? Map<String, dynamic>.from(res) : <String, dynamic>{};
+    return map['motivo']?.toString() ?? 'NO_ENCONTRADO';
+  }
 
-    return true;
+  /// Registra una transacción FALLIDA vía RPC `registrar_pago_fallido` sin
+  /// tocar `pagos` (el saldo queda pendiente). Devuelve `motivo` del RPC.
+  Future<String> registrarPagoFallido({
+    required String citaId,
+    required String solicitudId,
+    required double monto,
+    required String stripePaymentRef,
+    required String motivo,
+    required String tipo,
+  }) async {
+    final res = await _client.rpc(AppConstants.rpcRegistrarPagoFallido,
+        params: {
+          'p_solicitud_id': solicitudId,
+          'p_cita_id': citaId,
+          'p_monto': monto,
+          'p_stripe_payment_id': stripePaymentRef,
+          'p_motivo': motivo,
+          'p_tipo': tipo,
+        });
+    final map = res is Map ? Map<String, dynamic>.from(res) : <String, dynamic>{};
+    return map['motivo']?.toString() ?? 'NO_ENCONTRADO';
   }
 
   // ── Lecturas ──────────────────────────────────────────────
@@ -354,5 +352,99 @@ class PaymentsSupabaseDataSource {
         .maybeSingle();
     if (res == null) return null;
     return PagoModel.fromJson(Map<String, dynamic>.from(res));
+  }
+
+  // ── Conciliación admin ──────────────────────────────────
+
+  /// Lista transacciones para conciliación con filtros opcionales
+  /// (estado, tipo, rango de fechas). Incluye paciente y solicitud.
+  Future<List<TransaccionModel>> fetchTransaccionesAdmin({
+    String? estado,
+    String? tipo,
+    DateTime? desde,
+    DateTime? hasta,
+  }) async {
+    var builder = _client
+        .from('transacciones')
+        .select(
+            '*, pacientes(usuario_id, profiles(full_name)), solicitudes(estado)');
+    if (estado != null && estado.isNotEmpty) {
+      builder = builder.eq('estado', estado);
+    }
+    if (tipo != null && tipo.isNotEmpty) {
+      builder = builder.eq('tipo_transaccion', tipo);
+    }
+    if (desde != null) {
+      builder = builder.gte('fecha_transaccion', desde.toIso8601String());
+    }
+    if (hasta != null) {
+      builder = builder.lte('fecha_transaccion', hasta.toIso8601String());
+    }
+    final res = await builder.order('fecha_transaccion', ascending: false);
+    return (res as List).map((e) {
+      return TransaccionModel.fromJson(Map<String, dynamic>.from(e));
+    }).toList();
+  }
+
+  /// Lista las comisiones de la plataforma registradas (`comisiones`).
+  Future<List<ComisionEntity>> fetchComisionesAdmin() async {
+    final res = await _client
+        .from('comisiones')
+        .select()
+        .order('created_at', ascending: false);
+    return (res as List).map((e) {
+      final m = Map<String, dynamic>.from(e);
+      return ComisionEntity(
+        id: m['id']?.toString() ?? '',
+        citaId: m['cita_id']?.toString() ?? '',
+        porcentaje: (m['porcentaje'] as num?)?.toDouble() ?? 0,
+        montoComision: (m['monto_comision'] as num?)?.toDouble() ?? 0,
+        montoEspecialista: (m['monto_especialista'] as num?)?.toDouble() ?? 0,
+      );
+    }).toList();
+  }
+
+  /// Detalle financiero de una cita: depósito, pago final, saldo y comisión.
+  Future<DetalleFinancieroCitaEntity?> fetchDetalleFinancieroCita(
+      String citaId) async {
+    final res = await _client
+        .from('citas')
+        .select('id, solicitud_id, solicitudes(pagos)')
+        .eq('id', citaId)
+        .maybeSingle();
+    if (res == null) return null;
+
+    double pct = 0;
+    try {
+      final cfg = await _client
+          .from('configuracion_sistema')
+          .select('valor')
+          .eq('clave', 'comision_porcentaje')
+          .maybeSingle();
+      pct = double.tryParse(cfg?['valor']?.toString() ?? '') ?? 0;
+    } catch (_) {}
+
+    final solicitud = res['solicitudes'] as Map? ?? const <String, dynamic>{};
+    final map = <String, dynamic>{
+      'cita_id': res['id'],
+      'solicitud_id': res['solicitud_id'],
+      'pagos': solicitud['pagos'],
+      'porcentaje_comision': pct,
+    };
+    return DetalleFinancieroCitaEntity.fromJson(map);
+  }
+
+  /// Genera liquidaciones semanales por especialista vía RPC
+  /// `generar_liquidaciones` (solo admin). Devuelve el resumen de la operación.
+  Future<GenerarLiquidacionesEntity> generarLiquidaciones({
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
+  }) async {
+    final res = await _client.rpc(AppConstants.rpcGenerarLiquidaciones, params: {
+      'p_fecha_inicio': fechaInicio.toIso8601String(),
+      'p_fecha_fin': fechaFin.toIso8601String(),
+    });
+    final map = res is Map ? Map<String, dynamic>.from(res) : <String, dynamic>{};
+    return GenerarLiquidacionesEntity.fromJson(map);
   }
 }

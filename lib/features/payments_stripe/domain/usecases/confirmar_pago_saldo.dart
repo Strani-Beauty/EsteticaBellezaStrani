@@ -4,13 +4,13 @@ import '../../../../app/core/error/failures.dart';
 import '../../../../app/core/usecases/use_case.dart';
 import '../../domain/repositories/i_payments_repository.dart';
 
-class RegistrarSaldoParams {
+class ConfirmarPagoSaldoParams {
   final String citaId;
   final String solicitudId;
   final double monto;
   final String stripePaymentRef;
 
-  const RegistrarSaldoParams({
+  const ConfirmarPagoSaldoParams({
     required this.citaId,
     required this.solicitudId,
     required this.monto,
@@ -18,25 +18,25 @@ class RegistrarSaldoParams {
   });
 }
 
-/// Cobra el saldo restante de la solicitud al finalizar el tratamiento.
-/// Devuelve `false` si no había saldo pendiente.
-class RegistrarSaldo extends UseCase<bool, RegistrarSaldoParams> {
+/// Confirma el cobro del saldo final vía RPC `confirmar_pago_saldo`.
+/// Devuelve el `motivo` del RPC ('OK', 'YA_REGISTRADA', 'MONTO_INCORRECTO', ...).
+class ConfirmarPagoSaldo extends UseCase<String, ConfirmarPagoSaldoParams> {
   final IPaymentsRepository _repository;
 
-  RegistrarSaldo(this._repository);
+  ConfirmarPagoSaldo(this._repository);
 
   @override
-  Future<Either<Failure, bool>> call(RegistrarSaldoParams params) async {
+  Future<Either<Failure, String>> call(ConfirmarPagoSaldoParams params) async {
     try {
-      final registrado = await _repository.registrarPagoSaldo(
+      final motivo = await _repository.confirmarPagoSaldo(
         citaId: params.citaId,
         solicitudId: params.solicitudId,
         monto: params.monto,
         stripePaymentRef: params.stripePaymentRef,
       );
-      return Right(registrado);
+      return Right(motivo);
     } catch (e) {
-      return Left(ServerFailure('No se pudo registrar el saldo: $e'));
+      return Left(PaymentFailure('No se pudo confirmar el pago del saldo: $e'));
     }
   }
 }

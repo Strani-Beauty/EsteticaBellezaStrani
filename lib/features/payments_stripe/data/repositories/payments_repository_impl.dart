@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 
 import '../../domain/entities/adelanto_servicio_entity.dart';
+import '../../domain/entities/comision_entity.dart';
+import '../../domain/entities/detalle_financiero_entity.dart';
 import '../../domain/entities/pago_entity.dart';
 import '../../domain/entities/payment_intent_entity.dart';
+import '../../domain/entities/transaccion_entity.dart';
 import '../../domain/repositories/i_payments_repository.dart';
 import '../datasources/payments_supabase_datasource.dart';
 
@@ -83,21 +86,45 @@ class PaymentsRepositoryImpl implements IPaymentsRepository {
   }
 
   @override
-  Future<bool> registrarPagoSaldo({
+  Future<String> confirmarPagoSaldo({
     required String citaId,
     required String solicitudId,
     required double monto,
     required String stripePaymentRef,
   }) async {
     try {
-      return await _dataSource.registrarPagoSaldo(
+      return await _dataSource.confirmarPagoSaldo(
         citaId: citaId,
         solicitudId: solicitudId,
         monto: monto,
         stripePaymentRef: stripePaymentRef,
       );
     } catch (e) {
-      debugPrint('❌ [registrarPagoSaldo] $e');
+      debugPrint('❌ [confirmarPagoSaldo] $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<String> registrarPagoFallido({
+    required String citaId,
+    required String solicitudId,
+    required double monto,
+    required String stripePaymentRef,
+    required String motivo,
+    required String tipo,
+  }) async {
+    try {
+      return await _dataSource.registrarPagoFallido(
+        citaId: citaId,
+        solicitudId: solicitudId,
+        monto: monto,
+        stripePaymentRef: stripePaymentRef,
+        motivo: motivo,
+        tipo: tipo,
+      );
+    } catch (e) {
+      debugPrint('❌ [registrarPagoFallido] $e');
       rethrow;
     }
   }
@@ -131,6 +158,64 @@ class PaymentsRepositoryImpl implements IPaymentsRepository {
       return model.toEntity();
     } catch (e) {
       debugPrint('❌ [crearPaymentIntent] $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<TransaccionEntity>> getTransaccionesAdmin({
+    String? estado,
+    String? tipo,
+    DateTime? desde,
+    DateTime? hasta,
+  }) async {
+    try {
+      final models = await _dataSource.fetchTransaccionesAdmin(
+        estado: estado,
+        tipo: tipo,
+        desde: desde,
+        hasta: hasta,
+      );
+      return models.map((m) => m.toEntity()).toList();
+    } catch (e) {
+      debugPrint('❌ [getTransaccionesAdmin] $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<ComisionEntity>> getComisionesAdmin() async {
+    try {
+      return await _dataSource.fetchComisionesAdmin();
+    } catch (e) {
+      debugPrint('❌ [getComisionesAdmin] $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<DetalleFinancieroCitaEntity?> getDetalleFinancieroCita(
+      String citaId) async {
+    try {
+      return await _dataSource.fetchDetalleFinancieroCita(citaId);
+    } catch (e) {
+      debugPrint('❌ [getDetalleFinancieroCita] $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<GenerarLiquidacionesEntity> generarLiquidaciones({
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
+  }) async {
+    try {
+      return await _dataSource.generarLiquidaciones(
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin,
+      );
+    } catch (e) {
+      debugPrint('❌ [generarLiquidaciones] $e');
       rethrow;
     }
   }

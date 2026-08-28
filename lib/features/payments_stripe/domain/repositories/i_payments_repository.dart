@@ -1,6 +1,9 @@
 import '../entities/adelanto_servicio_entity.dart';
+import '../entities/comision_entity.dart';
+import '../entities/detalle_financiero_entity.dart';
 import '../entities/pago_entity.dart';
 import '../entities/payment_intent_entity.dart';
+import '../entities/transaccion_entity.dart';
 
 /// Contrato del módulo de pagos y solicitudes.
 /// La implementación vive en data/. Las pantallas migran de SupabaseService
@@ -35,13 +38,25 @@ abstract class IPaymentsRepository {
   /// Calcula el adelanto de un servicio (porcentaje configurado del total).
   Future<AdelantoServicioEntity> calcularAdelanto(double servicePrice);
 
-  /// Cobra el saldo restante al finalizar un tratamiento (transacción SALDO).
-  /// Devuelve `false` si no había saldo pendiente.
-  Future<bool> registrarPagoSaldo({
+  /// Confirma el cobro del saldo pendiente vía RPC `confirmar_pago_saldo`.
+  /// Devuelve el `motivo` del RPC: 'OK', 'YA_REGISTRADA', 'MONTO_INCORRECTO',
+  /// 'NO_ENCONTRADO' o 'NO_AUTORIZADO'.
+  Future<String> confirmarPagoSaldo({
     required String citaId,
     required String solicitudId,
     required double monto,
     required String stripePaymentRef,
+  });
+
+  /// Registra una transacción FALLIDA (pago rechazado/cancelado) sin marcar
+  /// la cita como financieramente completada. Devuelve el `motivo` del RPC.
+  Future<String> registrarPagoFallido({
+    required String citaId,
+    required String solicitudId,
+    required double monto,
+    required String stripePaymentRef,
+    required String motivo,
+    required String tipo,
   });
 
   /// Consulta la obligación (pago) de una solicitud.
@@ -53,5 +68,25 @@ abstract class IPaymentsRepository {
     required String concepto,
     String? solicitudId,
     String? citaId,
+  });
+
+  /// Transacciones para conciliación admin con filtros opcionales.
+  Future<List<TransaccionEntity>> getTransaccionesAdmin({
+    String? estado,
+    String? tipo,
+    DateTime? desde,
+    DateTime? hasta,
+  });
+
+  /// Comisiones de la plataforma registradas.
+  Future<List<ComisionEntity>> getComisionesAdmin();
+
+  /// Detalle financiero de una cita (depósito, pago final, saldo, comisión).
+  Future<DetalleFinancieroCitaEntity?> getDetalleFinancieroCita(String citaId);
+
+  /// Genera liquidaciones semanales por especialista (solo admin).
+  Future<GenerarLiquidacionesEntity> generarLiquidaciones({
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
   });
 }

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import '../cubits/admin_comisiones_cubit.dart';
 
 /// Comisiones y Liquidaciones — listado de liquidaciones y pagos a especialistas.
@@ -101,6 +103,26 @@ class _AdminComisionesScreenState extends State<AdminComisionesScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  color: AppTheme.cBrandGreen.withValues(alpha: 0.12),
+                  child: ListTile(
+                    leading: const Icon(Icons.event_available_outlined,
+                        color: AppTheme.cBrandGreen),
+                    title: const Text('Generar liquidación',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: const Text(
+                        'Agrupa por especialista las citas FINALIZADAS y '
+                        'pagadas de un periodo.'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.play_arrow_rounded,
+                          color: AppTheme.cBrandGreen),
+                      tooltip: 'Generar liquidación del periodo',
+                      onPressed: _generarLiquidacion,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text('Liquidaciones',
                     style:
                         TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -167,6 +189,53 @@ class _AdminComisionesScreenState extends State<AdminComisionesScreen> {
   static String _fmt(DateTime d) {
     final l = d.toLocal();
     return '${l.day}/${l.month}/${l.year}';
+  }
+
+  Future<void> _generarLiquidacion() async {
+    final now = DateTime.now();
+    final hoy = DateTime(now.year, now.month, now.day);
+    final inicioDefault = hoy.subtract(const Duration(days: 6));
+
+    final inicio = await showDatePicker(
+      context: context,
+      initialDate: inicioDefault,
+      firstDate: DateTime(2024),
+      lastDate: hoy,
+      helpText: 'Inicio del periodo',
+    );
+    if (inicio == null || !mounted) return;
+
+    final fin = await showDatePicker(
+      context: context,
+      initialDate: hoy,
+      firstDate: inicio,
+      lastDate: DateTime(now.year + 1),
+      helpText: 'Fin del periodo',
+    );
+    if (fin == null || !mounted) return;
+
+    try {
+      final res = await sl<IPaymentsRepository>()
+          .generarLiquidaciones(fechaInicio: inicio, fechaFin: fin);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res.ok
+                ? 'Liquidación generada: ${res.especialistas} especialista(s), '
+                    '${res.citas} cita(s), \$${res.montoPagar.toStringAsFixed(2)} '
+                    'a pagar.'
+                : 'No se pudo generar la liquidación: ${res.motivo}',
+          ),
+        ),
+      );
+      context.read<AdminComisionesCubit>().load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al generar la liquidación: $e')),
+      );
+    }
   }
 }
 

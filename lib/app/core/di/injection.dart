@@ -70,7 +70,13 @@ import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/crear_solicitud_deposito.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/pagar_servicio.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/registrar_pago_inicial.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/registrar_saldo.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/confirmar_pago_saldo.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/registrar_pago_fallido.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/get_transacciones_admin.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/get_comisiones_admin.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/get_detalle_financiero_cita.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/generar_liquidaciones.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/admin_conciliacion_cubit.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/payments_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/datasources/specialists_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/repositories/specialists_repository_impl.dart';
@@ -519,8 +525,33 @@ void _registerPaymentsStripe() {
       registrarPagoInicial: RegistrarPagoInicial(sl<IPaymentsRepository>()),
       crearSolicitudDeposito: CrearSolicitudDeposito(sl<IPaymentsRepository>()),
       pagarServicio: PagarServicio(sl<IPaymentsRepository>()),
-      registrarSaldo: RegistrarSaldo(sl<IPaymentsRepository>()),
       consultarPago: ConsultarPago(sl<IPaymentsRepository>()),
+    ),
+  );
+  sl.registerLazySingleton<ConfirmarPagoSaldo>(
+    () => ConfirmarPagoSaldo(sl<IPaymentsRepository>()),
+  );
+  sl.registerLazySingleton<RegistrarPagoFallido>(
+    () => RegistrarPagoFallido(sl<IPaymentsRepository>()),
+  );
+  sl.registerLazySingleton<GetTransaccionesAdmin>(
+    () => GetTransaccionesAdmin(sl<IPaymentsRepository>()),
+  );
+  sl.registerLazySingleton<GetComisionesAdmin>(
+    () => GetComisionesAdmin(sl<IPaymentsRepository>()),
+  );
+  sl.registerLazySingleton<GetDetalleFinancieroCita>(
+    () => GetDetalleFinancieroCita(sl<IPaymentsRepository>()),
+  );
+  sl.registerLazySingleton<GenerarLiquidaciones>(
+    () => GenerarLiquidaciones(sl<IPaymentsRepository>()),
+  );
+  sl.registerFactory<AdminConciliacionCubit>(
+    () => AdminConciliacionCubit(
+      getTransacciones: sl<GetTransaccionesAdmin>(),
+      getComisiones: sl<GetComisionesAdmin>(),
+      getDetalle: sl<GetDetalleFinancieroCita>(),
+      generarLiquidaciones: sl<GenerarLiquidaciones>(),
     ),
   );
 }

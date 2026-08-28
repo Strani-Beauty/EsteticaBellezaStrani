@@ -58,6 +58,8 @@ import 'package:esteticaybellezastrani/features/admin_master_data/presentation/s
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_especialidades_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_comisiones_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_medicos_regentes_screen.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/admin_conciliacion_cubit.dart';
+import 'package:esteticaybellezastrani/features/payments_stripe/presentation/screens/admin_conciliacion_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -78,6 +80,7 @@ class AppRoutes {
   static const String adminCatalogServicio = '/admin/catalog/servicio';
   static const String adminLicencias       = '/admin/licencias';
   static const String adminConfiguracion   = '/admin/configuracion';
+  static const String adminConciliacion     = '/admin/conciliacion';
   static const String adminDatosMaestros   = '/admin/datos-maestros';
   static const String adminRoles           = '/admin/datos-maestros/roles';
   static const String adminComisiones      = '/admin/datos-maestros/comisiones';
@@ -282,6 +285,14 @@ final GoRouter appRouter = GoRouter(
           BlocProvider<AdminConfiguracionCubit>.value(
         value: sl<AdminConfiguracionCubit>(),
         child: const AdminConfiguracionScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminConciliacion,
+      name: 'adminConciliacion',
+      builder: (context, state) => BlocProvider<AdminConciliacionCubit>.value(
+        value: sl<AdminConciliacionCubit>(),
+        child: const AdminConciliacionScreen(),
       ),
     ),
     GoRoute(

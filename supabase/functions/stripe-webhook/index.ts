@@ -79,26 +79,48 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Payload inválido' }, 400);
   }
 
-  if (event.type !== 'payment_intent.succeeded') {
-    return jsonResponse({ received: event.type });
-  }
+  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  if (!serviceRole || !url) return jsonResponse({ error: 'Servidor mal configurado' }, 503);
+  const supabase = createClient(url, serviceRole);
 
   const pi = event.data?.object ?? {};
   const metadata: Record<string, string> = pi.metadata ?? {};
   const concepto = String(metadata.concepto ?? '');
   const solicitudId = metadata.solicitud_id;
   const citaId = metadata.cita_id;
+  const monto = (pi.amount ?? 0) / 100;
 
-  const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  const url = Deno.env.get('SUPABASE_URL') ?? '';
-  if (!serviceRole || !url) return jsonResponse({ error: 'Servidor mal configurado' }, 503);
-  const supabase = createClient(url, serviceRole);
+  // ── 0. Pago fallido: registra la transacción FALLIDA (conciliación) ───────
+  if (event.type === 'payment_intent.payment_failed') {
+    const conceptoTipo: Record<string, string> = {
+      SALDO: 'SALDO',
+      ADELANTO: 'DEPOSITO',
+      DEPOSITO: 'DEPOSITO',
+      PAGO_TOTAL: 'PAGO_TOTAL',
+    };
+    const tipo = conceptoTipo[concepto];
+    if (tipo && solicitudId) {
+      const { error: falloError } = await supabase.rpc('registrar_pago_fallido', {
+        p_solicitud_id: solicitudId,
+        p_cita_id: citaId ?? null,
+        p_monto: monto,
+        p_stripe_payment_id: pi.id ?? null,
+        p_motivo: 'STRIPE_PAYMENT_FAILED',
+        p_tipo: tipo,
+      });
+      if (falloError) return jsonResponse({ error: falloError.message }, 500);
+    }
+    return jsonResponse({ received: 'payment_failed' });
+  }
+
+  if (event.type !== 'payment_intent.succeeded') {
+    return jsonResponse({ received: event.type });
+  }
 
   // ── 1. Depósito / adelanto de reserva: publica la solicitud (idempotente) ──
   const DEPOSIT_CONCEPTOS = ['ADELANTO', 'DEPOSITO', 'PAGO_TOTAL'];
   if (DEPOSIT_CONCEPTOS.includes(concepto) && solicitudId) {
-    const monto = (pi.amount ?? 0) / 100;
-
     const yaConfirmada = await supabase
       .from('transacciones')
       .select('id')
@@ -119,46 +141,19 @@ Deno.serve(async (req) => {
     return jsonResponse({ received: 'deposito_confirmado', solicitud_id: solicitudId });
   }
 
-  // ── 2. Saldo final al terminar la cita (idempotente) ──────────────────────
+  // ── 2. Saldo final al terminar la cita: RPC idempotente y con validación de
+  // monto == saldo_pendiente (el RPC rechaza con MONTO_INCORRECTO y registra
+  // FALLIDA si el monto no coincide) ──────────────────────────────────────────
   if (concepto === 'SALDO' && solicitudId && citaId) {
-    const yaRegistrada = await supabase
-      .from('transacciones')
-      .select('id')
-      .eq('cita_id', citaId)
-      .eq('tipo_transaccion', 'SALDO')
-      .maybeSingle();
-    if (yaRegistrada.data) return jsonResponse({ received: 'already_processed' });
+    const { error: saldoError } = await supabase.rpc('confirmar_pago_saldo', {
+      p_solicitud_id: solicitudId,
+      p_cita_id: citaId,
+      p_monto: monto,
+      p_stripe_payment_id: pi.id,
+    });
+    if (saldoError) return jsonResponse({ error: saldoError.message }, 500);
 
-    const sol = await supabase
-      .from('solicitudes')
-      .select('paciente_id')
-      .eq('id', solicitudId)
-      .maybeSingle();
-    const pacienteId = sol.data?.paciente_id as string | undefined;
-
-    const monto = (pi.amount ?? 0) / 100;
-
-    const { error: pagoError } = await supabase
-      .from('pagos')
-      .update({ estado: 'PAGADO', saldo_pendiente: 0, updated_at: new Date().toISOString() })
-      .eq('solicitud_id', solicitudId);
-    if (pagoError) return jsonResponse({ error: pagoError.message }, 500);
-
-    const { error: txError } = await supabase
-      .from('transacciones')
-      .insert({
-        solicitud_id: solicitudId,
-        cita_id: citaId,
-        paciente_id: pacienteId,
-        tipo_transaccion: 'SALDO',
-        monto,
-        moneda: 'USD',
-        estado: 'APROBADO',
-        stripe_payment_id: pi.id,
-        stripe_payment_intent: pi.id,
-        fecha_transaccion: new Date().toISOString(),
-      });
-    if (txError) return jsonResponse({ error: txError.message }, 500);
+    return jsonResponse({ received: 'saldo_confirmado', cita_id: citaId });
   }
 
   return jsonResponse({ received: event.type });

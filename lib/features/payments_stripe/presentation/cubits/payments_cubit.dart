@@ -10,7 +10,6 @@ import '../../domain/usecases/crear_payment_intent.dart';
 import '../../domain/usecases/crear_solicitud_deposito.dart';
 import '../../domain/usecases/pagar_servicio.dart';
 import '../../domain/usecases/registrar_pago_inicial.dart';
-import '../../domain/usecases/registrar_saldo.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTADOS
@@ -48,7 +47,6 @@ class PaymentsCubit extends Cubit<PaymentsState> {
   final RegistrarPagoInicial _registrarPagoInicial;
   final CrearSolicitudDeposito _crearSolicitudDeposito;
   final PagarServicio _pagarServicio;
-  final RegistrarSaldo _registrarSaldo;
   final ConsultarPago _consultarPago;
 
   PaymentsCubit({
@@ -56,13 +54,11 @@ class PaymentsCubit extends Cubit<PaymentsState> {
     required RegistrarPagoInicial registrarPagoInicial,
     required CrearSolicitudDeposito crearSolicitudDeposito,
     required PagarServicio pagarServicio,
-    required RegistrarSaldo registrarSaldo,
     required ConsultarPago consultarPago,
   })  : _crearPaymentIntent = crearPaymentIntent,
         _registrarPagoInicial = registrarPagoInicial,
         _crearSolicitudDeposito = crearSolicitudDeposito,
         _pagarServicio = pagarServicio,
-        _registrarSaldo = registrarSaldo,
         _consultarPago = consultarPago,
         super(const PaymentsInitial());
 
@@ -157,28 +153,6 @@ class PaymentsCubit extends Cubit<PaymentsState> {
         return null;
       },
       (id) => id,
-    );
-  }
-
-  /// Cobra el saldo restante al finalizar tratamiento.
-  Future<bool> registrarSaldo({
-    required String citaId,
-    required String solicitudId,
-    required double monto,
-    required String stripePaymentRef,
-  }) async {
-    final result = await _registrarSaldo(RegistrarSaldoParams(
-      citaId: citaId,
-      solicitudId: solicitudId,
-      monto: monto,
-      stripePaymentRef: stripePaymentRef,
-    ));
-    return result.fold(
-      (f) {
-        emit(PaymentsError(f.message));
-        return false;
-      },
-      (ok) => ok,
     );
   }
 

@@ -75,8 +75,17 @@ class AppConstants {
 
   // ── Tipos de Transacción ───────────────────────────────────
   static const String txDeposito = 'DEPOSITO';
+  static const String txPagoTotal = 'PAGO_TOTAL';
   static const String txSaldo = 'SALDO';
   static const String txReembolso = 'REEMBOLSO';
+  static const String txAjuste = 'AJUSTE';
+
+  // ── Estados de Transacción ─────────────────────────────────
+  static const String txEstadoPendiente = 'PENDIENTE';
+  static const String txEstadoProcesada = 'PROCESADA';
+  static const String txEstadoAprobado = 'APROBADO';
+  static const String txEstadoFallida = 'FALLIDA';
+  static const String txEstadoReembolsada = 'REEMBOLSADA';
 
   // ── Supabase Storage Buckets ───────────────────────────────
   static const String bucketDocumentos = 'documentos-especialistas';
@@ -95,6 +104,9 @@ class AppConstants {
   static const String rpcCrearSolicitudReserva = 'crear_solicitud_reserva';
   static const String rpcConfirmarDepositoSolicitud =
       'confirmar_deposito_solicitud';
+  static const String rpcConfirmarPagoSaldo = 'confirmar_pago_saldo';
+  static const String rpcRegistrarPagoFallido = 'registrar_pago_fallido';
+  static const String rpcGenerarLiquidaciones = 'generar_liquidaciones';
   static const String rpcAdminResumenKpis = 'admin_resumen_kpis';
 
   // ── Conceptos de pago (metadata de Stripe) ────────────────

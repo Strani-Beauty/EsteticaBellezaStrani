@@ -194,10 +194,13 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                     if (t != null &&
                         t.estado == EstadoTratamiento.pendienteFirma) {
                       navigator.push(MaterialPageRoute(
-                        builder: (_) => FirmaConsentimientoScreen(
-                          tratamientoId: t.id,
-                          pacienteId: t.pacienteId,
-                          tipoConsentimiento: 'TRATAMIENTO_ESTETICO',
+                        builder: (_) => BlocProvider<TreatmentExecutionCubit>.value(
+                          value: cubit,
+                          child: FirmaConsentimientoScreen(
+                            tratamientoId: t.id,
+                            pacienteId: t.pacienteId,
+                            tipoConsentimiento: 'TRATAMIENTO_ESTETICO',
+                          ),
                         ),
                       ));
                     }
@@ -400,7 +403,28 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
           ? 'Llegada registrada a ${distancia.toStringAsFixed(0)} m del domicilio.'
           : 'Llegada registrada.');
     } on GeoServiceException catch (e) {
-      _mensaje('No se pudo obtener tu ubicación: ${e.message}');
+      // Si el GPS falla (permiso denegado, país distinto, etc.) y la
+      // simulación está habilitada, registra la llegada con las coordenadas
+      // del domicilio para no bloquear el flujo de la cita.
+      final st = cubit.state;
+      final puedeSimular = st is TreatmentExecutionLoaded &&
+          st.simularLlegada &&
+          cita.latitud != null &&
+          cita.longitud != null;
+      if (!puedeSimular) {
+        _mensaje('No se pudo obtener tu ubicación: ${e.message}');
+        return;
+      }
+      if (!mounted) return;
+      final distancia = await cubit.simularLlegada(
+        citaId: cita.id,
+        latitud: cita.latitud!,
+        longitud: cita.longitud!,
+      );
+      if (!mounted) return;
+      _mensaje(distancia != null
+          ? 'GPS no disponible: llegada simulada a ${distancia.toStringAsFixed(0)} m del domicilio.'
+          : 'GPS no disponible: llegada simulada.');
     }
   }
 
@@ -640,6 +664,10 @@ class _ProductosSection extends StatelessWidget {
 
   Future<void> _dialogoProducto(
       BuildContext context, String tratamientoId, String? unidadSugerida) async {
+    // El cubit se captura ANTES del showDialog: el context del builder del
+    // diálogo no está bajo el BlocProvider de la pantalla y un read ahí
+    // lanzaría ProviderNotFoundException (silencioso en release).
+    final cubit = context.read<TreatmentExecutionCubit>();
     final nombre = TextEditingController();
     final fabricante = TextEditingController();
     final lote = TextEditingController();
@@ -703,7 +731,7 @@ class _ProductosSection extends StatelessWidget {
             onPressed: () {
               final n = nombre.text.trim();
               if (n.isEmpty) return;
-              context.read<TreatmentExecutionCubit>().agregarProducto(
+              cubit.agregarProducto(
                     tratamientoId: tratamientoId,
                     productoNombre: n,
                     fabricante: fabricante.text.trim().isEmpty
@@ -753,10 +781,13 @@ class _FirmaSection extends StatelessWidget {
             : FilledButton.tonal(
                 onPressed: () {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => FirmaConsentimientoScreen(
-                      tratamientoId: tratamiento.id,
-                      pacienteId: tratamiento.pacienteId,
-                      tipoConsentimiento: 'TRATAMIENTO_ESTETICO',
+                    builder: (_) => BlocProvider<TreatmentExecutionCubit>.value(
+                      value: context.read<TreatmentExecutionCubit>(),
+                      child: FirmaConsentimientoScreen(
+                        tratamientoId: tratamiento.id,
+                        pacienteId: tratamiento.pacienteId,
+                        tipoConsentimiento: 'TRATAMIENTO_ESTETICO',
+                      ),
                     ),
                   ));
                 },

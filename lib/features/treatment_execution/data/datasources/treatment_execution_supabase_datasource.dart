@@ -246,6 +246,7 @@ class TreatmentExecutionSupabaseDataSource {
       'tratamiento_id': tratamientoId,
       'paciente_id': pacienteId,
       'tipo_consentimiento': tipoConsentimiento,
+      'documento_url': firmaUrl,
       'firma_url': firmaUrl,
       'fecha_firma': now,
     }).select().maybeSingle();
@@ -469,6 +470,10 @@ class TreatmentExecutionSupabaseDataSource {
           'vista': p['vista'],
           'coordenada_x': p['coordenada_x'],
           'coordenada_y': p['coordenada_y'],
+          // `cantidad` y `unidad_medida` son NOT NULL en BD: se envían siempre
+          // con valores por defecto aunque el punto no tenga producto.
+          'cantidad': 1,
+          'unidad_medida': 'u',
         };
         final productoId = p['producto_id'];
         if (productoId is String && productoId.isNotEmpty) {

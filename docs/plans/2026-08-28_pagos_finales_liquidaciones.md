@@ -173,3 +173,35 @@ pperrez) se corrigieron y documentaron:
   (`https://www.google.com/maps/search/?api=1&query=lat,lng`) si `google.navigation:` falla,
   evitando la pantalla en blanco.
 - Verificación: `flutter analyze` 0 issues, `flutter test` 366/366.
+
+## Complementos de pruebas G3 (segundo commit posterior — fixes de flujo de ejecución)
+
+- **Fallback GPS → llegada simulada**: en `cita_detalle_screen.dart` `_llegarAlDomicilio`,
+  si el GPS falla (`GeoServiceException`, p. ej. permiso denegado) y `simular_llegada` está
+  habilitada y la cita tiene coordenadas, registra la llegada con las coordenadas del
+  domicilio en vez de bloquear el flujo («GPS no disponible: llegada simulada…»).
+- **Provider de la firma**: los dos `MaterialPageRoute` a `FirmaConsentimientoScreen`
+  (tras `iniciarTratamiento` y botón «Firmar») ahora envuelven la pantalla en
+  `BlocProvider<TreatmentExecutionCubit>.value` — una ruta empujada no hereda el provider
+  de la ruta y el `context.read` interno lanzaba `ProviderNotFoundException`.
+- **`documento_url` NOT NULL**: `registrarConsentimiento` ahora envía `documento_url`
+  (= `firmaUrl`) junto a `firma_url` (columna NOT NULL → error 23502 al guardar la firma).
+- **Diálogo de insumos**: `_dialogoProducto` captura `final cubit = context.read<...>()`
+  ANTES de `showDialog` (el context del builder del diálogo no está bajo el BlocProvider);
+  el botón Guardar usa `cubit.agregarProducto(...)`.
+- **Fotos Pre/Post en el grid**: dos partes —
+  (a) `subirFotografia` devuelve `_withSignedUrl(model)` para mostrar la foto al instante;
+  (b) `uploadBinary` devuelve el path CON el prefijo del bucket
+  (`fotografias-tratamiento/<tratamiento>/<archivo>`), pero `createSignedUrl` espera un
+  path RELATIVO: `_signedUrl` normaliza el prefijo y `subirFotografia` guarda `archivo_url`
+  sin prefijo. Sin esto CachedNetworkImage mostraba la imagen rota.
+- **Face Map — panel de producto**: `_abrirPanelProducto` captura el cubit ANTES de
+  `showModalBottomSheet` (misma clase de bug: el context del bottom sheet no está bajo el
+  provider); el panel «cantidad de producto» ahora abre y guarda.
+- **Face Map — zonas prohibidas**: `_defaultForbiddenRegions` usaba `Rect.fromLTWH` con
+  valores LTRB (cajas gigantes mal ubicadas); ahora `Rect.fromLTRB` igual que la pantalla
+  del paciente.
+- **Face Map — `cantidad`/`unidad_medida` NOT NULL**: `guardarFaceMapPorTratamiento` envía
+  siempre `cantidad: 1`, `unidad_medida: 'u'` como default en el mapa literal (error 23502
+  al guardar puntos sin producto).
+- Verificación: `flutter analyze` 0 issues, `flutter test` 366/366.

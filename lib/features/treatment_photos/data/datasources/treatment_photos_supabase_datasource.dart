@@ -42,9 +42,15 @@ class TreatmentPhotosSupabaseDataSource {
 
   Future<String> _signedUrl(String path) async {
     try {
+      // uploadBinary puede devolver el path con el prefijo del bucket
+      // (`fotografias-tratamiento/<tratamiento>/<archivo>`); createSignedUrl
+      // espera el path RELATIVO al bucket, así que se normaliza.
+      final clean = path.startsWith('${AppConstants.bucketFotografias}/')
+          ? path.substring(AppConstants.bucketFotografias.length + 1)
+          : path;
       final res = await _client.storage
           .from(AppConstants.bucketFotografias)
-          .createSignedUrl(path, 3600);
+          .createSignedUrl(clean, 3600);
       return res;
     } catch (_) {
       return path;
@@ -69,11 +75,19 @@ class TreatmentPhotosSupabaseDataSource {
         .from(AppConstants.bucketFotografias)
         .uploadBinary(path, bytes);
 
+    // uploadBinary devuelve el path con el prefijo del bucket
+    // (`fotografias-tratamiento/<tratamiento>/<archivo>`); se guarda el path
+    // RELATIVO al bucket para createSignedUrl (mismo formato que el resto).
+    final storedPath =
+        uploadResult.startsWith('${AppConstants.bucketFotografias}/')
+            ? uploadResult.substring(AppConstants.bucketFotografias.length + 1)
+            : uploadResult;
+
     final now = DateTime.now().toIso8601String();
     final payload = <String, dynamic>{
       'tratamiento_id': tratamientoId,
       'tipo_fotografia': tipoFotografia.toDb,
-      'archivo_url': uploadResult,
+      'archivo_url': storedPath,
       'fecha_captura': now,
       'descripcion': descripcion,
       'created_at': now,
@@ -88,7 +102,9 @@ class TreatmentPhotosSupabaseDataSource {
     if (res == null) {
       throw Exception('No se pudo registrar la fotografía');
     }
-    return FotografiaTratamientoModel.fromJson(res);
+    // La fila guarda el path de storage; se devuelve la URL firmada para que
+    // la tarjeta del grid la muestre inmediatamente (mismo criterio que fetch).
+    return _withSignedUrl(FotografiaTratamientoModel.fromJson(res));
   }
 
   /// Registra una fotografía cuyo archivo ya existe en Storage (solo URL).

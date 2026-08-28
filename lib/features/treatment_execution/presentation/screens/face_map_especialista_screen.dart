@@ -236,7 +236,11 @@ class _FaceMapEspecialistaScreenState extends State<FaceMapEspecialistaScreen> {
   }
 
   Future<void> _abrirPanelProducto(InjectionPoint point) async {
-    final state = context.read<TreatmentExecutionCubit>().state;
+    // El cubit se captura ANTES del showModalBottomSheet: el context del builder
+    // del bottom sheet no está bajo el BlocProvider de la pantalla y un read
+    // ahí lanzaría ProviderNotFoundException (panel nunca abre).
+    final cubit = context.read<TreatmentExecutionCubit>();
+    final state = cubit.state;
     final productos = state is TreatmentExecutionLoaded
         ? state.productos
         : const <ProductoAplicadoEntity>[];
@@ -251,7 +255,7 @@ class _FaceMapEspecialistaScreenState extends State<FaceMapEspecialistaScreen> {
         tratamientoId: widget.tratamientoId,
         unidadSugerida: _unidadSugerida(tipoPrecio),
         datoInicial: _datosPorPunto[point.id] ?? _DatoPunto(),
-        cubit: context.read<TreatmentExecutionCubit>(),
+        cubit: cubit,
       ),
     );
     if (resultado == null || !mounted) return;
@@ -1087,9 +1091,9 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
       reason: 'Prohibido por la FDA y la sociedad de dermatología: riesgo '
           'grave de necrosis vascular y ceguera.',
       bounds: {
-        HeadView.izq: Rect.fromLTWH(0.300, 0.380, 0.380, 0.460),
-        HeadView.frente: Rect.fromLTWH(0.370, 0.380, 0.450, 0.460),
-        HeadView.der: Rect.fromLTWH(0.620, 0.380, 0.700, 0.460),
+        HeadView.izq: Rect.fromLTRB(0.300, 0.380, 0.380, 0.460),
+        HeadView.frente: Rect.fromLTRB(0.370, 0.380, 0.450, 0.460),
+        HeadView.der: Rect.fromLTRB(0.620, 0.380, 0.700, 0.460),
       },
     ),
     const ForbiddenRegion(
@@ -1098,7 +1102,7 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
       reason: 'Prohibido por la FDA y la sociedad de dermatología: riesgo '
           'grave de necrosis vascular y ceguera.',
       bounds: {
-        HeadView.frente: Rect.fromLTWH(0.550, 0.380, 0.630, 0.460),
+        HeadView.frente: Rect.fromLTRB(0.550, 0.380, 0.630, 0.460),
       },
     ),
     const ForbiddenRegion(
@@ -1107,9 +1111,9 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
       reason: 'Prohibido por la FDA y dermatología: alto riesgo de oclusión '
           'vascular y necrosis nasal.',
       bounds: {
-        HeadView.izq: Rect.fromLTWH(0.178, 0.497, 0.228, 0.557),
-        HeadView.frente: Rect.fromLTWH(0.470, 0.470, 0.530, 0.530),
-        HeadView.der: Rect.fromLTWH(0.747, 0.497, 0.797, 0.557),
+        HeadView.izq: Rect.fromLTRB(0.178, 0.497, 0.228, 0.557),
+        HeadView.frente: Rect.fromLTRB(0.470, 0.470, 0.530, 0.530),
+        HeadView.der: Rect.fromLTRB(0.747, 0.497, 0.797, 0.557),
       },
     ),
     const ForbiddenRegion(
@@ -1118,8 +1122,8 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
       reason: 'Prohibido para aplicación directa de inyectables sin guía '
           'ecográfica avanzada.',
       bounds: {
-        HeadView.izq: Rect.fromLTWH(0.482, 0.305, 0.542, 0.385),
-        HeadView.frente: Rect.fromLTWH(0.260, 0.320, 0.320, 0.400),
+        HeadView.izq: Rect.fromLTRB(0.482, 0.305, 0.542, 0.385),
+        HeadView.frente: Rect.fromLTRB(0.260, 0.320, 0.320, 0.400),
       },
     ),
     const ForbiddenRegion(
@@ -1128,8 +1132,8 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
       reason: 'Prohibido para aplicación directa de inyectables sin guía '
           'ecográfica avanzada.',
       bounds: {
-        HeadView.frente: Rect.fromLTWH(0.680, 0.320, 0.740, 0.400),
-        HeadView.der: Rect.fromLTWH(0.467, 0.330, 0.527, 0.410),
+        HeadView.frente: Rect.fromLTRB(0.680, 0.320, 0.740, 0.400),
+        HeadView.der: Rect.fromLTRB(0.467, 0.330, 0.527, 0.410),
       },
     ),
     const ForbiddenRegion(
@@ -1138,9 +1142,9 @@ List<ForbiddenRegion> _defaultForbiddenRegions() {
       reason: 'La FDA prohíbe explícitamente el uso de inyectables en grandes '
           'volúmenes para modelado corporal (como senos o glúteos).',
       bounds: {
-        HeadView.izq: Rect.fromLTWH(0.100, 0.940, 0.900, 1.000),
-        HeadView.frente: Rect.fromLTWH(0.100, 0.940, 0.900, 1.000),
-        HeadView.der: Rect.fromLTWH(0.100, 0.940, 0.900, 1.000),
+        HeadView.izq: Rect.fromLTRB(0.100, 0.940, 0.900, 1.000),
+        HeadView.frente: Rect.fromLTRB(0.100, 0.940, 0.900, 1.000),
+        HeadView.der: Rect.fromLTRB(0.100, 0.940, 0.900, 1.000),
       },
     ),
   ];

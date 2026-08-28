@@ -162,6 +162,14 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                   label: 'Navegar al domicilio',
                   onPressed: () => _abrirNavegacion(cita),
                 ),
+                if (state.simularLlegada) ...[
+                  const SizedBox(height: 8),
+                  _AccionSecundaria(
+                    icon: Icons.bolt_rounded,
+                    label: 'Simular llegada (pruebas)',
+                    onPressed: () => _simularLlegada(cita),
+                  ),
+                ],
               ],
               if (cita.estado == EstadoCitaEjecucion.llego)
                 _AccionButton(
@@ -326,6 +334,8 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
     final lng = cita.longitud;
     final Uri uri;
     if (lat != null && lng != null) {
+      // Intentamos primero la app de Google Maps (navigation) y, si falla,
+      // el modo "ver mapa" web como respaldo (evita la pantalla en blanco).
       uri = Uri.parse('google.navigation:q=$lat,$lng');
     } else {
       final q = Uri.encodeComponent(
@@ -333,13 +343,39 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
       uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$q');
     }
     try {
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      var ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && lat != null && lng != null) {
+        final web = Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+        ok = await launchUrl(web, mode: LaunchMode.externalApplication);
+      }
       if (!ok && mounted) {
         _mensaje('No se pudo abrir la aplicación de mapas.');
       }
     } catch (_) {
       if (mounted) _mensaje('No se pudo abrir la aplicación de mapas.');
     }
+  }
+
+  /// Simula la llegada del especialista al domicilio usando las coordenadas
+  /// del paciente (pruebas; el GPS real puede no corresponder al país).
+  Future<void> _simularLlegada(CitaEjecucionEntity cita) async {
+    final lat = cita.latitud;
+    final lng = cita.longitud;
+    if (lat == null || lng == null) {
+      _mensaje('La cita no tiene coordenadas del domicilio para simular.');
+      return;
+    }
+    final cubit = context.read<TreatmentExecutionCubit>();
+    final distancia = await cubit.simularLlegada(
+      citaId: cita.id,
+      latitud: lat,
+      longitud: lng,
+    );
+    if (!mounted) return;
+    _mensaje(distancia != null
+        ? 'Llegada simulada a ${distancia.toStringAsFixed(0)} m del domicilio.'
+        : 'Llegada simulada.');
   }
 
   /// Act. 8: registra la llegada del especialista con GPS (estado LLEGO +

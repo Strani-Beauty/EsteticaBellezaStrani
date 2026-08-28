@@ -298,6 +298,18 @@ class TreatmentExecutionSupabaseDataSource {
     );
   }
 
+  /// Indica si la simulación de llegada está habilitada (configuración de
+  /// pruebas). Lee la clave `simular_llegada` de `configuracion_sistema`.
+  Future<bool> fetchSimularLlegada() async {
+    final res = await _client
+        .from('configuracion_sistema')
+        .select('valor')
+        .eq('clave', AppConstants.simularLlegadaClave)
+        .maybeSingle();
+    final valor = res?['valor'];
+    return valor == null || valor.toString().toLowerCase() == 'true';
+  }
+
   /// Cancela la cita y la deja sin valor (estado CANCELADA) vía RPC, que valida
   /// la transición y registra el motivo + usuario en `historial_estados`.
   Future<void> cancelarCita({

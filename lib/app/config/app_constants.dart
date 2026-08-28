@@ -115,6 +115,11 @@ class AppConstants {
   static const String conceptoDeposito = 'DEPOSITO';
   static const String conceptoSaldo = 'SALDO';
 
+  // ── Claves de configuración del sistema ─────────────────────
+  /// Cuando es 'true', el especialista puede simular la llegada al domicilio
+  /// usando las coordenadas del paciente (útil en pruebas fuera del país).
+  static const String simularLlegadaClave = 'simular_llegada';
+
   // ── Presencia (online/offline) ─────────────────────────────
   /// Intervalo del heartbeat de presencia mientras la app está en foreground.
   static const Duration heartbeatPresencia = Duration(seconds: 60);

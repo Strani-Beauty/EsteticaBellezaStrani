@@ -108,6 +108,10 @@ abstract class ITreatmentExecutionRepository {
     String? motivo,
   });
 
+  /// Indica si la simulación de llegada al domicilio está habilitada
+  /// (configuración de pruebas `simular_llegada`).
+  Future<Either<Failure, bool>> getSimularLlegada();
+
   /// Devuelve el face map del especialista para el tratamiento (o el del
   /// paciente pre-tratamiento si el especialista aún no guarda uno), con sus
   /// puntos. `null` si no existe ningún mapa.

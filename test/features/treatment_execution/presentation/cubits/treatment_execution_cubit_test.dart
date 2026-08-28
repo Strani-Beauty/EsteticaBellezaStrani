@@ -22,6 +22,7 @@ import 'package:esteticaybellezastrani/features/treatment_execution/domain/useca
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_face_map_por_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_mis_citas.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_productos.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_simular_llegada.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/guardar_face_map_por_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/iniciar_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/registrar_consentimiento.dart';
@@ -55,6 +56,7 @@ TreatmentExecutionCubit _buildCubit(
     getFotografias: GetFotografias(photosRepo),
     getFaceMapPorTratamiento: GetFaceMapPorTratamiento(repo),
     guardarFaceMapPorTratamiento: GuardarFaceMapPorTratamiento(repo),
+    getSimularLlegada: GetSimularLlegada(repo),
   );
 }
 
@@ -198,6 +200,8 @@ void main() {
             .thenAnswer((_) async => Right(consentimiento));
         when(() => photosRepo.getFotografias('trat-1'))
             .thenAnswer((_) async => Right([foto]));
+        when(() => repo.getSimularLlegada())
+            .thenAnswer((_) async => const Right(false));
       },
       act: (cubit) => cubit.loadDetalle(citaId: 'cita-1'),
       expect: () => [
@@ -223,6 +227,8 @@ void main() {
         );
         when(() => repo.getCitaDetalle('cita-1'))
             .thenAnswer((_) async => Right(citaSinTratamiento));
+        when(() => repo.getSimularLlegada())
+            .thenAnswer((_) async => const Right(false));
       },
       act: (cubit) => cubit.loadDetalle(citaId: 'cita-1'),
       expect: () => [
@@ -243,6 +249,8 @@ void main() {
       setUp: () {
         when(() => repo.getCitaDetalle('cita-1'))
             .thenAnswer((_) async => const Left(ServerFailure('boom')));
+        when(() => repo.getSimularLlegada())
+            .thenAnswer((_) async => const Right(false));
       },
       act: (cubit) => cubit.loadDetalle(citaId: 'cita-1'),
       expect: () => [

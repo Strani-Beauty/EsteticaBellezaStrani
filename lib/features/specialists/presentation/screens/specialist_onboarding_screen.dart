@@ -99,7 +99,10 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
   void _syncDesdeEstado(SpecialistsLoaded state) {
     final especialista = state.especialista;
     if (especialista != null) {
-      _medicoRegenteId = especialista.medicoRegenteId;
+      // Solo aplica el médico regente si el usuario aún no eligió uno en esta
+      // sesión; si lo sobrescribe siempre, cada rebuild del Stepper borra la
+      // selección (especialistas ya existentes con medico_regente_id NULL).
+      _medicoRegenteId ??= especialista.medicoRegenteId;
       if (_licenciaCtrl.text.isEmpty) {
         _licenciaCtrl.text = especialista.numeroLicencia ?? '';
       }

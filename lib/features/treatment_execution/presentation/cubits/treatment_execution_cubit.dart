@@ -22,6 +22,7 @@ import '../../domain/usecases/get_face_map_por_tratamiento.dart';
 import '../../domain/usecases/guardar_face_map_por_tratamiento.dart';
 import '../../domain/usecases/get_mis_citas.dart';
 import '../../domain/usecases/get_productos.dart';
+import '../../domain/usecases/get_simular_llegada.dart';
 import '../../domain/usecases/iniciar_tratamiento.dart';
 import '../../domain/usecases/registrar_consentimiento.dart';
 import '../../domain/usecases/cancelar_cita.dart';
@@ -53,6 +54,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
   final List<FotografiaTratamientoEntity> fotografias;
   final FaceMapEspecialistaEntity? faceMap;
   final bool trabajando;
+  final bool simularLlegada;
 
   const TreatmentExecutionLoaded({
     this.citas = const [],
@@ -63,6 +65,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
     this.fotografias = const [],
     this.faceMap,
     this.trabajando = false,
+    this.simularLlegada = false,
   });
 
   TreatmentExecutionLoaded copyWith({
@@ -74,6 +77,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
     List<FotografiaTratamientoEntity>? fotografias,
     FaceMapEspecialistaEntity? faceMap,
     bool? trabajando,
+    bool? simularLlegada,
   }) {
     return TreatmentExecutionLoaded(
       citas: citas ?? this.citas,
@@ -84,6 +88,7 @@ class TreatmentExecutionLoaded extends TreatmentExecutionState {
       fotografias: fotografias ?? this.fotografias,
       faceMap: faceMap ?? this.faceMap,
       trabajando: trabajando ?? this.trabajando,
+      simularLlegada: simularLlegada ?? this.simularLlegada,
     );
   }
 }
@@ -116,6 +121,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
   final GetFotografias _getFotografias;
   final GetFaceMapPorTratamiento _getFaceMapPorTratamiento;
   final GuardarFaceMapPorTratamiento _guardarFaceMapPorTratamiento;
+  final GetSimularLlegada _getSimularLlegada;
 
   TreatmentExecutionCubit({
     required GetMisCitas getMisCitas,
@@ -136,6 +142,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     required GetFotografias getFotografias,
     required GetFaceMapPorTratamiento getFaceMapPorTratamiento,
     required GuardarFaceMapPorTratamiento guardarFaceMapPorTratamiento,
+    required GetSimularLlegada getSimularLlegada,
   })  : _getMisCitas = getMisCitas,
         _getCitaDetalle = getCitaDetalle,
         _getProductos = getProductos,
@@ -154,6 +161,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
         _getFotografias = getFotografias,
         _getFaceMapPorTratamiento = getFaceMapPorTratamiento,
         _guardarFaceMapPorTratamiento = guardarFaceMapPorTratamiento,
+        _getSimularLlegada = getSimularLlegada,
         super(const TreatmentExecutionInitial());
 
   TreatmentExecutionLoaded? get _loaded =>
@@ -198,6 +206,10 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     String? error;
     citaResult.fold((f) => error = f.message, (c) => cita = c);
 
+    bool simularLlegada = false;
+    final simResult = await _getSimularLlegada();
+    simResult.fold((f) {}, (v) => simularLlegada = v);
+
     List<ProductoAplicadoEntity> productos = [];
     ConsentimientoTratamientoEntity? consentimiento;
     List<FotografiaTratamientoEntity> fotografias = [];
@@ -222,6 +234,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
       productos: productos,
       consentimiento: consentimiento,
       fotografias: fotografias,
+      simularLlegada: simularLlegada,
     ));
   }
 
@@ -423,6 +436,38 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
       (f) => emit(TreatmentExecutionError(f.message)),
       (d) => distancia = d,
     );
+    emit(current.copyWith(trabajando: false));
+    return distancia;
+  }
+
+  /// Simula la llegada al domicilio usando las coordenadas del paciente
+  /// (para pruebas cuando el GPS real no corresponde al país de la cita).
+  Future<double?> simularLlegada({
+    required String citaId,
+    required double latitud,
+    required double longitud,
+  }) async {
+    final current = _loaded;
+    if (current == null) return null;
+    emit(current.copyWith(trabajando: true));
+    final avanzado = await _avanzarEstadoCita(AvanzarEstadoCitaParams(
+      citaId: citaId,
+      nuevoEstado: EstadoCitaEjecucion.llego,
+    ));
+    double? distancia;
+    await avanzado.fold((f) async {
+      emit(TreatmentExecutionError(f.message));
+    }, (_) async {
+      final res = await _registrarLlegada(RegistrarLlegadaParams(
+        citaId: citaId,
+        latitud: latitud,
+        longitud: longitud,
+      ));
+      res.fold(
+        (f) => emit(TreatmentExecutionError(f.message)),
+        (d) => distancia = d,
+      );
+    });
     emit(current.copyWith(trabajando: false));
     return distancia;
   }

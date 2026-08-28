@@ -243,6 +243,16 @@ class TreatmentExecutionRepositoryImpl
   }
 
   @override
+  Future<Either<Failure, bool>> getSimularLlegada() async {
+    try {
+      final simul = await _dataSource.fetchSimularLlegada();
+      return Right(simul);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> cancelarCita({
     required String citaId,
     String? motivo,

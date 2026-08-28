@@ -143,3 +143,33 @@ El flujo de depósito/adelanto con Stripe ya está implementado de punta a punta
   fuera de alcance (documentado, sin tocar).
 - El botón «Generar liquidación» usa `sl<IPaymentsRepository>().generarLiquidaciones(...)`
   directamente (mismo patrón que el resto de pantallas de pago).
+- La migración `20260828000100` se aplicó al remoto vía `supabase db push` y se commiteó
+  en `dca4bfb` (junto con webhook, capa Dart, admin de conciliación y botón de liquidación).
+
+## Complementos de pruebas G3 (misma fecha, commit posterior)
+
+Durante las pruebas G3 manuales (especialista Dr. Carlos Medina ejecutando la cita de
+pperrez) se corrigieron y documentaron:
+
+- **Fix P0001 (docs «Continuar» en especialista APROBADO)**: `specialist_documents_screen.dart`
+  ya no llama `solicitarVerificacion` si `estadoVerificacion == APROBADO` (evita el trigger
+  `proteger_verificacion_especialista` «Solo el administrador…»). El dueño solo puede
+  auto-solicitar `PENDIENTE/RECHAZADO → EN_REVISION`.
+- **Fix bucle de onboarding (médico regente no persistía)**: `specialist_onboarding_screen.dart`
+  `_syncDesdeEstado` sobrescribía `_medicoRegenteId` con el valor BD (NULL) en cada rebuild
+  del Stepper, borrando la selección del dropdown; ahora usa `_medicoRegenteId ??=` (siembra
+  solo en carga inicial). Sin esto el especialista volvía a Completar perfil en bucle.
+- **RLS citas 42P17 (mapa/ubicación)**: migración `20260828000200_fix_rls_citas_recursion.sql`
+  (helper SECURITY DEFINER `paciente_auth_es_dueno_cita` + `cita_paciente_select` sin
+  subquery recursiva) — aplicada al remoto.
+- **Simulación de llegada (pruebas en otro país)**: migración `20260828000300_simular_llegada_config.sql`
+  seed `simular_llegada='true'` (BOOLEAN). `cita_detalle_screen.dart` muestra el botón
+  «Simular llegada (pruebas)» en EN_CAMINO cuando `state.simularLlegada`; usa las
+  coordenadas del domicilio del paciente (`cita.latitud/longitud`) en vez del GPS real,
+  con `avanzar(LLEGO)` + RPC `registrar_llegada_especialista` (distancia ~0 m). Capa nueva:
+  `get_simular_llegada.dart` usecase + `fetchSimularLlegada()` en datasource + `simularLlegada`
+  en el estado/cubit + DI. En producción `simular_llegada` debe quedar en `false`.
+- **Navegación robusta**: `_abrirNavegacion` reintenta con Google Maps web
+  (`https://www.google.com/maps/search/?api=1&query=lat,lng`) si `google.navigation:` falla,
+  evitando la pantalla en blanco.
+- Verificación: `flutter analyze` 0 issues, `flutter test` 366/366.

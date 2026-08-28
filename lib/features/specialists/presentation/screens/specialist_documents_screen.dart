@@ -12,6 +12,7 @@ import '../../../auth_users/presentation/cubits/auth_cubit.dart';
 import '../../../notifications/presentation/cubits/notifications_cubit.dart';
 import '../../../notifications/presentation/widgets/notificaciones_bell.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
+import '../../domain/entities/especialista_entity.dart';
 import '../cubits/specialists_cubit.dart';
 import '../widgets/documentos_requeridos.dart';
 
@@ -250,9 +251,17 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
   void _continuar() {
     if (!_completo) return;
     final cubit = context.read<SpecialistsCubit>();
-    // Al completar los documentos obligatorios se mueve la solicitud a
-    // EN_REVISION: el especialista queda a la espera de validación del admin.
-    cubit.solicitarVerificacion(especialistaId: widget.especialistaId);
+    final state = cubit.state;
+    // Si el especialista ya está APROBADO no debe degradarse a EN_REVISION
+    // (trigger `proteger_verificacion_especialista` lo bloquea): solo se
+    // solicita verificación para PENDIENTE/RECHAZADO.
+    final yaAprobado = state is SpecialistsLoaded &&
+        state.especialista?.estadoVerificacion == EstadoVerificacion.aprobado;
+    if (!yaAprobado) {
+      // Al completar los documentos obligatorios se mueve la solicitud a
+      // EN_REVISION: el especialista queda a la espera de validación del admin.
+      cubit.solicitarVerificacion(especialistaId: widget.especialistaId);
+    }
     context.go(AppRoutes.specialistHome);
   }
 }

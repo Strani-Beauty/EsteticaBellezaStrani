@@ -152,6 +152,7 @@ import 'package:esteticaybellezastrani/features/treatment_execution/domain/useca
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/guardar_face_map_por_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_mis_citas.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_productos.dart';
+import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/get_simular_llegada.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/iniciar_tratamiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/registrar_consentimiento.dart';
 import 'package:esteticaybellezastrani/features/treatment_execution/domain/usecases/registrar_llegada.dart';
@@ -490,6 +491,7 @@ void _registerTreatmentExecution() {
       guardarFaceMapPorTratamiento: GuardarFaceMapPorTratamiento(
         sl<ITreatmentExecutionRepository>(),
       ),
+      getSimularLlegada: GetSimularLlegada(sl<ITreatmentExecutionRepository>()),
     ),
   );
 }

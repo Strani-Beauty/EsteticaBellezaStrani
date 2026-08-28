@@ -936,7 +936,13 @@ class _PanelProductoPuntoState extends State<_PanelProductoPunto> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
+              // `Wrap` en lugar de `Row`+`Spacer`: el contenido del bottom sheet
+              // puede llegar con ancho no acotado (BoxConstraints infinita) y
+              // un Spacer dentro de una Row lanza 'infinite width'.
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: 12,
+                runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
                     onPressed: _guardando
@@ -949,7 +955,6 @@ class _PanelProductoPuntoState extends State<_PanelProductoPunto> {
                       foregroundColor: Colors.red,
                     ),
                   ),
-                  const Spacer(),
                   ElevatedButton.icon(
                     onPressed: _guardando ? null : _guardar,
                     icon: _guardando

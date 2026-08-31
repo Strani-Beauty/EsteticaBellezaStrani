@@ -409,7 +409,8 @@ class PaymentsSupabaseDataSource {
       String citaId) async {
     final res = await _client
         .from('citas')
-        .select('id, solicitud_id, solicitudes(pagos)')
+        .select(
+            'id, solicitud_id, solicitudes(pagos(monto_total, deposito, saldo_pendiente, estado))')
         .eq('id', citaId)
         .maybeSingle();
     if (res == null) return null;

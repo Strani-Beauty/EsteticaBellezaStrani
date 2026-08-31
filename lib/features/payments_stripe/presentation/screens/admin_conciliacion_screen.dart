@@ -184,9 +184,79 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
   }
 
   Widget _buildDetalle(AdminConciliacionLoaded state) {
+    final desde = _desde;
+    final hasta = _hasta;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Seleccionar cita',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.cDeepAccent,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Citas finalizadas y pagadas del período. Toca una para '
+                  'ver su detalle financiero.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  desde != null && hasta != null
+                      ? 'Período: ${_fmtFecha(desde)} → ${_fmtFecha(hasta)}'
+                      : 'Período por defecto: última semana completa '
+                          '(lunes a domingo).',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.cMutedText),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.date_range, size: 18),
+                  label: const Text('Seleccionar período'),
+                  onPressed: () => _seleccionarPeriodo(state),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (state.cargandoCitas)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (state.citasFinalizadas.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text('No hay citas terminadas elegibles en el período.'),
+            ),
+          )
+        else
+          for (final c in state.citasFinalizadas)
+            _CitaSeleccionableTile(
+              cita: c,
+              onSeleccionar: () => context
+                  .read<AdminConciliacionCubit>()
+                  .consultarDetalle(c.citaId),
+            ),
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 8),
+        const Text(
+          '¿Conoces el ID? Consulta directa',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
         TextField(
           controller: _citaController,
           keyboardType: TextInputType.text,
@@ -210,6 +280,7 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
         ),
         const SizedBox(height: 16),
         if (state.detalle != null) _DetalleFinancieroCard(state.detalle!),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -580,6 +651,100 @@ class _CitaTerminadaTile extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _monto(String label, double monto) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label: ',
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
+          Text('\$${monto.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 12)),
+        ],
+      );
+}
+
+/// Cita seleccionable para ver su detalle financiero.
+/// Muestra Paciente · Servicio · Fecha · Especialista.
+class _CitaSeleccionableTile extends StatelessWidget {
+  final CitaFinalizadaAdminEntity cita;
+  final VoidCallback onSeleccionar;
+
+  const _CitaSeleccionableTile({required this.cita, required this.onSeleccionar});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onSeleccionar,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            cita.pacienteNombre ?? 'Paciente',
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        if (cita.especialistaNombre != null)
+                          Text(
+                            cita.especialistaNombre!,
+                            style: const TextStyle(
+                                fontSize: 12, color: AppTheme.cMutedText),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                    if (cita.servicios.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Servicio(s): ${cita.servicios.join(', ')}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.cMutedText),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (cita.fechaFinalizacion != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Finalizada: ${cita.fechaFinalizacion!.toLocal()}',
+                        style: const TextStyle(
+                            fontSize: 11, color: AppTheme.cMutedText),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      children: [
+                        _monto('Total', cita.montoTotal),
+                        _monto('Depósito', cita.deposito),
+                        _monto('Saldo', cita.saldoPendiente),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.cDeepAccent.withValues(alpha: 0.6),
+              ),
+            ],
+          ),
         ),
       ),
     );

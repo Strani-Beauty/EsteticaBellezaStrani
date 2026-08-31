@@ -494,7 +494,9 @@ class _LiquidacionCard extends StatelessWidget {
                 onTap: () => onCambiarEstado(EstadoLiquidacion.enRevision.db),
               ),
             if (liquidacion.estado == EstadoLiquidacion.enRevision)
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _botonAccion(
                     context,
@@ -503,7 +505,6 @@ class _LiquidacionCard extends StatelessWidget {
                     color: AppTheme.cBrandGreen,
                     onTap: () => onCambiarEstado(EstadoLiquidacion.aprobada.db),
                   ),
-                  const SizedBox(width: 8),
                   _botonAccion(
                     context,
                     icon: Icons.cancel_outlined,

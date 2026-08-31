@@ -251,7 +251,11 @@ class AdminMasterDataSupabaseDataSource {
         .from('citas')
         .select('''
         id, solicitud_id, fecha_finalizacion, especialista_id,
-        solicitudes(pagos(monto_total, deposito, saldo_pendiente, estado)),
+        solicitudes(
+          pagos(monto_total, deposito, saldo_pendiente, estado),
+          pacientes(profiles(full_name)),
+          solicitud_detalles(servicios(nombre))
+        ),
         especialistas(usuario_id, profiles!especialistas_usuario_id_fkey(full_name))
       ''')
         .eq('estado', AppConstants.citaFinalizada)
@@ -299,6 +303,31 @@ class AdminMasterDataSupabaseDataSource {
         }
       }
 
+      String? pacienteNombre;
+      final servicios = <String>[];
+      if (solicitudes is Map<String, dynamic>) {
+        final pacientes = solicitudes['pacientes'];
+        if (pacientes is Map<String, dynamic>) {
+          final profile = pacientes['profiles'];
+          if (profile is Map<String, dynamic>) {
+            pacienteNombre = profile['full_name']?.toString();
+          }
+        }
+        final detalles = solicitudes['solicitud_detalles'];
+        if (detalles is List) {
+          for (final d in detalles) {
+            if (d is! Map) continue;
+            final s = d['servicios'];
+            if (s is Map) {
+              final nombreServicio = s['nombre']?.toString();
+              if (nombreServicio != null && nombreServicio.isNotEmpty) {
+                servicios.add(nombreServicio);
+              }
+            }
+          }
+        }
+      }
+
       out.add(CitaFinalizadaAdminEntity(
         citaId: citaId,
         solicitudId: json['solicitud_id']?.toString(),
@@ -309,6 +338,8 @@ class AdminMasterDataSupabaseDataSource {
         deposito: (pago?['deposito'] as num?)?.toDouble() ?? 0,
         saldoPendiente: saldo,
         estadoPago: estadoPago,
+        pacienteNombre: pacienteNombre,
+        servicios: servicios,
       ));
     }
     return out;

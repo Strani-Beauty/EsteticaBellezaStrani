@@ -88,3 +88,22 @@ El RPC `generar_liquidaciones` (migración `20260828000100`) ya agrupa por espec
 - En producción `inicio_semana_liquidacion` puede ajustarse (1=lunes ... 7=domingo).
 - El bucket `comprobantes-pagos` es privado; solo admin sube/lee (URLs firmadas).
 - D4 (búsqueda/filtro por especialista) queda fuera de alcance de esta iteración.
+
+## Complementos posteriores (misma fecha)
+
+- **Fixes de pruebas del ciclo**: `admin_comisiones_screen.dart` — crash de layout al
+  enviar a revisión (botones Aprobar/Anular en `Row` con ancho ilimitado → `Wrap`,
+  patrón del fix `ed589e7`); migración `20260831000200_fix_check_metodo_pago.sql`
+  (el CHECK original de `pagos_especialistas.metodo_pago` era
+  `['ACH','ZELLE','TRANSFERENCIA','OTRO']` y el RPC `registrar_pago_especialista`
+  fallaba con `Transferencia` → se cambió a `['Transferencia','Efectivo','Cheque','Otro']`,
+  aplicada al remoto).
+- **Lista de citas en "Detalle por cita"**: el tab "Detalle por cita" de
+  `admin_conciliacion_screen.dart` ahora muestra, con el mismo selector de período del
+  corte, una lista de citas terminadas elegibles con **Paciente · Servicio(s) · Fecha ·
+  Especialista** (+ Total/Depósito/Saldo) para **seleccionar** una y ver su detalle
+  financiero (`consultarDetalle(citaId)`); se mantiene la consulta directa por UUID como
+  alternativa. `CitaFinalizadaAdminEntity` ganó `pacienteNombre` y `servicios`, y
+  `fetchCitasFinalizadasAdmin` amplía su select embebido con
+  `solicitudes(pacientes(profiles(full_name)), solicitud_detalles(servicios(nombre)))`.
+- Verificación: `flutter analyze` 0 issues; `flutter test` 366/366.

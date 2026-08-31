@@ -2,9 +2,9 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fpdart/fpdart.dart';
 
-import '../../../../app/core/error/failures.dart';
+import '../../../admin_master_data/domain/entities/financiero_entity.dart';
+import '../../../admin_master_data/domain/usecases/financiero_usecases.dart';
 import '../../domain/entities/comision_entity.dart';
 import '../../domain/entities/detalle_financiero_entity.dart';
 import '../../domain/entities/transaccion_entity.dart';
@@ -30,12 +30,18 @@ class AdminConciliacionLoaded extends AdminConciliacionState {
   final List<ComisionEntity> comisiones;
   final DetalleFinancieroCitaEntity? detalle;
   final bool generandoLiquidacion;
+  final List<CitaFinalizadaAdminEntity> citasFinalizadas;
+  final int inicioSemana;
+  final bool cargandoCitas;
 
   const AdminConciliacionLoaded({
     this.transacciones = const [],
     this.comisiones = const [],
     this.detalle,
     this.generandoLiquidacion = false,
+    this.citasFinalizadas = const [],
+    this.inicioSemana = 1,
+    this.cargandoCitas = false,
   });
 
   AdminConciliacionLoaded copyWith({
@@ -43,12 +49,18 @@ class AdminConciliacionLoaded extends AdminConciliacionState {
     List<ComisionEntity>? comisiones,
     DetalleFinancieroCitaEntity? detalle,
     bool? generandoLiquidacion,
+    List<CitaFinalizadaAdminEntity>? citasFinalizadas,
+    int? inicioSemana,
+    bool? cargandoCitas,
   }) {
     return AdminConciliacionLoaded(
       transacciones: transacciones ?? this.transacciones,
       comisiones: comisiones ?? this.comisiones,
       detalle: detalle ?? this.detalle,
       generandoLiquidacion: generandoLiquidacion ?? this.generandoLiquidacion,
+      citasFinalizadas: citasFinalizadas ?? this.citasFinalizadas,
+      inicioSemana: inicioSemana ?? this.inicioSemana,
+      cargandoCitas: cargandoCitas ?? this.cargandoCitas,
     );
   }
 }
@@ -64,27 +76,31 @@ class AdminConciliacionCubit extends Cubit<AdminConciliacionState> {
   final GetComisionesAdmin _getComisiones;
   final GetDetalleFinancieroCita _getDetalle;
   final GenerarLiquidaciones _generarLiquidaciones;
+  final GetCitasFinalizadasAdmin _getCitasFinalizadas;
+  final GetInicioSemanaLiquidacion _getInicioSemana;
 
   AdminConciliacionCubit({
     required GetTransaccionesAdmin getTransacciones,
     required GetComisionesAdmin getComisiones,
     required GetDetalleFinancieroCita getDetalle,
     required GenerarLiquidaciones generarLiquidaciones,
+    required GetCitasFinalizadasAdmin getCitasFinalizadas,
+    required GetInicioSemanaLiquidacion getInicioSemana,
   })  : _getTransacciones = getTransacciones,
         _getComisiones = getComisiones,
         _getDetalle = getDetalle,
         _generarLiquidaciones = generarLiquidaciones,
+        _getCitasFinalizadas = getCitasFinalizadas,
+        _getInicioSemana = getInicioSemana,
         super(const AdminConciliacionInitial());
 
   Future<void> load() async {
     emit(const AdminConciliacionLoading());
-    final results = await Future.wait([
-      _getTransacciones(const GetTransaccionesAdminParams()),
-      _getComisiones(),
-    ]);
-    final txEither = results[0] as Either<Failure, List<TransaccionEntity>>;
-    final comEither =
-        results[1] as Either<Failure, List<ComisionEntity>>;
+    final txEither =
+        await _getTransacciones(const GetTransaccionesAdminParams());
+    final comEither = await _getComisiones();
+    final inicioSemana =
+        (await _getInicioSemana()).getOrElse((l) => 1);
 
     final tx = txEither.getOrElse((l) => <TransaccionEntity>[]);
     final com = comEither.getOrElse((l) => <ComisionEntity>[]);
@@ -99,6 +115,7 @@ class AdminConciliacionCubit extends Cubit<AdminConciliacionState> {
     emit(AdminConciliacionLoaded(
       transacciones: tx,
       comisiones: com,
+      inicioSemana: inicioSemana,
     ));
   }
 
@@ -132,5 +149,40 @@ class AdminConciliacionCubit extends Cubit<AdminConciliacionState> {
         ? 'Liquidación generada: ${resp.especialistas} especialista(s), '
             '${resp.citas} cita(s), \$${resp.montoPagar.toStringAsFixed(2)} a pagar.'
         : resp.motivo;
+  }
+
+  /// Carga las citas terminadas (elegibles) del período seleccionado.
+  Future<void> cargarCitasPorPeriodo({
+    required DateTime desde,
+    required DateTime hasta,
+  }) async {
+    final current = state;
+    if (current is! AdminConciliacionLoaded) return;
+    emit(current.copyWith(citasFinalizadas: const [], cargandoCitas: true));
+    final result = await _getCitasFinalizadas(GetCitasFinalizadasAdminParams(
+      desde: desde,
+      hasta: hasta,
+    ));
+    result.fold(
+      (l) => emit(current.copyWith(cargandoCitas: false)),
+      (citas) => emit(
+          current.copyWith(citasFinalizadas: citas, cargandoCitas: false)),
+    );
+  }
+
+  /// Rango por defecto: última semana completa [lunes..domingo] según
+  /// `inicioSemana` (1=Lunes ... 7=Domingo) de la configuración del sistema.
+  ({DateTime desde, DateTime hasta}) rangoUltimaSemana(DateTime hoy) {
+    final inicio = state is AdminConciliacionLoaded
+        ? (state as AdminConciliacionLoaded).inicioSemana
+        : 1;
+    final inicioReal = (inicio >= 1 && inicio <= 7) ? inicio : 1;
+    final iso = hoy.weekday; // 1=Lunes ... 7=Domingo
+    final diff = (iso - inicioReal) % 7;
+    final lunes = DateTime(hoy.year, hoy.month, hoy.day).subtract(
+      Duration(days: diff + 7),
+    );
+    final domingo = lunes.add(const Duration(days: 6));
+    return (desde: lunes, hasta: domingo);
   }
 }

@@ -143,4 +143,100 @@ class AdminMasterDataRepositoryImpl implements IAdminMasterDataRepository {
           ServerFailure('No se pudieron cargar los pagos a especialistas: $e'));
     }
   }
+
+  @override
+  Future<Either<Failure, List<CitaFinalizadaAdminEntity>>>
+      getCitasFinalizadasAdmin({
+    required DateTime desde,
+    required DateTime hasta,
+  }) async {
+    try {
+      return Right(await _dataSource.fetchCitasFinalizadasAdmin(
+        desde: desde,
+        hasta: hasta,
+      ));
+    } catch (e) {
+      return Left(
+          ServerFailure('No se pudieron cargar las citas terminadas: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<DetalleLiquidacionEntity>>>
+      getLiquidacionDetalles(String liquidacionId) async {
+    try {
+      return Right(await _dataSource.fetchLiquidacionDetalles(liquidacionId));
+    } catch (e) {
+      return Left(ServerFailure('No se pudieron cargar los detalles: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> cambiarEstadoLiquidacion(
+      String liquidacionId, String nuevoEstado) async {
+    try {
+      return Right(await _dataSource.cambiarEstadoLiquidacion(
+          liquidacionId, nuevoEstado));
+    } catch (e) {
+      return Left(ServerFailure('No se pudo cambiar el estado: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> registrarPagoEspecialista({
+    required String liquidacionId,
+    required String metodoPago,
+    String? referenciaPago,
+    String? comprobanteUrl,
+    String? notas,
+    double? montoPagado,
+  }) async {
+    try {
+      return Right(await _dataSource.registrarPagoEspecialista(
+        liquidacionId: liquidacionId,
+        metodoPago: metodoPago,
+        referenciaPago: referenciaPago,
+        comprobanteUrl: comprobanteUrl,
+        notas: notas,
+        montoPagado: montoPagado,
+      ));
+    } catch (e) {
+      return Left(ServerFailure('No se pudo registrar el pago: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> subirComprobantePago({
+    required String liquidacionId,
+    required List<int> bytes,
+    required String nombreArchivo,
+  }) async {
+    try {
+      return Right(await _dataSource.subirComprobantePago(
+        liquidacionId: liquidacionId,
+        bytes: bytes,
+        nombreArchivo: nombreArchivo,
+      ));
+    } catch (e) {
+      return Left(ServerFailure('No se pudo subir el comprobante: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, int>> getInicioSemanaLiquidacion() async {
+    try {
+      return Right(await _dataSource.fetchInicioSemanaLiquidacion());
+    } catch (e) {
+      return Left(ServerFailure('No se pudo leer la configuración: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String?>> firmarComprobante(String path) async {
+    try {
+      return Right(await _dataSource.firmarComprobante(path));
+    } catch (e) {
+      return Left(ServerFailure('No se pudo firmar el comprobante: $e'));
+    }
+  }
 }

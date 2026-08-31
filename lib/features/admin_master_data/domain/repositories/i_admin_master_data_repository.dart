@@ -34,4 +34,28 @@ abstract class IAdminMasterDataRepository {
   // ── Comisiones / liquidaciones / pagos ────────────────────
   Future<Either<Failure, List<LiquidacionEntity>>> getLiquidaciones();
   Future<Either<Failure, List<PagoEspecialistaEntity>>> getPagosEspecialistas();
+  Future<Either<Failure, List<CitaFinalizadaAdminEntity>>>
+      getCitasFinalizadasAdmin({
+    required DateTime desde,
+    required DateTime hasta,
+  });
+  Future<Either<Failure, List<DetalleLiquidacionEntity>>> getLiquidacionDetalles(
+      String liquidacionId);
+  Future<Either<Failure, String>> cambiarEstadoLiquidacion(
+      String liquidacionId, String nuevoEstado);
+  Future<Either<Failure, String>> registrarPagoEspecialista({
+    required String liquidacionId,
+    required String metodoPago,
+    String? referenciaPago,
+    String? comprobanteUrl,
+    String? notas,
+    double? montoPagado,
+  });
+  Future<Either<Failure, String>> subirComprobantePago({
+    required String liquidacionId,
+    required List<int> bytes,
+    required String nombreArchivo,
+  });
+  Future<Either<Failure, int>> getInicioSemanaLiquidacion();
+  Future<Either<Failure, String?>> firmarComprobante(String path);
 }

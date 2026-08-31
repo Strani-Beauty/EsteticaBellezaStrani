@@ -554,6 +554,8 @@ void _registerPaymentsStripe() {
       getComisiones: sl<GetComisionesAdmin>(),
       getDetalle: sl<GetDetalleFinancieroCita>(),
       generarLiquidaciones: sl<GenerarLiquidaciones>(),
+      getCitasFinalizadas: sl<GetCitasFinalizadasAdmin>(),
+      getInicioSemana: sl<GetInicioSemanaLiquidacion>(),
     ),
   );
 }
@@ -641,6 +643,27 @@ void _registerAdminMasterData() {
   sl.registerLazySingleton<GetPagosEspecialistas>(
     () => GetPagosEspecialistas(sl<IAdminMasterDataRepository>()),
   );
+  sl.registerLazySingleton<GetCitasFinalizadasAdmin>(
+    () => GetCitasFinalizadasAdmin(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetLiquidacionDetalles>(
+    () => GetLiquidacionDetalles(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<CambiarEstadoLiquidacion>(
+    () => CambiarEstadoLiquidacion(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<RegistrarPagoEspecialista>(
+    () => RegistrarPagoEspecialista(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<SubirComprobantePago>(
+    () => SubirComprobantePago(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetInicioSemanaLiquidacion>(
+    () => GetInicioSemanaLiquidacion(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<FirmarComprobante>(
+    () => FirmarComprobante(sl<IAdminMasterDataRepository>()),
+  );
   sl.registerLazySingleton<AdminRolesCubit>(
     () => AdminRolesCubit(
       getRoles: sl<GetRoles>(),
@@ -662,6 +685,10 @@ void _registerAdminMasterData() {
     () => AdminComisionesCubit(
       getLiquidaciones: sl<GetLiquidaciones>(),
       getPagos: sl<GetPagosEspecialistas>(),
+      getDetalles: sl<GetLiquidacionDetalles>(),
+      cambiarEstado: sl<CambiarEstadoLiquidacion>(),
+      registrarPago: sl<RegistrarPagoEspecialista>(),
+      subirComprobante: sl<SubirComprobantePago>(),
     ),
   );
   sl.registerLazySingleton<AdminMedicosRegentesCubit>(

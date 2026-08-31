@@ -24,12 +24,33 @@ class AdminComisionesLoading extends AdminComisionesState {
 class AdminComisionesLoaded extends AdminComisionesState {
   final List<LiquidacionEntity> liquidaciones;
   final List<PagoEspecialistaEntity> pagos;
+  final Map<String, List<DetalleLiquidacionEntity>> detallesPorLiquidacion;
+  final bool trabajando;
   const AdminComisionesLoaded({
     this.liquidaciones = const [],
     this.pagos = const [],
+    this.detallesPorLiquidacion = const {},
+    this.trabajando = false,
   });
+
+  AdminComisionesLoaded copyWith({
+    List<LiquidacionEntity>? liquidaciones,
+    List<PagoEspecialistaEntity>? pagos,
+    Map<String, List<DetalleLiquidacionEntity>>? detallesPorLiquidacion,
+    bool? trabajando,
+  }) {
+    return AdminComisionesLoaded(
+      liquidaciones: liquidaciones ?? this.liquidaciones,
+      pagos: pagos ?? this.pagos,
+      detallesPorLiquidacion:
+          detallesPorLiquidacion ?? this.detallesPorLiquidacion,
+      trabajando: trabajando ?? this.trabajando,
+    );
+  }
+
   @override
-  List<Object?> get props => [liquidaciones, pagos];
+  List<Object?> get props =>
+      [liquidaciones, pagos, detallesPorLiquidacion, trabajando];
 }
 
 class AdminComisionesError extends AdminComisionesState {
@@ -42,12 +63,24 @@ class AdminComisionesError extends AdminComisionesState {
 class AdminComisionesCubit extends Cubit<AdminComisionesState> {
   final GetLiquidaciones _getLiquidaciones;
   final GetPagosEspecialistas _getPagos;
+  final GetLiquidacionDetalles _getDetalles;
+  final CambiarEstadoLiquidacion _cambiarEstado;
+  final RegistrarPagoEspecialista _registrarPago;
+  final SubirComprobantePago _subirComprobante;
 
   AdminComisionesCubit({
     required GetLiquidaciones getLiquidaciones,
     required GetPagosEspecialistas getPagos,
+    required GetLiquidacionDetalles getDetalles,
+    required CambiarEstadoLiquidacion cambiarEstado,
+    required RegistrarPagoEspecialista registrarPago,
+    required SubirComprobantePago subirComprobante,
   })  : _getLiquidaciones = getLiquidaciones,
         _getPagos = getPagos,
+        _getDetalles = getDetalles,
+        _cambiarEstado = cambiarEstado,
+        _registrarPago = registrarPago,
+        _subirComprobante = subirComprobante,
         super(const AdminComisionesInitial());
 
   Future<void> load() async {
@@ -67,5 +100,83 @@ class AdminComisionesCubit extends Cubit<AdminComisionesState> {
       liquidaciones: liquidaciones ?? const [],
       pagos: pagos ?? const [],
     ));
+  }
+
+  /// Carga el detalle (líneas) de una liquidación.
+  Future<void> cargarDetalles(String liquidacionId) async {
+    final current = state;
+    if (current is! AdminComisionesLoaded) return;
+    final result =
+        await _getDetalles(GetLiquidacionDetallesParams(liquidacionId));
+    result.fold(
+      (l) => emit(AdminComisionesError(l.message)),
+      (detalles) {
+        final map = Map<String, List<DetalleLiquidacionEntity>>.from(
+            current.detallesPorLiquidacion);
+        map[liquidacionId] = detalles;
+        emit(current.copyWith(detallesPorLiquidacion: map));
+      },
+    );
+  }
+
+  /// Cambia el estado de una liquidación (EN_REVISION/APROBADA/ANULADA).
+  Future<String?> cambiarEstado(String liquidacionId, String nuevoEstado) async {
+    final current = state;
+    if (current is! AdminComisionesLoaded) return null;
+    emit(current.copyWith(trabajando: true));
+    final result = await _cambiarEstado(CambiarEstadoLiquidacionParams(
+      liquidacionId: liquidacionId,
+      nuevoEstado: nuevoEstado,
+    ));
+    final motivo = result.getOrElse((l) => l.message);
+    emit(current.copyWith(trabajando: false));
+    await load();
+    return motivo;
+  }
+
+  /// Registra el pago externo (RPC admin) y recarga.
+  Future<String?> registrarPago({
+    required String liquidacionId,
+    required String metodoPago,
+    String? referenciaPago,
+    List<int>? comprobanteBytes,
+    String? comprobanteNombre,
+    String? notas,
+    double? montoPagado,
+  }) async {
+    final current = state;
+    if (current is! AdminComisionesLoaded) return null;
+    emit(current.copyWith(trabajando: true));
+    try {
+      String? comprobanteUrl;
+      if (comprobanteBytes != null && comprobanteNombre != null) {
+        final subida = await _subirComprobante(SubirComprobantePagoParams(
+          liquidacionId: liquidacionId,
+          bytes: comprobanteBytes,
+          nombreArchivo: comprobanteNombre,
+        ));
+        final path = subida.fold((l) => null, (path) => path);
+        if (path == null) {
+          emit(current.copyWith(trabajando: false));
+          return subida.fold((l) => l.message, (_) => 'No se pudo subir el comprobante.');
+        }
+        comprobanteUrl = path;
+      }
+      final result = await _registrarPago(RegistrarPagoEspecialistaParams(
+        liquidacionId: liquidacionId,
+        metodoPago: metodoPago,
+        referenciaPago: referenciaPago,
+        comprobanteUrl: comprobanteUrl,
+        notas: notas,
+        montoPagado: montoPagado,
+      ));
+      final motivo = result.getOrElse((l) => l.message);
+      emit(current.copyWith(trabajando: false));
+      await load();
+      return motivo;
+    } catch (e) {
+      emit(current.copyWith(trabajando: false));
+      return 'Error: $e';
+    }
   }
 }

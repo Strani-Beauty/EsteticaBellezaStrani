@@ -87,6 +87,13 @@ class AppConstants {
   static const String txEstadoFallida = 'FALLIDA';
   static const String txEstadoReembolsada = 'REEMBOLSADA';
 
+  // ── Estados de Liquidación ─────────────────────────────────
+  static const String liquidacionPendiente = 'PENDIENTE';
+  static const String liquidacionEnRevision = 'EN_REVISION';
+  static const String liquidacionAprobada = 'APROBADA';
+  static const String liquidacionPagada = 'PAGADA';
+  static const String liquidacionAnulada = 'ANULADA';
+
   // ── Supabase Storage Buckets ───────────────────────────────
   static const String bucketDocumentos = 'documentos-especialistas';
   static const String bucketContratos = 'contratos';
@@ -94,6 +101,7 @@ class AppConstants {
   static const String bucketFirmas = 'firmas-consentimiento';
   static const String bucketAvatars = 'avatars';
   static const String bucketImagenesServicios = 'imagenes-servicios';
+  static const String bucketComprobantes = 'comprobantes-pagos';
 
   // ── Supabase RPCs ──────────────────────────────────────────
   static const String rpcAceptarSolicitud = 'aceptar_solicitud';
@@ -107,6 +115,10 @@ class AppConstants {
   static const String rpcConfirmarPagoSaldo = 'confirmar_pago_saldo';
   static const String rpcRegistrarPagoFallido = 'registrar_pago_fallido';
   static const String rpcGenerarLiquidaciones = 'generar_liquidaciones';
+  static const String rpcCambiarEstadoLiquidacion =
+      'cambiar_estado_liquidacion';
+  static const String rpcRegistrarPagoEspecialista =
+      'registrar_pago_especialista';
   static const String rpcAdminResumenKpis = 'admin_resumen_kpis';
 
   // ── Conceptos de pago (metadata de Stripe) ────────────────
@@ -119,6 +131,9 @@ class AppConstants {
   /// Cuando es 'true', el especialista puede simular la llegada al domicilio
   /// usando las coordenadas del paciente (útil en pruebas fuera del país).
   static const String simularLlegadaClave = 'simular_llegada';
+
+  /// Día de inicio de la semana de liquidación (1=Lunes, 7=Domingo).
+  static const String inicioSemanaLiquidacionClave = 'inicio_semana_liquidacion';
 
   // ── Presencia (online/offline) ─────────────────────────────
   /// Intervalo del heartbeat de presencia mientras la app está en foreground.

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../app/config/app_theme.dart';
+import '../../../admin_master_data/domain/entities/financiero_entity.dart';
 import '../../domain/entities/detalle_financiero_entity.dart';
 import '../../domain/entities/transaccion_entity.dart';
 import '../cubits/admin_conciliacion_cubit.dart';
@@ -19,6 +20,8 @@ class AdminConciliacionScreen extends StatefulWidget {
 class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
   bool _cargado = false;
   final TextEditingController _citaController = TextEditingController();
+  DateTime? _desde;
+  DateTime? _hasta;
 
   @override
   void didChangeDependencies() {
@@ -42,10 +45,32 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
         .showSnackBar(SnackBar(content: Text('Referencia copiada: $texto')));
   }
 
+  Future<void> _seleccionarPeriodo(AdminConciliacionLoaded state) async {
+    final hoy = DateTime.now();
+    final cubit = context.read<AdminConciliacionCubit>();
+    final rango = cubit.rangoUltimaSemana(hoy);
+    final desde = _desde ?? rango.desde;
+    final hasta = _hasta ?? rango.hasta;
+    final fin = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2024),
+      lastDate: hoy,
+      initialDateRange: DateTimeRange(start: desde, end: hasta),
+      helpText: 'Período del corte semanal',
+      saveText: 'Cargar',
+    );
+    if (fin == null) return;
+    setState(() {
+      _desde = fin.start;
+      _hasta = fin.end;
+    });
+    cubit.cargarCitasPorPeriodo(desde: fin.start, hasta: fin.end);
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
@@ -59,6 +84,7 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
             tabs: [
               Tab(text: 'Transacciones'),
               Tab(text: 'Detalle por cita'),
+              Tab(text: 'Citas terminadas'),
             ],
           ),
         ),
@@ -98,6 +124,7 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
                 children: [
                   _buildTransacciones(state),
                   _buildDetalle(state),
+                  _buildCitasTerminadas(state),
                 ],
               );
             }
@@ -186,6 +213,126 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
       ],
     );
   }
+
+  Widget _buildCitasTerminadas(AdminConciliacionLoaded state) {
+    final desde = _desde;
+    final hasta = _hasta;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Corte semanal',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.cDeepAccent,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Citas finalizadas y pagadas elegibles para liquidación.',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  desde != null && hasta != null
+                      ? 'Período: ${_fmtFecha(desde)} → ${_fmtFecha(hasta)}'
+                      : 'Período por defecto: última semana completa '
+                          '(lunes a domingo).',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.cMutedText),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.date_range, size: 18),
+                        label: const Text('Seleccionar período'),
+                        onPressed: () => _seleccionarPeriodo(state),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.cBrandGreen,
+                        ),
+                        icon: state.generandoLiquidacion
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.assessment, size: 18),
+                        label: const Text('Generar liquidación'),
+                        onPressed: state.generandoLiquidacion
+                            ? null
+                            : () => _generarLiquidacionDesdePeriodo(state),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (state.cargandoCitas)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (state.citasFinalizadas.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text('No hay citas terminadas elegibles en el período.'),
+            ),
+          )
+        else
+          for (final c in state.citasFinalizadas)
+            _CitaTerminadaTile(cita: c),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Future<void> _generarLiquidacionDesdePeriodo(
+      AdminConciliacionLoaded state) async {
+    final cubit = context.read<AdminConciliacionCubit>();
+    final hoy = DateTime.now();
+    final rango = cubit.rangoUltimaSemana(hoy);
+    final desde = _desde ?? rango.desde;
+    final hasta = _hasta ?? rango.hasta;
+    final resumen =
+        await cubit.generarLiquidaciones(fechaInicio: desde, fechaFin: hasta);
+    if (!mounted || resumen == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(resumen)),
+    );
+    if (resumen.startsWith('Liquidación generada')) {
+      _cargarCitasActuales(state);
+    }
+  }
+
+  void _cargarCitasActuales(AdminConciliacionLoaded state) {
+    final desde = _desde;
+    final hasta = _hasta;
+    if (desde == null || hasta == null) return;
+    context.read<AdminConciliacionCubit>().cargarCitasPorPeriodo(
+        desde: desde, hasta: hasta);
+  }
+
+  String _fmtFecha(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 }
 
 class _TransaccionTile extends StatelessWidget {
@@ -370,4 +517,82 @@ String _labelEstado(String estado) {
     default:
       return 'Pendiente';
   }
+}
+
+class _CitaTerminadaTile extends StatelessWidget {
+  final CitaFinalizadaAdminEntity cita;
+
+  const _CitaTerminadaTile({required this.cita});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    cita.especialistaNombre ?? 'Especialista',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                _Chip('TERMINADA',
+                    color: cita.estaPagada
+                        ? AppTheme.cBrandGreen
+                        : Colors.amber.shade700),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Cita: ${cita.citaId}',
+              style:
+                  const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (cita.fechaFinalizacion != null)
+              Text(
+                'Finalizada: ${cita.fechaFinalizacion!.toLocal()}',
+                style: const TextStyle(
+                    fontSize: 11, color: AppTheme.cMutedText),
+              ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                _monto('Bruto', cita.montoTotal),
+                _monto('Depósito', cita.deposito),
+                _monto('Saldo', cita.saldoPendiente),
+              ],
+            ),
+            if (!cita.estaPagada)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Aún con saldo pendiente: no es elegible.',
+                  style: TextStyle(fontSize: 12, color: Colors.amber.shade700),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _monto(String label, double monto) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label: ',
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.cMutedText)),
+          Text('\$${monto.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 12)),
+        ],
+      );
 }

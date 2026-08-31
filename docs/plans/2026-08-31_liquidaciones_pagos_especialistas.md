@@ -107,3 +107,65 @@ El RPC `generar_liquidaciones` (migración `20260828000100`) ya agrupa por espec
   `fetchCitasFinalizadasAdmin` amplía su select embebido con
   `solicitudes(pacientes(profiles(full_name)), solicitud_detalles(servicios(nombre)))`.
 - Verificación: `flutter analyze` 0 issues; `flutter test` 366/366.
+
+## Diagnóstico y cierre del fix de RLS admin (commit `91a1234`)
+
+El fix `91a1234` ("Arregla consulta de detalle financiero y RLS de admin en pagos,
+solicitud_detalles y pacientes") **ya funciona** para el detalle financiero: se
+verificó en el remoto que la migración `20260831000300` está aplicada
+(`pagos_admin_select`, `solicitud_detalles_admin_select`, `pacientes_admin_select`)
+y se simuló la consulta como admin (rol `authenticated` + claims JWT del admin
+`40000000-...`) → la cita 85e1d764 devuelve monto_total=180, deposito=90,
+saldo_pendiente=0, estado=PAGADO, y `comision_porcentaje`=20.
+
+Quedaban dos huecos RLS que rompían la **lista "Citas terminadas"** de la
+conciliación (`fetchCitasFinalizadasAdmin`, que consulta `liquidacion_detalles`
+para idempotencia y `tratamientos` COMPLETADO para elegibilidad):
+
+- `tratamientos`: solo tenía `tratamiento_especialista_own` (20260807000000),
+  sin policy admin → el admin no veía qué citas tienen tratamiento COMPLETADO y
+  la lista salía vacía.
+- `liquidacion_detalles`: RLS habilitada pero SIN ninguna policy (creada por SQL
+  Editor) → el admin no podía leer la idempotencia.
+
+**Solución**: migración `20260831000400_admin_read_tratamientos_liquidacion_detalles.sql`
+(2 policies SELECT admin-only con `public.is_administrador()`, idempotente),
+**aplicada al remoto** (se verificó: `tratamientos` → 2 policies,
+`liquidacion_detalles` → 1 policy) y confirmada con simulación RLS como admin
+(Q1/Q2/Q3 de `fetchCitasFinalizadasAdmin` devuelven filas correctas).
+
+**Nota de idempotencia**: la cita de prueba 85e1d764 ya está liquidada
+(`liquidacion_detalles` → liquidación `e402f686` estado PAGADA), por lo que NO
+aparece en la lista "Citas terminadas" (comportamiento correcto de no-duplicación);
+solo afecta a citas aún sin liquidar del período.
+
+## Causa raíz REAL de los "montos en cero" (fix Dart, no RLS)
+
+El usuario seguía viendo **todos los montos en 0** al consultar el detalle
+financiero de una cita concreta, pese a que RLS ya permitía al admin leer
+`pagos`. Reproduciendo la llamada PostgREST EXACTA con un JWT real de admin
+(`admin@test`, password `Test1234!`):
+
+```
+GET /rest/v1/citas?select=id,solicitud_id,solicitudes(pagos(monto_total,deposito,saldo_pendiente,estado))&id=eq.85e1d764-...
+```
+
+PostgREST devuelve `pagos` como **OBJETO único** (no array):
+```json
+{ "solicitudes": { "pagos": { "estado":"PAGADO", "deposito":90.00, "monto_total":180.00, "saldo_pendiente":0.00 } } }
+```
+porque `pagos.solicitud_id` tiene UNIQUE → relación 1-a-1 (no 1-a-muchos).
+
+El código de parseo asumía **Lista** en dos sitios → `pagos` Map fallaba el
+`is List` → pago vacío → montos en 0 (detalle) y lista "Citas terminadas"
+vacía (el filtro `estadoPago != 'PAGADO'` descartaba todas las citas):
+
+1. `lib/features/payments_stripe/domain/entities/detalle_financiero_entity.dart`
+   `DetalleFinancieroCitaEntity.fromJson` → ahora acepta List **o** Map.
+2. `lib/features/admin_master_data/data/datasources/admin_master_data_supabase_datasource.dart`
+   `fetchCitasFinalizadasAdmin` (parseo de `solicitudes['pagos']`) → idem.
+
+(Referencia correcta del patrón: `seguimiento_solicitud_model.dart` ya manejaba
+ambos. No se requirió migración; el fix es solo Dart.)
+
+Verificación: `flutter analyze` 0 issues; `flutter test` 366/366.

@@ -59,9 +59,14 @@ class DetalleFinancieroCitaEntity {
   bool get estaCompleta => saldoPendiente <= 0;
 
   factory DetalleFinancieroCitaEntity.fromJson(Map<String, dynamic> json) {
-    final pago = json['pagos'] is List && (json['pagos'] as List).isNotEmpty
-        ? Map<String, dynamic>.from((json['pagos'] as List).first as Map)
-        : <String, dynamic>{};
+    final pagosRaw = json['pagos'];
+    final pago = pagosRaw is List
+        ? (pagosRaw.isNotEmpty
+            ? Map<String, dynamic>.from(pagosRaw.first)
+            : <String, dynamic>{})
+        : (pagosRaw is Map
+            ? Map<String, dynamic>.from(pagosRaw)
+            : <String, dynamic>{});
     final montoTotal = (pago['monto_total'] as num?)?.toDouble() ?? 0;
     final deposito = (pago['deposito'] as num?)?.toDouble() ?? 0;
     final saldo = (pago['saldo_pendiente'] as num?)?.toDouble() ?? montoTotal;

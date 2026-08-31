@@ -287,6 +287,8 @@ class AdminMasterDataSupabaseDataSource {
         final pagos = solicitudes['pagos'];
         if (pagos is List && pagos.isNotEmpty) {
           pago = Map<String, dynamic>.from(pagos.first as Map);
+        } else if (pagos is Map) {
+          pago = Map<String, dynamic>.from(pagos);
         }
       }
       final saldo = (pago?['saldo_pendiente'] as num?)?.toDouble() ?? 0;

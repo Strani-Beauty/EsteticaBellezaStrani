@@ -22,6 +22,21 @@ flutter test
 
 No hay linter/formatter extra configurado más allá de `flutter_lints` (`analysis_options.yaml`). Los tests son solo un placeholder (`test/widget_test.dart`); no asumas cobertura existente.
 
+## PowerShell (Windows) — quoting al invocar node -e / nativos
+
+- `\"` **no escapa** comillas dobles en PowerShell (la barra invertida no es carácter de escape): la cadena se corta en ese punto y el resto se interpreta como comando (p. ej. `oid` como cmdlet).
+- Las comillas dobles embebidas se **pierden** al pasar argumentos a ejecutables nativos (node) aunque el string de PowerShell sea single-quoted (`'...'`) → `SyntaxError`.
+- **Solución fiable**: pasar el script JS a node por **base64**:
+  ```powershell
+  $js='<JS sin comillas simples>'
+  $b=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($js))
+  node -e "eval(Buffer.from('$b','base64').toString())"
+  ```
+  - `$js` en single-quoted (evita interpolación de `$`); el JS **no** puede contener comillas simples (la single-quoted termina en la primera `'`).
+  - Para literales SQL dentro del JS usa `String.fromCharCode(39)` en vez de comillas simples.
+  - Para `require("pg")` el driver vive en `C:\Users\Jaime\AppData\Local\Temp\opencode\pgcheck` (usar ese workdir o `NODE_PATH`).
+- **Conexión BD (pooler) con driver `pg`**: host `aws-0-ca-central-1.pooler.supabase.com`, port `6543`, db `postgres`, user `postgres.<ref>` (ref = `hhyjremkguvphmjuaazp`), password en `supabase/.temp/credentials` (`SUPABASE_DB_PASSWORD`), `ssl: {rejectUnauthorized: false}`. `supabase db dump` requiere Docker (no instalado) — no usar.
+
 ## Arquitectura: Feature-First Clean Architecture
 
 - `lib/app/` — bootstrap (`main.dart`, `app.dart`), configuración (`config/`), núcleo (`core/`: DI, errores, network, usecases).

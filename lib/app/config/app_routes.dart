@@ -52,11 +52,13 @@ import 'package:esteticaybellezastrani/features/admin_config/presentation/screen
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_roles_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_especialidades_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_comisiones_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/mis_liquidaciones_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_medicos_regentes_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_datos_maestros_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_roles_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_especialidades_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_comisiones_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/mis_liquidaciones_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_medicos_regentes_screen.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/admin_conciliacion_cubit.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/screens/admin_conciliacion_screen.dart';
@@ -113,6 +115,7 @@ class AppRoutes {
       '/tratamiento/$tratamientoId/revision/$citaId';
   static const String specialistPatientMap = '/specialist/map';
   static const String misCitas = '/specialist/mis-citas';
+  static const String misLiquidaciones = '/specialist/liquidaciones';
   static const String misCitasDetalle = '/specialist/mis-citas/:id';
   static const String misSolicitudes = '/mis-solicitudes';
   static const String solicitudResumen = '/solicitud/resumen';
@@ -412,6 +415,16 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => BlocProvider<TreatmentExecutionCubit>.value(
         value: sl<TreatmentExecutionCubit>(),
         child: MisCitasScreen(
+          especialistaId: state.extra as String? ?? '',
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.misLiquidaciones,
+      name: 'misLiquidaciones',
+      builder: (context, state) => BlocProvider<MisLiquidacionesCubit>.value(
+        value: sl<MisLiquidacionesCubit>(),
+        child: MisLiquidacionesScreen(
           especialistaId: state.extra as String? ?? '',
         ),
       ),

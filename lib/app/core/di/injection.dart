@@ -128,6 +128,7 @@ import 'package:esteticaybellezastrani/features/admin_master_data/presentation/c
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_especialidades_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_medicos_regentes_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/admin_roles_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_master_data/presentation/cubits/mis_liquidaciones_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/datasources/treatment_photos_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/data/repositories/treatment_photos_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/repositories/i_treatment_photos_repository.dart';
@@ -664,6 +665,12 @@ void _registerAdminMasterData() {
   sl.registerLazySingleton<FirmarComprobante>(
     () => FirmarComprobante(sl<IAdminMasterDataRepository>()),
   );
+  sl.registerLazySingleton<GetMisLiquidaciones>(
+    () => GetMisLiquidaciones(sl<IAdminMasterDataRepository>()),
+  );
+  sl.registerLazySingleton<GetMisPagosEspecialistas>(
+    () => GetMisPagosEspecialistas(sl<IAdminMasterDataRepository>()),
+  );
   sl.registerLazySingleton<AdminRolesCubit>(
     () => AdminRolesCubit(
       getRoles: sl<GetRoles>(),
@@ -696,6 +703,13 @@ void _registerAdminMasterData() {
       getMedicos: GetMedicosRegentes(sl<ISpecialistsRepository>()),
       createMedico: CreateMedicoRegente(sl<ISpecialistsRepository>()),
       aprobarMedico: AprobarMedicoRegente(sl<ISpecialistsRepository>()),
+    ),
+  );
+  sl.registerLazySingleton<MisLiquidacionesCubit>(
+    () => MisLiquidacionesCubit(
+      getLiquidaciones: sl<GetMisLiquidaciones>(),
+      getPagos: sl<GetMisPagosEspecialistas>(),
+      firmarComprobante: sl<FirmarComprobante>(),
     ),
   );
 }

@@ -34,6 +34,10 @@ abstract class IAdminMasterDataRepository {
   // ── Comisiones / liquidaciones / pagos ────────────────────
   Future<Either<Failure, List<LiquidacionEntity>>> getLiquidaciones();
   Future<Either<Failure, List<PagoEspecialistaEntity>>> getPagosEspecialistas();
+  Future<Either<Failure, List<LiquidacionEntity>>> getMisLiquidaciones(
+      String especialistaId);
+  Future<Either<Failure, List<PagoEspecialistaEntity>>> getMisPagosEspecialistas(
+      String especialistaId);
   Future<Either<Failure, List<CitaFinalizadaAdminEntity>>>
       getCitasFinalizadasAdmin({
     required DateTime desde,

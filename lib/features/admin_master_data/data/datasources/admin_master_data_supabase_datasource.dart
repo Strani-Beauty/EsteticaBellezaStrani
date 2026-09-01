@@ -234,6 +234,49 @@ class AdminMasterDataSupabaseDataSource {
     }).toList();
   }
 
+  /// Liquidaciones del especialista dueño (historial del especialista).
+  Future<List<LiquidacionEntity>> fetchMisLiquidaciones(
+      String especialistaId) async {
+    final res = await _client.from('liquidaciones_especialistas').select('''
+      *,
+      especialistas(usuario_id, profiles!especialistas_usuario_id_fkey(full_name))
+    ''').eq('especialista_id', especialistaId).order('fecha_inicio',
+        ascending: false);
+    return res.map((json) => _liquidationFromJson(json)).toList();
+  }
+
+  /// Pagos al especialista dueño (historial del especialista).
+  Future<List<PagoEspecialistaEntity>> fetchMisPagosEspecialistas(
+      String especialistaId) async {
+    final res = await _client.from('pagos_especialistas').select('''
+      *,
+      especialistas(usuario_id, profiles!especialistas_usuario_id_fkey(full_name))
+    ''').eq('especialista_id', especialistaId).order('fecha_pago',
+        ascending: false);
+    return res.map((json) {
+      final esp = json['especialistas'];
+      String? nombre;
+      if (esp is Map<String, dynamic>) {
+        final profile = esp['profiles'];
+        if (profile is Map<String, dynamic>) {
+          nombre = profile['full_name']?.toString();
+        }
+      }
+      return PagoEspecialistaEntity(
+        id: json['id']?.toString() ?? '',
+        liquidacionId: json['liquidacion_id']?.toString() ?? '',
+        especialistaId: json['especialista_id']?.toString() ?? '',
+        especialistaNombre: nombre,
+        fechaPago: _parseDate(json['fecha_pago']),
+        montoPagado: (json['monto_pagado'] as num?)?.toDouble() ?? 0,
+        metodoPago: json['metodo_pago']?.toString(),
+        referenciaPago: json['referencia_pago']?.toString(),
+        comprobanteUrl: json['comprobante_url']?.toString(),
+        notas: json['notas']?.toString(),
+      );
+    }).toList();
+  }
+
   /// Citas terminadas elegibles para liquidación en un período.
   /// Elegibilidad: cita FINALIZADA + tratamiento COMPLETADO + pago PAGADO/saldo
   /// <=0 + no incluida aún en `liquidacion_detalles` (idempotencia).

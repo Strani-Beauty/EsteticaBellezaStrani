@@ -33,6 +33,47 @@ class GetPagosEspecialistas
   }
 }
 
+class GetMisLiquidacionesParams {
+  final String especialistaId;
+  const GetMisLiquidacionesParams(this.especialistaId);
+}
+
+class GetMisLiquidaciones
+    extends UseCase<List<LiquidacionEntity>, GetMisLiquidacionesParams> {
+  final IAdminMasterDataRepository _repository;
+  GetMisLiquidaciones(this._repository);
+  @override
+  Future<Either<Failure, List<LiquidacionEntity>>> call(
+      GetMisLiquidacionesParams params) async {
+    try {
+      return await _repository.getMisLiquidaciones(params.especialistaId);
+    } catch (e) {
+      return Left(
+          ServerFailure('No se pudieron cargar tus liquidaciones: $e'));
+    }
+  }
+}
+
+class GetMisPagosEspecialistasParams {
+  final String especialistaId;
+  const GetMisPagosEspecialistasParams(this.especialistaId);
+}
+
+class GetMisPagosEspecialistas extends UseCase<List<PagoEspecialistaEntity>,
+    GetMisPagosEspecialistasParams> {
+  final IAdminMasterDataRepository _repository;
+  GetMisPagosEspecialistas(this._repository);
+  @override
+  Future<Either<Failure, List<PagoEspecialistaEntity>>> call(
+      GetMisPagosEspecialistasParams params) async {
+    try {
+      return await _repository.getMisPagosEspecialistas(params.especialistaId);
+    } catch (e) {
+      return Left(ServerFailure('No se pudieron cargar tus pagos: $e'));
+    }
+  }
+}
+
 class GetCitasFinalizadasAdminParams {
   final DateTime desde;
   final DateTime hasta;

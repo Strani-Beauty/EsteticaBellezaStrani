@@ -198,6 +198,13 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
                   extra: especialista.id,
                 ),
               ),
+              const SizedBox(height: 16),
+              _MisLiquidacionesCard(
+                onTap: () => context.push(
+                  AppRoutes.misLiquidaciones,
+                  extra: especialista.id,
+                ),
+              ),
             ],
           ],
         ],
@@ -591,6 +598,37 @@ class _MisCitasCard extends StatelessWidget {
         ),
         subtitle: const Text(
           'Ejecuta el ciclo de tus citas: desplazamiento, tratamiento, insumos y firma.',
+        ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _MisLiquidacionesCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _MisLiquidacionesCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: const BoxDecoration(
+            color: AppTheme.cDeepAccent,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.payments_rounded,
+              color: Colors.white, size: 26),
+        ),
+        title: const Text(
+          'Mis liquidaciones',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text(
+          'Consulta tu historial de cortes semanales y pagos recibidos.',
         ),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: onTap,

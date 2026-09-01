@@ -145,6 +145,26 @@ class AdminMasterDataRepositoryImpl implements IAdminMasterDataRepository {
   }
 
   @override
+  Future<Either<Failure, List<LiquidacionEntity>>> getMisLiquidaciones(
+      String especialistaId) async {
+    try {
+      return Right(await _dataSource.fetchMisLiquidaciones(especialistaId));
+    } catch (e) {
+      return Left(ServerFailure('No se pudieron cargar tus liquidaciones: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<PagoEspecialistaEntity>>>
+      getMisPagosEspecialistas(String especialistaId) async {
+    try {
+      return Right(await _dataSource.fetchMisPagosEspecialistas(especialistaId));
+    } catch (e) {
+      return Left(ServerFailure('No se pudieron cargar tus pagos: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<CitaFinalizadaAdminEntity>>>
       getCitasFinalizadasAdmin({
     required DateTime desde,

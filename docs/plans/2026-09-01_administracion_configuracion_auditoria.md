@@ -68,7 +68,24 @@ El panel administrativo ya está implementado (rutas `/admin`, RLS admin, gesti�
 
 - [x] G1. `flutter analyze` 0 issues + `flutter test` 366/366.
 - [x] G2. Migraciones aplicadas al remoto (00100→00200→00300) y verificadas: policies `auditoria_admin_select`/`historial_estados_admin_select`, 14 triggers `trg_auditoria_*`, funciones `mis_permisos`/`tiene_permiso`/`registrar_auditoria`/`auditar_entidad`/`notificar_usuario_push`, 17 permisos seed + 13 rol_permisos de Administrador, RPCs blindados con `is_administrador()`.
-- [ ] G3. Pruebas con `admin@test`: ver tiles por permisos, ejecutar acciones admin (cambiar estado liquidación, activar usuario, revisar documento) y verificar registros de `auditoria` en BD. Prueba de seguridad: verificar que un rol no-admin NO puede llamar `admin_resumen_kpis`/`eliminar_servicio`. (Verificado a nivel BD: `prosrc` de ambos RPCs contiene `is_administrador()`; RBAC simulado — admin=13 permisos, especialista=ninguno; triggers de auditoría generan filas correctas con ROLLBACK. Falta la prueba manual en la UI con `admin@test`.)
+- [x] G3. **Pruebas de control (11/11 PASS)** ejecutadas contra el remoto vía RLS simulado
+  (`SET LOCAL ROLE authenticated` + `set_config('request.jwt.claims', …)`, transacción con
+  `ROLLBACK`, script `verify_control.js` en el workdir de pgcheck). Resultado por control:
+  1. Admin accede al panel — `is_administrador()=true`; especialista `false`.
+  2. Usuarios sin permiso no acceden a funciones admin — `tiene_permiso(admin.usuarios)=false`;
+     `admin_resumen_kpis()` → `{error:'NO_AUTORIZADO'}`; `eliminar_servicio(uuid)` → `{ok:false,'NO_AUTORIZADO'}`.
+  3. Roles con permisos diferenciados — rol de prueba con solo `admin.auditoria` → `mis_permisos()=["admin.auditoria"]`;
+     rol Administrador → 13 permisos.
+  4. Activar/desactivar usuarios — admin UPDATE profiles OK (41 perfiles); especialista UPDATE a otro → 0 filas.
+  5. Consultar especialistas y pacientes — admin lee 13 especialistas y 22 pacientes.
+  6. Configuraciones administrables — admin lee 19 claves y edita; especialista ve 0 filas.
+  7. Notificaciones registradas — 7 existentes; admin INSERT OK.
+  8. Eventos importantes generan notificaciones — los 4 RPCs de pago llaman `notificar_usuario_push`.
+  9. Operaciones críticas generan auditoría — admin lee 30 filas; 14 triggers `trg_auditoria_*` activos; especialista ve 0 filas.
+  10. Auditoría identifica usuario/fecha/operación — `accion`, `entidad`, `usuario_id`, `fecha`, `detalle` presentes.
+  11. Permisos en interfaz y en datos — `tiene_permiso(admin.auditoria)`: admin `true`, especialista `false`;
+      interfaz gateada por `_tiene()` + route guard `isAdmin`.
+  (La prueba manual en la UI con `admin@test` queda para la sesión interactiva del usuario.)
 - [ ] G4. Prueba funcional del panel completo (navegación, permisos, config, notificaciones, auditoría).
 
 ## Notas

@@ -129,7 +129,7 @@ class SolicitudesReservaSupabaseDataSource {
           *,
           solicitud_detalles(id, servicio_id, cantidad, precio_unitario, servicios(nombre)),
           pagos(monto_total, deposito, saldo_pendiente, estado),
-          citas(estado, fecha_aceptacion),
+          citas(id, estado, fecha_aceptacion, evaluaciones_servicio(id)),
           direcciones_paciente(ciudad)
         ''')
         .eq('paciente_id', pacienteId)

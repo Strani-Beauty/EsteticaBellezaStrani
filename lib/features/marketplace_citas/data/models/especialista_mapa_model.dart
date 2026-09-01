@@ -7,6 +7,8 @@ class EspecialistaMapaModel {
   final double? longitud;
   final bool disponible;
   final bool enLinea;
+  final double? promedio;
+  final int totalEvaluaciones;
 
   const EspecialistaMapaModel({
     required this.id,
@@ -15,6 +17,8 @@ class EspecialistaMapaModel {
     this.longitud,
     required this.disponible,
     this.enLinea = false,
+    this.promedio,
+    this.totalEvaluaciones = 0,
   });
 
   factory EspecialistaMapaModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,23 @@ class EspecialistaMapaModel {
       }
     }
 
+    double? promedio;
+    var totalEvaluaciones = 0;
+    final evaluaciones = json['evaluaciones_servicio'];
+    if (evaluaciones is List && evaluaciones.isNotEmpty) {
+      final puntuaciones = <double>[];
+      for (final ev in evaluaciones) {
+        if (ev is Map<String, dynamic>) {
+          final p = (ev['puntuacion'] as num?)?.toDouble();
+          if (p != null) puntuaciones.add(p);
+        }
+      }
+      totalEvaluaciones = puntuaciones.length;
+      if (totalEvaluaciones > 0) {
+        promedio = puntuaciones.reduce((a, b) => a + b) / totalEvaluaciones;
+      }
+    }
+
     return EspecialistaMapaModel(
       id: json['id'] as String? ?? '',
       nombre: nombre,
@@ -54,6 +75,8 @@ class EspecialistaMapaModel {
       longitud: longitud,
       disponible: json['disponible'] as bool? ?? false,
       enLinea: json['en_linea'] as bool? ?? false,
+      promedio: promedio,
+      totalEvaluaciones: totalEvaluaciones,
     );
   }
 
@@ -65,6 +88,8 @@ class EspecialistaMapaModel {
       longitud: longitud,
       disponible: disponible,
       enLinea: enLinea,
+      promedio: promedio,
+      totalEvaluaciones: totalEvaluaciones,
     );
   }
 }

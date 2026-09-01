@@ -15,6 +15,8 @@ class SeguimientoSolicitudModel {
   final String? ciudad;
   final String? citaEstado;
   final DateTime? citaFechaAceptacion;
+  final String? citaId;
+  final bool yaEvaluado;
   final String? observaciones;
 
   const SeguimientoSolicitudModel({
@@ -30,6 +32,8 @@ class SeguimientoSolicitudModel {
     this.ciudad,
     this.citaEstado,
     this.citaFechaAceptacion,
+    this.citaId,
+    this.yaEvaluado = false,
     this.observaciones,
   });
 
@@ -93,8 +97,15 @@ class SeguimientoSolicitudModel {
       ciudad: dir?['ciudad']?.toString(),
       citaEstado: cita?['estado']?.toString(),
       citaFechaAceptacion: _parseDate(cita?['fecha_aceptacion']),
+      citaId: cita?['id']?.toString(),
+      yaEvaluado: _yaEvaluado(cita?['evaluaciones_servicio']),
       observaciones: json['observaciones_paciente']?.toString(),
     );
+  }
+
+  static bool _yaEvaluado(dynamic evaluaciones) {
+    if (evaluaciones is List && evaluaciones.isNotEmpty) return true;
+    return evaluaciones is Map<String, dynamic> && evaluaciones.isNotEmpty;
   }
 
   SeguimientoSolicitudEntity toEntity() {
@@ -111,6 +122,8 @@ class SeguimientoSolicitudModel {
       ciudad: ciudad,
       citaEstado: citaEstado,
       citaFechaAceptacion: citaFechaAceptacion,
+      citaId: citaId,
+      yaEvaluado: yaEvaluado,
       observaciones: observaciones,
     );
   }

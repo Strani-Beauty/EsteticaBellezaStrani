@@ -126,6 +126,11 @@ import 'package:esteticaybellezastrani/features/auditoria/data/repositories/audi
 import 'package:esteticaybellezastrani/features/auditoria/domain/repositories/i_auditoria_repository.dart';
 import 'package:esteticaybellezastrani/features/auditoria/domain/usecases/get_auditoria.dart';
 import 'package:esteticaybellezastrani/features/auditoria/presentation/cubits/admin_auditoria_cubit.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/data/datasources/calificaciones_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/data/repositories/calificaciones_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/domain/repositories/i_calificaciones_repository.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/domain/usecases/get_promedio_especialista.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/domain/usecases/registrar_evaluacion.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/data/datasources/admin_master_data_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/data/repositories/admin_master_data_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/domain/repositories/i_admin_master_data_repository.dart';
@@ -209,6 +214,9 @@ void setupDependencies() {
   // ── Features: Auditoría ────────────────────────────────────
   _registerAuditoria();
 
+  // ── Features: Calificaciones ───────────────────────────────
+  _registerCalificaciones();
+
   // ── Features: Payments Stripe ─────────────────────────────
   _registerPaymentsStripe();
 
@@ -233,7 +241,7 @@ void _registerAuthUsers() {
     () => AuthRepositoryImpl(sl<AuthSupabaseDataSource>()),
   );
   sl.registerLazySingleton<AuthCubit>(
-    () => AuthCubit(sl<IAuthRepository>()),
+    () => AuthCubit(sl<IAuthRepository>(), sl<FcmTokenService>()),
   );
   sl.registerLazySingleton<RegisterFcmToken>(
     () => RegisterFcmToken(sl<IAuthRepository>()),
@@ -604,6 +612,21 @@ void _registerAuditoria() {
   );
   sl.registerLazySingleton<AdminAuditoriaCubit>(
     () => AdminAuditoriaCubit(getAuditoria: sl<GetAuditoria>()),
+  );
+}
+
+void _registerCalificaciones() {
+  sl.registerLazySingleton<CalificacionesSupabaseDataSource>(
+    () => CalificacionesSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<ICalificacionesRepository>(
+    () => CalificacionesRepositoryImpl(sl<CalificacionesSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<RegistrarEvaluacion>(
+    () => RegistrarEvaluacion(sl<ICalificacionesRepository>()),
+  );
+  sl.registerLazySingleton<GetPromedioEspecialista>(
+    () => GetPromedioEspecialista(sl<ICalificacionesRepository>()),
   );
 }
 

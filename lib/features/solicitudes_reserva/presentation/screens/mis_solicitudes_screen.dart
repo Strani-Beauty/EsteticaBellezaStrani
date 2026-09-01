@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/domain/usecases/registrar_evaluacion.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/presentation/widgets/rating_dialog.dart';
 import '../../domain/entities/seguimiento_solicitud_entity.dart';
 import '../cubits/mis_solicitudes_cubit.dart';
 
@@ -208,10 +211,70 @@ class _SolicitudCard extends StatelessWidget {
                   label: 'Aceptada',
                   value: _fecha(solicitud.citaFechaAceptacion!),
                 ),
+              if (solicitud.citaEstado == 'FINALIZADA' &&
+                  !solicitud.yaEvaluado &&
+                  solicitud.citaId != null)
+                _CalificarEspecialistaButton(solicitud: solicitud),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CalificarEspecialistaButton extends StatelessWidget {
+  final SeguimientoSolicitudEntity solicitud;
+
+  const _CalificarEspecialistaButton({required this.solicitud});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppTheme.cPastelBlue,
+          foregroundColor: AppTheme.cDeepAccent,
+          minimumSize: const Size.fromHeight(40),
+        ),
+        onPressed: () => _calificar(context),
+        icon: const Icon(Icons.star_rounded, size: 20),
+        label: const Text('Calificar especialista',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  Future<void> _calificar(BuildContext context) async {
+    final resultado = await showRatingDialog(
+      context,
+      titulo: 'Califica a tu especialista',
+      subtitulo: '¿Cómo fue el servicio? Tu opinión ayuda a la comunidad.',
+    );
+    if (resultado == null || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final usecase = sl<RegistrarEvaluacion>();
+    final result = await usecase.call(RegistrarEvaluacionParams(
+      citaId: solicitud.citaId!,
+      puntuacion: resultado.puntuacion,
+      comentario: resultado.comentario,
+    ));
+
+    result.fold(
+      (failure) => messenger.showSnackBar(
+        SnackBar(content: Text(failure.message)),
+      ),
+      (_) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Gracias por tu calificación')),
+        );
+        final profileId = context.read<AuthCubit>().currentProfile?.id;
+        if (profileId != null && profileId.isNotEmpty) {
+          context.read<MisSolicitudesCubit>().load(profileId);
+        }
+      },
     );
   }
 }

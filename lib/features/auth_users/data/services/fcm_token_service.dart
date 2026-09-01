@@ -71,6 +71,21 @@ class FcmTokenService {
     }
   }
 
+  /// Desactiva el token del dispositivo actual (logout). No-op si Firebase
+  /// no está disponible; nunca rompe el cierre de sesión (fire-and-forget).
+  Future<void> deactivateCurrentDevice() async {
+    if (!_firebaseReady || _messaging == null) return;
+
+    try {
+      final token = await _messaging!.getToken();
+      if (token == null || token.isEmpty) return;
+      await _authRepository.deactivateFcmToken(token);
+      debugPrint('✅ [FCM] Token desactivado: $token');
+    } catch (e) {
+      debugPrint('⚠️ [FCM] Error al desactivar token: $e');
+    }
+  }
+
   String? _plataforma() {
     if (kIsWeb) return 'web';
     switch (defaultTargetPlatform) {

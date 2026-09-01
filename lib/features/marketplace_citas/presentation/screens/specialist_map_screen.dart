@@ -10,6 +10,7 @@ import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import '../../domain/entities/solicitud_pendiente_entity.dart';
+import '../../domain/entities/especialista_mapa_entity.dart';
 import '../cubits/marketplace_cubit.dart';
 
 /// Mapa interactivo del especialista: muestra pacientes que buscan especialista
@@ -384,15 +385,30 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
               width: 42,
               height: 42,
               alignment: Alignment.topCenter,
-              child: Tooltip(
-                message: e.nombre ?? 'Especialista',
-                child: _MapPin(
-                  color: AppTheme.cDeepAccent,
-                  icon: Icons.medical_services_rounded,
+              child: GestureDetector(
+                onTap: () => _showEspecialistaDetail(e),
+                child: Tooltip(
+                  message: e.nombre ?? 'Especialista',
+                  child: _MapPin(
+                    color: AppTheme.cDeepAccent,
+                    icon: Icons.medical_services_rounded,
+                  ),
                 ),
               ),
             ))
         .toList();
+  }
+
+  void _showEspecialistaDetail(EspecialistaMapaEntity e) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusLg)),
+      ),
+      builder: (ctx) => _EspecialistaDetailSheet(especialista: e),
+    );
   }
 
   Widget _buildLegend() {
@@ -665,6 +681,59 @@ class _DetailRow extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _EspecialistaDetailSheet extends StatelessWidget {
+  final EspecialistaMapaEntity especialista;
+
+  const _EspecialistaDetailSheet({required this.especialista});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.medical_services_rounded,
+                    color: AppTheme.cDeepAccent, size: 28),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    especialista.nombre ?? 'Especialista',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _DetailRow(
+              icon: Icons.star_rounded,
+              label: 'Calificación',
+              value: _ratingTexto(especialista),
+            ),
+            const SizedBox(height: 8),
+            _DetailRow(
+              icon: Icons.tune_rounded,
+              label: 'Disponible',
+              value: especialista.disponible ? 'Sí' : 'No',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _ratingTexto(EspecialistaMapaEntity e) {
+    if (e.promedio == null || e.totalEvaluaciones == 0) {
+      return 'Sin calificaciones aún';
+    }
+    return '★ ${e.promedio!.toStringAsFixed(1)} · ${e.totalEvaluaciones} evaluación(es)';
   }
 }
 

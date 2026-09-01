@@ -7,8 +7,11 @@ import '../../../../app/config/app_theme.dart';
 import '../../../../app/config/app_routes.dart';
 import '../../../../app/config/map_config.dart';
 import '../../../../app/core/network/supabase_service.dart';
+import '../../../../app/core/di/injection.dart';
 import '../../../auth_users/presentation/cubits/auth_cubit.dart';
 import '../../../patients_compliance/presentation/widgets/patient_map_picker.dart';
+import '../../../calificaciones/domain/entities/evaluacion_entity.dart';
+import '../../../calificaciones/domain/usecases/get_promedio_especialista.dart';
 import '../../domain/entities/especialista_entity.dart';
 import '../cubits/specialists_cubit.dart';
 import '../widgets/especialidades_selector.dart';
@@ -453,6 +456,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
                     medicoActual?.nombre ?? 'Sin asignar'),
                 _infoRow(Icons.medical_services_outlined, 'Especialidades',
                     nombresEspecialidades.isEmpty ? 'Sin seleccionar' : nombresEspecialidades),
+                _calificacionRow(especialista.id),
               ],
             ),
     );
@@ -467,6 +471,22 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
         label: label,
         prefix: Icon(icon, color: AppTheme.cDeepAccent),
       ),
+    );
+  }
+
+  Widget _calificacionRow(String especialistaId) {
+    return FutureBuilder<PromedioEspecialistaEntity>(
+      future: sl<GetPromedioEspecialista>()
+          .call(GetPromedioEspecialistaParams(especialistaId: especialistaId))
+          .then((result) =>
+              result.fold((f) => const PromedioEspecialistaEntity(), (v) => v)),
+      builder: (context, snapshot) {
+        final p = snapshot.data;
+        final texto = (p == null || p.total == 0)
+            ? 'Sin calificaciones aún'
+            : '★ ${p.promedio.toStringAsFixed(1)} · ${p.total} evaluación(es)';
+        return _infoRow(Icons.star_rounded, 'Calificación', texto);
+      },
     );
   }
 

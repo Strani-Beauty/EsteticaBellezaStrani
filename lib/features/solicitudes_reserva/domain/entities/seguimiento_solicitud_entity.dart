@@ -37,6 +37,8 @@ class SeguimientoSolicitudEntity extends Equatable {
   final String? ciudad;
   final String? citaEstado;
   final DateTime? citaFechaAceptacion;
+  final String? citaId;
+  final bool yaEvaluado;
   final String? observaciones;
 
   const SeguimientoSolicitudEntity({
@@ -52,6 +54,8 @@ class SeguimientoSolicitudEntity extends Equatable {
     this.ciudad,
     this.citaEstado,
     this.citaFechaAceptacion,
+    this.citaId,
+    this.yaEvaluado = false,
     this.observaciones,
   });
 

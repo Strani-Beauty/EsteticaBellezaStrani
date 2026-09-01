@@ -7,6 +7,8 @@ import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/utils/geo_service.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/domain/usecases/registrar_evaluacion.dart';
+import 'package:esteticaybellezastrani/features/calificaciones/presentation/widgets/rating_dialog.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/domain/entities/fotografia_tratamiento_entity.dart';
 import '../../domain/entities/cita_ejecucion_entity.dart';
 import '../../domain/entities/consentimiento_tratamiento_entity.dart';
@@ -318,8 +320,10 @@ class _CitaDetalleScreenState extends State<CitaDetalleScreen> {
                   ],
                 ],
               ],
-              if (cita.estado == EstadoCitaEjecucion.finalizada)
+              if (cita.estado == EstadoCitaEjecucion.finalizada) ...[
                 const _EstadoFinal(icon: Icons.task_alt, texto: 'Cita finalizada'),
+                _CalificarPacienteButton(citaId: cita.id),
+              ],
               if (cita.estado == EstadoCitaEjecucion.cancelada ||
                   cita.estado == EstadoCitaEjecucion.noCompletada)
                 const _EstadoFinal(
@@ -875,6 +879,54 @@ class _EstadoFinal extends StatelessWidget {
         const SizedBox(height: 8),
         Text(texto, style: const TextStyle(fontSize: 16)),
       ],
+    );
+  }
+}
+
+class _CalificarPacienteButton extends StatelessWidget {
+  final String citaId;
+  const _CalificarPacienteButton({required this.citaId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppTheme.cPastelBlue,
+          foregroundColor: AppTheme.cDeepAccent,
+          minimumSize: const Size.fromHeight(40),
+        ),
+        onPressed: () => _calificar(context),
+        icon: const Icon(Icons.star_rounded, size: 20),
+        label: const Text('Calificar paciente',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  Future<void> _calificar(BuildContext context) async {
+    final resultado = await showRatingDialog(
+      context,
+      titulo: 'Califica al paciente',
+      subtitulo: '¿Cómo fue la atención con este paciente?',
+    );
+    if (resultado == null || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await sl<RegistrarEvaluacion>().call(
+      RegistrarEvaluacionParams(
+        citaId: citaId,
+        puntuacion: resultado.puntuacion,
+        comentario: resultado.comentario,
+      ),
+    );
+
+    result.fold(
+      (failure) =>
+          messenger.showSnackBar(SnackBar(content: Text(failure.message))),
+      (_) => messenger.showSnackBar(
+          const SnackBar(content: Text('Gracias por tu calificación'))),
     );
   }
 }

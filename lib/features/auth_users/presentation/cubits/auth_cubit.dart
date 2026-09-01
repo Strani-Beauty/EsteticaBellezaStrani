@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/services/fcm_token_service.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../../domain/repositories/i_auth_repository.dart';
 
@@ -66,8 +67,10 @@ class AuthPasswordChanged extends AuthState {
 /// Reemplaza todo el setState() del _LoginScreenState original.
 class AuthCubit extends Cubit<AuthState> {
   final IAuthRepository _authRepository;
+  final FcmTokenService _fcmTokenService;
 
-  AuthCubit(this._authRepository) : super(const AuthInitial());
+  AuthCubit(this._authRepository, this._fcmTokenService)
+      : super(const AuthInitial());
 
   // ── Inicialización (comprobar sesión activa al arrancar) ────
   Future<void> checkCurrentSession() async {
@@ -171,6 +174,8 @@ class AuthCubit extends Cubit<AuthState> {
   // ── Sign Out ────────────────────────────────────────────────
   Future<void> signOut() async {
     emit(const AuthLoading());
+    // Desactiva el token FCM del dispositivo antes de revocar la sesión.
+    await _fcmTokenService.deactivateCurrentDevice();
     final result = await _authRepository.signOut();
     result.fold(
       (failure) => emit(AuthError(failure.message)),

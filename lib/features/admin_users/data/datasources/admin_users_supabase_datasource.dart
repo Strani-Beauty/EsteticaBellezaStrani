@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/paciente_admin_model.dart';
 import '../models/usuario_admin_model.dart';
 
 /// Datasource de Supabase para la administración de usuarios.
@@ -28,5 +29,19 @@ class AdminUsersSupabaseDataSource {
         .from('profiles')
         .update({'activo': activo})
         .eq('id', userId);
+  }
+
+  /// Lista pacientes con su perfil embebido. Policies `pacientes_admin_select`
+  /// (00300) garantizan que solo un Administrador obtenga filas.
+  Future<List<PacienteAdminModel>> fetchPacientesAdmin() async {
+    final res = await _client
+        .from('pacientes')
+        .select('id, usuario_id, activo, profiles(full_name, email, phone, activo)')
+        .order('created_at', ascending: true);
+
+    return res
+        .map((json) => PacienteAdminModel.fromJson(
+            Map<String, dynamic>.from(json as Map)))
+        .toList();
   }
 }

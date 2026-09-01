@@ -151,34 +151,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildAdministrativo() {
     return Column(
       children: [
-        _NavCard(
-          icon: Icons.people_outline_rounded,
-          color: AppTheme.cPastelPurple,
-          title: 'Usuarios del Sistema',
-          subtitle: 'Consultar y activar/desactivar cuentas',
-          onTap: () => context.go(AppRoutes.adminUsuarios),
-        ),
-        _NavCard(
-          icon: Icons.assignment_rounded,
-          color: AppTheme.cPastelPink,
-          title: 'Cuestionario de Salud',
-          subtitle: 'Versiones, activar versión y editar preguntas',
-          onTap: () => context.go(AppRoutes.adminCuestionario),
-        ),
-        _NavCard(
-          icon: Icons.storefront_rounded,
-          color: AppTheme.cBrandGreen.withValues(alpha: 0.15),
-          title: 'Catálogo de Servicios',
-          subtitle: 'Categorías, servicios, especialidades y requisitos',
-          onTap: () => context.go(AppRoutes.adminCatalog),
-        ),
-        _NavCard(
-          icon: Icons.verified_user_outlined,
-          color: AppTheme.cGoldAccent.withValues(alpha: 0.2),
-          title: 'Verificación de Licencias',
-          subtitle: 'Expedientes, documentos y aprobación de especialistas',
-          onTap: () => context.go(AppRoutes.adminLicencias),
-        ),
+        if (_tiene('admin.usuarios'))
+          _NavCard(
+            icon: Icons.people_outline_rounded,
+            color: AppTheme.cPastelPurple,
+            title: 'Usuarios del Sistema',
+            subtitle: 'Consultar y activar/desactivar cuentas',
+            onTap: () => context.go(AppRoutes.adminUsuarios),
+          ),
+        if (_tiene('admin.pacientes'))
+          _NavCard(
+            icon: Icons.badge_outlined,
+            color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+            title: 'Gestión de Pacientes',
+            subtitle: 'Consultar pacientes y activar/desactivar cuentas',
+            onTap: () => context.go(AppRoutes.adminPacientes),
+          ),
+        if (_tiene('admin.cuestionario'))
+          _NavCard(
+            icon: Icons.assignment_rounded,
+            color: AppTheme.cPastelPink,
+            title: 'Cuestionario de Salud',
+            subtitle: 'Versiones, activar versión y editar preguntas',
+            onTap: () => context.go(AppRoutes.adminCuestionario),
+          ),
+        if (_tiene('admin.catalogo'))
+          _NavCard(
+            icon: Icons.storefront_rounded,
+            color: AppTheme.cBrandGreen.withValues(alpha: 0.15),
+            title: 'Catálogo de Servicios',
+            subtitle: 'Categorías, servicios, especialidades y requisitos',
+            onTap: () => context.go(AppRoutes.adminCatalog),
+          ),
+        if (_tiene('admin.licencias'))
+          _NavCard(
+            icon: Icons.verified_user_outlined,
+            color: AppTheme.cGoldAccent.withValues(alpha: 0.2),
+            title: 'Verificación de Licencias',
+            subtitle: 'Expedientes, documentos y aprobación de especialistas',
+            onTap: () => context.go(AppRoutes.adminLicencias),
+          ),
+        if (_tiene('admin.auditoria'))
+          _NavCard(
+            icon: Icons.receipt_long_outlined,
+            color: AppTheme.cPastelPurple,
+            title: 'Auditoría',
+            subtitle: 'Registro de operaciones sensibles (quién, qué, cuándo)',
+            onTap: () => context.go(AppRoutes.adminAuditoria),
+          ),
       ],
     );
   }
@@ -186,50 +206,65 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildDatosMaestros() {
     return Column(
       children: [
-        _NavCard(
-          icon: Icons.admin_panel_settings_outlined,
-          color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
-          title: 'Roles y Permisos',
-          subtitle: 'Catálogo RBAC (roles, permisos y asignación)',
-          onTap: () => context.go(AppRoutes.adminRoles),
-        ),
-        _NavCard(
-          icon: Icons.settings_rounded,
-          color: AppTheme.cPastelPurple,
-          title: 'Configuración del Sistema',
-          subtitle: 'Depósito, radio, comisión, adelanto y claves generales',
-          onTap: () => context.go(AppRoutes.adminConfiguracion),
-        ),
-        _NavCard(
-          icon: Icons.account_balance_wallet_outlined,
-          color: AppTheme.cPastelPink,
-          title: 'Comisiones y Liquidaciones',
-          subtitle: 'Comisiones, liquidaciones y pagos a especialistas',
-          onTap: () => context.go(AppRoutes.adminComisiones),
-        ),
-        _NavCard(
-          icon: Icons.receipt_long_outlined,
-          color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
-          title: 'Conciliación de Pagos',
-          subtitle: 'Transacciones, refs de Stripe y detalle financiero por cita',
-          onTap: () => context.go(AppRoutes.adminConciliacion),
-        ),
-        _NavCard(
-          icon: Icons.category_outlined,
-          color: AppTheme.cBrandGreen.withValues(alpha: 0.15),
-          title: 'Especialidades',
-          subtitle: 'Catálogo de especialidades',
-          onTap: () => context.go(AppRoutes.adminEspecialidades),
-        ),
-        _NavCard(
-          icon: Icons.medical_information_outlined,
-          color: AppTheme.cGoldAccent.withValues(alpha: 0.2),
-          title: 'Médicos Regentes',
-          subtitle: 'Registro y validación de médicos regentes',
-          onTap: () => context.go(AppRoutes.adminMedicosRegentes),
-        ),
+        if (_tiene('admin.roles'))
+          _NavCard(
+            icon: Icons.admin_panel_settings_outlined,
+            color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+            title: 'Roles y Permisos',
+            subtitle: 'Catálogo RBAC (roles, permisos y asignación)',
+            onTap: () => context.go(AppRoutes.adminRoles),
+          ),
+        if (_tiene('admin.configuracion'))
+          _NavCard(
+            icon: Icons.settings_rounded,
+            color: AppTheme.cPastelPurple,
+            title: 'Configuración del Sistema',
+            subtitle: 'Depósito, radio, comisión, adelanto y claves generales',
+            onTap: () => context.go(AppRoutes.adminConfiguracion),
+          ),
+        if (_tiene('admin.comisiones'))
+          _NavCard(
+            icon: Icons.account_balance_wallet_outlined,
+            color: AppTheme.cPastelPink,
+            title: 'Comisiones y Liquidaciones',
+            subtitle: 'Comisiones, liquidaciones y pagos a especialistas',
+            onTap: () => context.go(AppRoutes.adminComisiones),
+          ),
+        if (_tiene('admin.conciliacion'))
+          _NavCard(
+            icon: Icons.receipt_long_outlined,
+            color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+            title: 'Conciliación de Pagos',
+            subtitle: 'Transacciones, refs de Stripe y detalle financiero por cita',
+            onTap: () => context.go(AppRoutes.adminConciliacion),
+          ),
+        if (_tiene('admin.especialidades'))
+          _NavCard(
+            icon: Icons.category_outlined,
+            color: AppTheme.cBrandGreen.withValues(alpha: 0.15),
+            title: 'Especialidades',
+            subtitle: 'Catálogo de especialidades',
+            onTap: () => context.go(AppRoutes.adminEspecialidades),
+          ),
+        if (_tiene('admin.medicos'))
+          _NavCard(
+            icon: Icons.medical_information_outlined,
+            color: AppTheme.cGoldAccent.withValues(alpha: 0.2),
+            title: 'Médicos Regentes',
+            subtitle: 'Registro y validación de médicos regentes',
+            onTap: () => context.go(AppRoutes.adminMedicosRegentes),
+          ),
       ],
     );
+  }
+
+  /// El admin (super-rol) ve todo; si la carga de permisos aún no resolvió
+  /// (conjunto vacío), se muestran todos los tiles para no romper el panel.
+  bool _tiene(String codigo) {
+    final state = context.read<AdminDashboardCubit>().state;
+    if (state is! AdminDashboardLoaded) return true;
+    if (state.permisos.isEmpty) return true;
+    return state.permisos.contains(codigo);
   }
 }
 

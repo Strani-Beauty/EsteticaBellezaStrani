@@ -24,6 +24,16 @@ class AdminConfigRepositoryImpl implements IAdminConfigRepository {
   }
 
   @override
+  Future<Either<Failure, List<String>>> getMisPermisos() async {
+    try {
+      return Right(await _dataSource.fetchMisPermisos());
+    } catch (e) {
+      debugPrint('❌ [getMisPermisos] $e');
+      return Left(ServerFailure('No se pudieron cargar tus permisos: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<ConfigSistemaEntity>>> getConfiguracion() async {
     try {
       return Right(await _dataSource.fetchConfiguracion());

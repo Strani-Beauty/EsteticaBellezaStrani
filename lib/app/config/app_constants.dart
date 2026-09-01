@@ -120,6 +120,7 @@ class AppConstants {
   static const String rpcRegistrarPagoEspecialista =
       'registrar_pago_especialista';
   static const String rpcAdminResumenKpis = 'admin_resumen_kpis';
+  static const String rpcMisPermisos = 'mis_permisos';
 
   // ── Conceptos de pago (metadata de Stripe) ────────────────
   static const String conceptoAdelanto = 'ADELANTO';

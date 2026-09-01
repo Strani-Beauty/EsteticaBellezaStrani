@@ -8,6 +8,9 @@ abstract class IAdminConfigRepository {
   /// KPIs del home del dashboard (RPC `admin_resumen_kpis`).
   Future<Either<Failure, AdminKpisEntity>> getKpis();
 
+  /// Códigos de permiso del usuario logueado (RPC `mis_permisos`).
+  Future<Either<Failure, List<String>>> getMisPermisos();
+
   /// Lista de claves de `configuracion_sistema`.
   Future<Either<Failure, List<ConfigSistemaEntity>>> getConfiguracion();
 

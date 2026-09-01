@@ -19,6 +19,16 @@ class AdminConfigSupabaseDataSource {
     return AdminKpisEntity.fromJson(Map<String, dynamic>.from(res as Map));
   }
 
+  /// Códigos de permiso del usuario logueado (RPC `mis_permisos`).
+  Future<List<String>> fetchMisPermisos() async {
+    final res = await _client.rpc(AppConstants.rpcMisPermisos);
+    if (res == null) return const [];
+    if (res is List) {
+      return res.map((e) => e.toString()).toList();
+    }
+    return const [];
+  }
+
   Future<List<ConfigSistemaEntity>> fetchConfiguracion() async {
     final res = await _client
         .from('configuracion_sistema')

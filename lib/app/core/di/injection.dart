@@ -4,8 +4,10 @@ import 'package:esteticaybellezastrani/app/core/utils/geo_service.dart';
 import 'package:esteticaybellezastrani/features/admin_users/data/datasources/admin_users_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/admin_users/data/repositories/admin_users_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/repositories/i_admin_users_repository.dart';
+import 'package:esteticaybellezastrani/features/admin_users/domain/usecases/get_pacientes.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/usecases/get_usuarios.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/usecases/set_usuario_activo.dart';
+import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_pacientes_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_users_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/repositories/auth_repository_impl.dart';
@@ -114,10 +116,16 @@ import 'package:esteticaybellezastrani/features/admin_config/data/datasources/ad
 import 'package:esteticaybellezastrani/features/admin_config/data/repositories/admin_config_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/admin_config/domain/repositories/i_admin_config_repository.dart';
 import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_admin_kpis.dart';
+import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_mis_permisos.dart';
 import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_config_sistema.dart';
 import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/update_config_sistema.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_dashboard_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_configuracion_cubit.dart';
+import 'package:esteticaybellezastrani/features/auditoria/data/datasources/auditoria_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/auditoria/data/repositories/auditoria_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/auditoria/domain/repositories/i_auditoria_repository.dart';
+import 'package:esteticaybellezastrani/features/auditoria/domain/usecases/get_auditoria.dart';
+import 'package:esteticaybellezastrani/features/auditoria/presentation/cubits/admin_auditoria_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/data/datasources/admin_master_data_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/data/repositories/admin_master_data_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/admin_master_data/domain/repositories/i_admin_master_data_repository.dart';
@@ -197,6 +205,9 @@ void setupDependencies() {
 
   // ── Features: Admin Users ──────────────────────────────────
   _registerAdminUsers();
+
+  // ── Features: Auditoría ────────────────────────────────────
+  _registerAuditoria();
 
   // ── Features: Payments Stripe ─────────────────────────────
   _registerPaymentsStripe();
@@ -573,6 +584,27 @@ void _registerAdminUsers() {
       SetUsuarioActivo(sl<IAdminUsersRepository>()),
     ),
   );
+  sl.registerLazySingleton<AdminPacientesCubit>(
+    () => AdminPacientesCubit(
+      GetPacientes(sl<IAdminUsersRepository>()),
+      SetUsuarioActivo(sl<IAdminUsersRepository>()),
+    ),
+  );
+}
+
+void _registerAuditoria() {
+  sl.registerLazySingleton<AuditoriaSupabaseDataSource>(
+    () => AuditoriaSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IAuditoriaRepository>(
+    () => AuditoriaRepositoryImpl(sl<AuditoriaSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<GetAuditoria>(
+    () => GetAuditoria(sl<IAuditoriaRepository>()),
+  );
+  sl.registerLazySingleton<AdminAuditoriaCubit>(
+    () => AdminAuditoriaCubit(getAuditoria: sl<GetAuditoria>()),
+  );
 }
 
 void _registerAdminConfig() {
@@ -585,6 +617,9 @@ void _registerAdminConfig() {
   sl.registerLazySingleton<GetAdminKpis>(
     () => GetAdminKpis(sl<IAdminConfigRepository>()),
   );
+  sl.registerLazySingleton<GetMisPermisos>(
+    () => GetMisPermisos(sl<IAdminConfigRepository>()),
+  );
   sl.registerLazySingleton<GetConfigSistema>(
     () => GetConfigSistema(sl<IAdminConfigRepository>()),
   );
@@ -592,7 +627,10 @@ void _registerAdminConfig() {
     () => UpdateConfigSistema(sl<IAdminConfigRepository>()),
   );
   sl.registerLazySingleton<AdminDashboardCubit>(
-    () => AdminDashboardCubit(getKpis: sl<GetAdminKpis>()),
+    () => AdminDashboardCubit(
+      getKpis: sl<GetAdminKpis>(),
+      getMisPermisos: sl<GetMisPermisos>(),
+    ),
   );
   sl.registerLazySingleton<AdminConfiguracionCubit>(
     () => AdminConfiguracionCubit(

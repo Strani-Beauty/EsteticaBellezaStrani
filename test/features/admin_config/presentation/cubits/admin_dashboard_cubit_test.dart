@@ -6,19 +6,26 @@ import 'package:mocktail/mocktail.dart';
 import 'package:esteticaybellezastrani/app/core/error/failures.dart';
 import 'package:esteticaybellezastrani/features/admin_config/domain/entities/admin_kpis_entity.dart';
 import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_admin_kpis.dart';
+import 'package:esteticaybellezastrani/features/admin_config/domain/usecases/get_mis_permisos.dart';
 import 'package:esteticaybellezastrani/features/admin_config/presentation/cubits/admin_dashboard_cubit.dart';
 
 class MockGetAdminKpis extends Mock implements GetAdminKpis {}
 
+class MockGetMisPermisos extends Mock implements GetMisPermisos {}
+
 void main() {
   late MockGetAdminKpis getKpis;
+  late MockGetMisPermisos getMisPermisos;
 
   setUp(() {
     getKpis = MockGetAdminKpis();
+    getMisPermisos = MockGetMisPermisos();
   });
 
-  AdminDashboardCubit buildCubit() =>
-      AdminDashboardCubit(getKpis: getKpis);
+  AdminDashboardCubit buildCubit() => AdminDashboardCubit(
+        getKpis: getKpis,
+        getMisPermisos: getMisPermisos,
+      );
 
   const kpis = AdminKpisEntity(
     solicitudesPorEstado: {'PUBLICADA': 3, 'ACEPTADA': 2},
@@ -54,11 +61,12 @@ void main() {
     build: buildCubit,
     act: (cubit) async {
       when(() => getKpis()).thenAnswer((_) async => const Right(kpis));
+      when(() => getMisPermisos()).thenAnswer((_) async => const Right(<String>[]));
       await cubit.load();
     },
     expect: () => [
       const AdminDashboardLoading(),
-      const AdminDashboardLoaded(kpis),
+      const AdminDashboardLoaded(kpis, <String>{}),
     ],
   );
 
@@ -68,6 +76,7 @@ void main() {
     act: (cubit) async {
       when(() => getKpis())
           .thenAnswer((_) async => const Left(ServerFailure('Sin red')));
+      when(() => getMisPermisos()).thenAnswer((_) async => const Right(<String>[]));
       await cubit.load();
     },
     expect: () => [

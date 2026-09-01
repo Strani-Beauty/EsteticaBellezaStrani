@@ -10,6 +10,10 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/reset_password_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/screens/admin_users_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_users_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_users/presentation/screens/admin_pacientes_screen.dart';
+import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_pacientes_cubit.dart';
+import 'package:esteticaybellezastrani/features/auditoria/presentation/cubits/admin_auditoria_cubit.dart';
+import 'package:esteticaybellezastrani/features/auditoria/presentation/screens/admin_auditoria_screen.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
@@ -77,6 +81,8 @@ class AppRoutes {
   static const String payment              = '/payment/:id';
   static const String adminDashboard       = '/admin';
   static const String adminUsuarios        = '/admin/usuarios';
+  static const String adminPacientes       = '/admin/pacientes';
+  static const String adminAuditoria       = '/admin/auditoria';
   static const String adminCuestionario    = '/admin/cuestionario';
   static const String adminCatalog         = '/admin/catalog';
   static const String adminCatalogServicio = '/admin/catalog/servicio';
@@ -251,6 +257,22 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => BlocProvider<AdminUsersCubit>.value(
         value: sl<AdminUsersCubit>(),
         child: const AdminUsersScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminPacientes,
+      name: 'adminPacientes',
+      builder: (context, state) => BlocProvider<AdminPacientesCubit>.value(
+        value: sl<AdminPacientesCubit>(),
+        child: const AdminPacientesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminAuditoria,
+      name: 'adminAuditoria',
+      builder: (context, state) => BlocProvider<AdminAuditoriaCubit>.value(
+        value: sl<AdminAuditoriaCubit>(),
+        child: const AdminAuditoriaScreen(),
       ),
     ),
     GoRoute(

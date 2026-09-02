@@ -33,9 +33,12 @@ De las 15 actividades del módulo "Notificaciones Push y Sistema de Calificacion
 - [x] B2. `aceptar_solicitud`: notificar al paciente "Solicitud aceptada" al crear la cita PROGRAMADA.
 - [x] B3. `notificar_documento_rechazado` y `notificar_verificacion_aprobada`: pasar a `notificar_usuario_push` (añade push FCM).
 
-### C. Actividad 7 — fuera de alcance
+### C. Actividad 7 — Recordatorio previo a cita (implementado)
 
-- [x] C1. Documentar en el plan que el recordatorio previo a cita requiere `pg_cron`/scheduling y queda pendiente.
+- [x] C1. Migración `20260901000700_recordatorios_cita.sql`: seed `recordatorio_horas_previas`,
+      tabla `recordatorios_cita`, función `enviar_recordatorios_cita()` (SECURITY DEFINER),
+      `CREATE EXTENSION IF NOT EXISTS pg_cron` + job `recordatorios-cita` (`*/15 * * * *`).
+      Aplicada al remoto y verificada (cron.job, notif `RECORDATORIO_CITA` en simulación P6).
 
 ### D. Feature `lib/features/calificaciones/`
 
@@ -64,7 +67,52 @@ De las 15 actividades del módulo "Notificaciones Push y Sistema de Calificacion
 
 ## Notas
 
-- Actividad 7 (recordatorio previo a cita): **fuera de alcance**. Requeriría `pg_cron` (`cron.schedule`) o una edge function programada; se documenta como pendiente futuro en AGENTS.md.
 - El especialista NO cambia estados ni registra pagos desde calificaciones; solo califica al paciente post-servicio.
 - `evaluaciones_servicio` ya existe en remoto (creada por SQL Editor, vacía, RLS sin policies); la migración la versiona y habilita sin perder datos (0 filas).
 - Patrón de errores `Either<Failure,T>` y cubits inyectando usecases por nombre.
+
+## Complemento (misma fecha) — Recordatorio previo a cita (Actividad 7) IMPLEMENTADO
+
+Inicialmente se documentó la actividad 7 como **fuera de alcance**. Por decisión del
+usuario se implementó con `pg_cron` (extensión disponible en el remoto, no instalada):
+migración `20260901000700_recordatorios_cita.sql`:
+
+- Seed `configuracion_sistema.recordatorio_horas_previas` = `'2'` (NUMERIC) — horas previas
+  a la cita en las que se dispara el recordatorio.
+- Tabla `public.recordatorios_cita` (cita_id PK REFERENCES citas ON DELETE CASCADE,
+  fecha_envio) + RLS con policy SELECT admin → **idempotencia** (un solo recordatorio por cita).
+- Función `public.enviar_recordatorios_cita()` SECURITY DEFINER: recorre citas
+  `estado='PROGRAMADA'` con `fecha_inicio` dentro de la ventana `(now(), now()+horas]`
+  y sin registro previo; notifica al paciente con `notificar_usuario_push`
+  (`RECORDATORIO_CITA`) y registra la cita en `recordatorios_cita`.
+- `CREATE EXTENSION IF NOT EXISTS pg_cron` + job `cron.schedule('recordatorios-cita',
+  '*/15 * * * *', SELECT public.enviar_recordatorios_cita())` (idempotente).
+- GRANT EXECUTE a `authenticated`. Aplicada al remoto y verificada (cron.job presente).
+
+## Pruebas de control P1-P13 (verificadas en BD, script verify_control_push_calif.js)
+
+Ejecutadas con transacciones ROLLBACK + `SET LOCAL ROLE authenticated` y claims JWT
+(`request.jwt.claim.sub` + `request.jwt.claims`), resolviendo el `sub` como superusuario
+antes de cambiar de rol (bajo RLS el subquery devuelve NULL → `NO_AUTENTICADO`). Nota:
+`SET LOCAL ROLE` persiste en la transacción; usar `SET LOCAL ROLE postgres` antes de
+consultas superuser (los SELECT de notificaciones de otro usuario dan 0 filas bajo
+`notificacion_own_select`). **Resultado: 13/13 PASS, sin residuos.**
+
+| # | Prueba | Resultado | Detalle |
+|---|--------|-----------|---------|
+| P1 | El dispositivo queda registrado | **PASS** | INSERT en `dispositivos_usuario` (usuario_id, token_fcm, plataforma 'WEB', activo) + SELECT propio OK (RLS `dispositivo_own_access`). |
+| P2 | Push en dispositivos reales | **MANUAL** | Requiere dispositivo físico + Firebase. Infraestructura verificada: `send-push` (JWT RS256), config `push_notifications`/`edge_function_base_url`/`anon_key`, policies `dispositivos_usuario`. |
+| P3 | Especialista recibe solicitud en su zona | **PASS** | Solicitud PUBLICADA con dirección geo → trigger `trg_notificar_solicitud_publicada` genera `SOLICITUD_NUEVA` a 2 especialistas APROBADOS en radio. |
+| P4 | Paciente recibe confirmación al aceptar | **PASS** | `aceptar_solicitud` OK → notif `SOLICITUD_ACEPTADA` al paciente (1). |
+| P5 | Notif de desplazamiento/llegada | **PASS** | UPDATE cita `EN_CAMINO` y `LLEGO` como especialista dueño → 2 notif `CITA_ESTADO` al paciente (trigger `trg_notificar_cambio_estado_cita`). |
+| P6 | Recordatorios previos a cita | **PASS** | `fecha_inicio=now()+30min` en cita PROGRAMADA → `enviar_recordatorios_cita()` → notif `RECORDATORIO_CITA` (1) + fila en `recordatorios_cita` + cron.job activo. |
+| P7 | Aviso de documento rechazado | **PASS** | UPDATE `documentos_especialista` a `RECHAZADO` como admin → notif `DOCUMENTO_RECHAZADO` al especialista (1). |
+| P8 | Paciente califica al especialista | **PASS** | `registrar_evaluacion` (cita 85e1d764, 5★) → `{ok:true, evaluacion_id}`. |
+| P9 | Especialista califica al paciente | **PASS** | `registrar_evaluacion` como especialista de la cita (4★) → `{ok:true}` (bidireccional). |
+| P10 | No calificar antes de finalizar | **PASS** | Sobre cita PROGRAMADA → `{ok:false, motivo:'CITA_NO_FINALIZADA'}`. |
+| P11 | No segunda calificación | **PASS** | Tras P8, repetir → `{ok:false, motivo:'YA_EVALUADO'}`. |
+| P12 | Evaluaciones vinculadas a la cita | **PASS** | Fila con `cita_id`/`evaluador_id` correctos; UNIQUE `(cita_id, evaluador_id)` y FKs presentes. |
+| P13 | Consulta de calificaciones acumuladas | **PASS** | `get_promedio_especialista` → `{promedio:5, total:1}`. |
+
+P2 queda **pendiente de prueba manual** en un dispositivo real (ningún `dispositivos_usuario`
+activo en BD; la entrega FCM real requiere dispositivo + Firebase).

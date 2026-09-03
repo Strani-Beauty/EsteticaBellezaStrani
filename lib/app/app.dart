@@ -9,6 +9,7 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/session_storage_cleaner.dart';
+import 'package:esteticaybellezastrani/app/core/web_unload_cleaner.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/datasources/auth_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/auth_users/data/services/fcm_token_service.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
@@ -53,6 +54,17 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
     _listenRecoveryLink();
     sl<FcmTokenService>().init();
     _showStartupNotice();
+    if (kIsWeb) {
+      registerWebUnloadCleaner(_handleWebUnload);
+    }
+  }
+
+  /// Al cerrar/refrescar la pestaña (eventos nativos `pagehide`/`beforeunload`)
+  /// se elimina la sesión persistida de forma síncrona. `AppLifecycleState
+  /// .detached` no llega de forma fiable en Flutter Web, por eso se usan
+  /// listeners del navegador; el handler `detached` se mantiene como fallback.
+  void _handleWebUnload() {
+    clearPersistedSessionSynchronous();
   }
 
   /// Muestra el aviso de arranque (enlace de auth fallido) tras el primer frame.
@@ -88,6 +100,9 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _recoverySub?.cancel();
+    if (kIsWeb) {
+      unregisterWebUnloadCleaner(_handleWebUnload);
+    }
     super.dispose();
   }
 

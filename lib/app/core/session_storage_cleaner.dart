@@ -7,3 +7,9 @@ import 'session_storage_cleaner_stub.dart'
 /// seguir funcionando en ese browser (necesita el verifier intacto).
 Future<void> clearPersistedSessionKeepingPkceVerifier() =>
     impl.clearPersistedSessionKeepingPkceVerifier();
+
+/// Variante síncrona para usar en listeners nativos del navegador
+/// (`pagehide`/`beforeunload`), donde el código debe ejecutarse completo
+/// antes del teardown de la página.
+void clearPersistedSessionSynchronous() =>
+    impl.clearPersistedSessionSynchronous();

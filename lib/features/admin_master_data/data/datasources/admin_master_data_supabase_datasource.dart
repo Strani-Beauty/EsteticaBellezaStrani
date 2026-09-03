@@ -306,23 +306,9 @@ class AdminMasterDataSupabaseDataSource {
         .lte('fecha_finalizacion', hasta.toIso8601String())
         .order('fecha_finalizacion', ascending: false);
 
-    // Filtro servidor: descartamos citas ya liquidadas (idempotencia).
-    final candidatas = res.where((j) {
-      final citaId = j['id']?.toString();
-      return citaId != null && !liquidadasIds.contains(citaId);
-    });
-
-    final completadas = await _client
-        .from('tratamientos')
-        .select('cita_id')
-        .eq('estado', AppConstants.tratamientoCompletado);
-    final completadasIds =
-        (completadas.map((j) => j['cita_id']?.toString()).toSet());
-
     final out = <CitaFinalizadaAdminEntity>[];
-    for (final json in candidatas) {
+    for (final json in res) {
       final citaId = json['id']?.toString() ?? '';
-      if (!completadasIds.contains(citaId)) continue;
 
       final solicitudes = json['solicitudes'];
       Map<String, dynamic>? pago;
@@ -336,8 +322,6 @@ class AdminMasterDataSupabaseDataSource {
       }
       final saldo = (pago?['saldo_pendiente'] as num?)?.toDouble() ?? 0;
       final estadoPago = pago?['estado']?.toString() ?? '';
-      if (estadoPago != 'PAGADO') continue;
-      if (saldo > 0) continue;
 
       final esp = json['especialistas'];
       String? nombre;
@@ -385,6 +369,7 @@ class AdminMasterDataSupabaseDataSource {
         estadoPago: estadoPago,
         pacienteNombre: pacienteNombre,
         servicios: servicios,
+        liquidada: liquidadasIds.contains(citaId),
       ));
     }
     return out;

@@ -205,7 +205,7 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Citas finalizadas y pagadas del período. Toca una para '
+                  'Citas terminadas del período. Toca una para '
                   'ver su detalle financiero.',
                   style: TextStyle(fontSize: 13),
                 ),
@@ -238,7 +238,7 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text('No hay citas terminadas elegibles en el período.'),
+              child: Text('No hay citas terminadas en el período.'),
             ),
           )
         else
@@ -307,7 +307,8 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Citas finalizadas y pagadas elegibles para liquidación.',
+                  'Todas las citas terminadas del período '
+                  '(incluye ya liquidadas y pendientes de pago).',
                   style: const TextStyle(fontSize: 13),
                 ),
                 const SizedBox(height: 8),
@@ -365,7 +366,7 @@ class _AdminConciliacionScreenState extends State<AdminConciliacionScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
-              child: Text('No hay citas terminadas elegibles en el período.'),
+              child: Text('No hay citas terminadas en el período.'),
             ),
           )
         else
@@ -617,6 +618,10 @@ class _CitaTerminadaTile extends StatelessWidget {
                     color: cita.estaPagada
                         ? AppTheme.cBrandGreen
                         : Colors.amber.shade700),
+                if (cita.liquidada) ...[
+                  const SizedBox(width: 6),
+                  const _Chip('LIQUIDADA', color: AppTheme.cPastelBlue),
+                ],
               ],
             ),
             const SizedBox(height: 6),

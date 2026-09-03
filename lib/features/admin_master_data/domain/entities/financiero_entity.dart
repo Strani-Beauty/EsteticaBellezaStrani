@@ -117,6 +117,7 @@ class CitaFinalizadaAdminEntity extends Equatable {
   final String estadoPago;
   final String? pacienteNombre;
   final List<String> servicios;
+  final bool liquidada;
 
   const CitaFinalizadaAdminEntity({
     required this.citaId,
@@ -130,10 +131,12 @@ class CitaFinalizadaAdminEntity extends Equatable {
     this.estadoPago = '',
     this.pacienteNombre,
     this.servicios = const [],
+    this.liquidada = false,
   });
 
   bool get estaPagada => saldoPendiente <= 0;
 
   @override
-  List<Object?> get props => [citaId, solicitudId, especialistaId];
+  List<Object?> get props =>
+      [citaId, solicitudId, especialistaId, liquidada];
 }

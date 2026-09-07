@@ -43,8 +43,8 @@ class PagarServicio extends UseCase<String?, PagarServicioParams> {
       );
       return Right(solicitudId);
     } catch (e) {
-      return Left(
-          ServerFailure('No se pudo registrar el pago del servicio: $e'));
+      return Left(ServerFailure(
+          mensajeDeErrorAmigable('No se pudo registrar el pago del servicio', e)));
     }
   }
 }

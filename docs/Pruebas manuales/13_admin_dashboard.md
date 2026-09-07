@@ -17,7 +17,7 @@ pendientes, médicos pendientes, ingresos, usuarios) y **tarjetas agrupadas**:
 
 ## Precondiciones generales
 
-- Sesión de **Administrador** (`admin@test` / `admin@strani.com`, `Test1234!`).
+- Sesión de **Administrador** (`admin@test` → contraseña rotada, ver `supabase/.temp/seed_passwords.txt`; `admin@strani.com` / `Test1234!`).
 - Migración `20260822000100_admin_dashboard_rls.sql` aplicada al remoto.
 
 ## Casos

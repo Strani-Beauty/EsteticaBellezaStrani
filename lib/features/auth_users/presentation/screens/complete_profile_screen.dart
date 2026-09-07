@@ -45,6 +45,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   String? _avatarUrl;
   DateTime? _fechaNacimiento;
   String? _genero;
+  // true cuando el usuario confirmó una ubicación (búsqueda o PIN en el mapa).
+  bool _ubicacionConfirmada = false;
 
   @override
   void initState() {
@@ -99,6 +101,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       }
       if (isValidMapCoordinate(lat, lng)) {
         _selectedLocation = LatLng(lat!, lng!);
+        _ubicacionConfirmada = true;
       }
       _avatarUrl = avatar;
       _fechaNacimiento = paciente?.fechaNacimiento;
@@ -133,6 +136,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     if (coords != null) {
       setState(() {
         _selectedLocation = coords;
+        _ubicacionConfirmada = true;
         _searchingLocation = false;
       });
       _openMapModalDialog(); // Abrir mapa emergente cuadrado al geocodificar
@@ -221,6 +225,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       onPressed: () {
                         setState(() {
                           _selectedLocation = tempLocation;
+                          _ubicacionConfirmada = true;
                         });
                         Navigator.pop(dialogCtx);
                       },
@@ -247,6 +252,34 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    void aviso(String msg) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: Colors.redAccent, content: Text(msg)),
+      );
+    }
+
+    if (_fechaNacimiento == null) {
+      aviso('Selecciona tu fecha de nacimiento.');
+      return;
+    }
+    final hoy = DateTime.now();
+    final fechaMin = DateTime(1900);
+    final fechaMax = hoy.subtract(const Duration(days: 365 * 10));
+    if (_fechaNacimiento!.isAfter(hoy) ||
+        _fechaNacimiento!.isBefore(fechaMin) ||
+        _fechaNacimiento!.isAfter(fechaMax)) {
+      aviso('Ingresa una fecha de nacimiento válida (edad mínima 10 años).');
+      return;
+    }
+    if (_genero == null || _genero!.trim().isEmpty) {
+      aviso('Selecciona tu género.');
+      return;
+    }
+    if (!_ubicacionConfirmada) {
+      aviso('Confirma tu ubicación en el mapa antes de guardar.');
+      return;
+    }
 
     final cubit = context.read<AuthCubit>();
     final profile = cubit.currentProfile;

@@ -39,7 +39,8 @@ class CrearPaymentIntent
       );
       return Right(intent);
     } catch (e) {
-      return Left(PaymentFailure('No se pudo iniciar el pago: $e'));
+      return Left(
+          PaymentFailure(mensajeDeErrorAmigable('No se pudo iniciar el pago', e)));
     }
   }
 }

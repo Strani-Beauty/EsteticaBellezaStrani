@@ -338,6 +338,13 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
                 label: 'Tarifa por hora (USD)',
                 prefix: const Icon(Icons.attach_money, color: AppTheme.cDeepAccent),
               ),
+              validator: (v) {
+                final text = (v ?? '').trim();
+                if (text.isEmpty) return 'Ingresa tu tarifa por hora';
+                final valor = double.tryParse(text);
+                if (valor == null || valor <= 0) return 'Ingresa un monto válido mayor a 0';
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             TextFormField(

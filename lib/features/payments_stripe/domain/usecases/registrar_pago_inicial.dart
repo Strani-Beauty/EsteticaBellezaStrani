@@ -33,7 +33,8 @@ class RegistrarPagoInicial
       );
       return const Right(null);
     } catch (e) {
-      return Left(ServerFailure('No se pudo registrar el pago inicial: $e'));
+      return Left(ServerFailure(
+          mensajeDeErrorAmigable('No se pudo registrar el pago inicial', e)));
     }
   }
 }

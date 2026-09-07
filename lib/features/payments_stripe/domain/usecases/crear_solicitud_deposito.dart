@@ -33,7 +33,8 @@ class CrearSolicitudDeposito
       );
       return Right(solicitudId);
     } catch (e) {
-      return Left(ServerFailure('No se pudo crear la solicitud: $e'));
+      return Left(ServerFailure(
+          mensajeDeErrorAmigable('No se pudo crear la solicitud', e)));
     }
   }
 }

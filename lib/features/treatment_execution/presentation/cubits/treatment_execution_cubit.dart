@@ -244,7 +244,7 @@ class TreatmentExecutionCubit extends Cubit<TreatmentExecutionState> {
     required EstadoCitaEjecucion nuevoEstado,
   }) async {
     final current = _loaded;
-    if (current == null) return;
+    if (current == null || current.trabajando) return;
     emit(current.copyWith(trabajando: true));
     final result = await _avanzarEstadoCita(
         AvanzarEstadoCitaParams(citaId: citaId, nuevoEstado: nuevoEstado));

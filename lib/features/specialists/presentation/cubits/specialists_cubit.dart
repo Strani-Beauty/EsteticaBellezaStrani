@@ -435,7 +435,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     if (current is! SpecialistsLoaded) return;
 
     final result = await _getMedicosRegentes(
-      const GetMedicosRegentesParams(soloActivos: false),
+      const GetMedicosRegentesParams(
+        soloActivos: false,
+        includeContacto: true,
+      ),
     );
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
@@ -620,7 +623,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     emit(const SpecialistsLoading());
     final result = await _getAllEspecialistas(const NoParams());
     final medicos = await _getMedicosRegentes(
-      const GetMedicosRegentesParams(soloActivos: false),
+      const GetMedicosRegentesParams(
+        soloActivos: false,
+        includeContacto: true,
+      ),
     );
     List<MedicoRegenteEntity> medicosList = [];
     medicos.fold((_) {}, (m) => medicosList = m);

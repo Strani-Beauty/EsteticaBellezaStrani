@@ -93,9 +93,13 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
   @override
   Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes({
     bool soloActivos = true,
+    bool includeContacto = false,
   }) async {
     try {
-      final models = await _dataSource.fetchMedicosRegentes(soloActivos: soloActivos);
+      final models = await _dataSource.fetchMedicosRegentes(
+        soloActivos: soloActivos,
+        includeContacto: includeContacto,
+      );
       return Right(models.map((m) => m.toEntity()).toList());
     } catch (e) {
       return Left(ServerFailure(e.toString()));

@@ -32,6 +32,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
   bool _isGeocoding = false;
   bool _isSaving = false;
   bool _isLoadingInitial = true;
+  bool _ubicacionConfirmada = false;
   String? _statusMessage;
 
   @override
@@ -70,8 +71,10 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
       _addressCtrl.text = addr;
       if (isValidMapCoordinate(lat, lng)) {
         _selectedLocation = LatLng(lat!, lng!);
+        _ubicacionConfirmada = true;
       } else {
         _selectedLocation = kDefaultLocation;
+        _ubicacionConfirmada = false;
       }
       _isLoadingInitial = false;
     });
@@ -97,6 +100,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
     if (coords != null) {
       setState(() {
         _selectedLocation = coords;
+        _ubicacionConfirmada = true;
         _isGeocoding = false;
         _statusMessage = 'Ubicación localizada. Puedes verificar el PIN en el mapa.';
       });
@@ -175,6 +179,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                       onPressed: () {
                         setState(() {
                           _selectedLocation = tempLoc;
+                          _ubicacionConfirmada = true;
                           _statusMessage = 'PIN actualizado en el formulario.';
                         });
                         Navigator.pop(dialogCtx);
@@ -195,6 +200,16 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
   /// Guardar la latitud, longitud y dirección en Supabase
   Future<void> _saveLocation() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    if (!_ubicacionConfirmada) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text('Confirma tu ubicación en el mapa antes de guardar.'),
+        ),
+      );
+      return;
+    }
 
     final user = SupabaseService.currentUser;
     if (user == null) {

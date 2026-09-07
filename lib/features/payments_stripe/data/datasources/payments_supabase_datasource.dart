@@ -76,9 +76,19 @@ class PaymentsSupabaseDataSource {
           .eq('paciente_id', pacienteId)
           .eq('es_principal', true)
           .maybeSingle();
-      return res?['id'] as String?;
-    } catch (_) {
-      return null;
+      final direccionId = res?['id'] as String?;
+      if (direccionId == null || direccionId.isEmpty) {
+        throw Exception(
+            'Primero guarda una dirección principal con su ubicación en el mapa.');
+      }
+      return direccionId;
+    } catch (e) {
+      if (e is Exception &&
+          e.toString().contains('Primero guarda una dirección principal')) {
+        rethrow;
+      }
+      throw Exception(
+          'No se pudo obtener tu dirección principal. Verifica que tengas una dirección guardada.');
     }
   }
 

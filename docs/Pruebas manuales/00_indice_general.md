@@ -22,6 +22,9 @@
 | 09 | [09_treatment_execution.md](09_treatment_execution.md) | Ejecución de citas a domicilio | COMPLETO |
 | 10 | [10_treatment_photos.md](10_treatment_photos.md) | Fotografías de tratamiento | COMPLETO (accesible desde CitaDetalleScreen) |
 | 11 | [11_flujos_integrados_e2e.md](11_flujos_integrados_e2e.md) | Flujos completos que cruzan módulos | — |
+| 12 | [12_solicitudes_reserva.md](12_solicitudes_reserva.md) | Reserva de servicios y solicitudes | COMPLETO |
+| 13 | [13_admin_dashboard.md](13_admin_dashboard.md) | Panel de administración (dashboard) | COMPLETO |
+| 14 | [14_seguridad_privacidad.md](14_seguridad_privacidad.md) | Seguridad, privacidad, validaciones y errores | AUDITADO (CUMPLE) |
 
 `reports_dashboards` se omite: el módulo está vacío (sin pantallas, cubits ni rutas).
 
@@ -41,6 +44,9 @@
 | `pac.rechazado@test` | Paciente | Evaluación `RECHAZADA` | 05 |
 | `pac.desactivado@test` | Paciente | `profiles.activo=false` | 04, 11 |
 | `esp.desactivado@test` | Especialista | `profiles.activo=false` | 04, 11 |
+
+> **Nota (2026-09-07):** por seguridad se rotaron las contraseñas de las cuentas `*@test` (sin dominio).
+> Ver `supabase/.temp/seed_passwords.txt` (gitignored). Las cuentas `@test.com` conservan `Test1234!`.
 
 ## Entorno de prueba
 

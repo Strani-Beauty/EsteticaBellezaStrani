@@ -126,8 +126,13 @@ class SpecialistsSupabaseDataSource {
 
   Future<List<MedicoRegenteModel>> fetchMedicosRegentes({
     bool soloActivos = true,
+    bool includeContacto = false,
   }) async {
-    var query = _client.from('medicos_regentes').select();
+    // `medicos_regentes_publico` expone id, nombre, numero_licencia, estado,
+    // activo y fechas (SIN telefono/correo) a cualquier autenticado. La tabla
+    // con datos de contacto solo la lee el administrador (policy admin).
+    var query = _client.from(
+        includeContacto ? 'medicos_regentes' : 'medicos_regentes_publico').select();
     if (soloActivos) {
       query = query.eq('activo', true);
     }
@@ -345,6 +350,13 @@ class SpecialistsSupabaseDataSource {
         .createSignedUrl(path, 3600);
   }
 
+  /// Genera una URL firmada para leer la firma de contrato del bucket privado.
+  Future<String> crearUrlFirmadaContrato(String path) async {
+    return _client.storage
+        .from(AppConstants.bucketContratos)
+        .createSignedUrl(path, 3600);
+  }
+
   /// Aprueba o rechaza un documento (uso administrativo). Al rechazar deja
   /// `activo=false` para que el especialista vuelva a subirlo con la
   /// observación visible como feedback.
@@ -487,20 +499,19 @@ class SpecialistsSupabaseDataSource {
     return ContratoModel.fromJson(res);
   }
 
-  /// Sube la imagen de la firma manuscrita del contrato al bucket `contratos`
-  /// y devuelve la URL pública.
+  /// Sube la imagen de la firma manuscrita del contrato al bucket privado
+  /// `contratos` y devuelve el path de storage (para servirla con URL firmada
+  /// mediante [crearUrlFirmadaContrato]).
   Future<String> subirFirmaContrato({
     required String especialistaId,
     required Uint8List bytes,
   }) async {
     final path =
         '$especialistaId/firma_${DateTime.now().millisecondsSinceEpoch}.png';
-    final upload = await _client.storage
+    await _client.storage
         .from(AppConstants.bucketContratos)
         .uploadBinary(path, bytes);
-    return _client.storage
-        .from(AppConstants.bucketContratos)
-        .getPublicUrl(upload);
+    return path;
   }
 
   // ── Ubicación ────────────────────────────────────────────────

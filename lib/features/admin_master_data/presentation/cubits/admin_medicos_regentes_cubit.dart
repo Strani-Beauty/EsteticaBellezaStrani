@@ -54,7 +54,10 @@ class AdminMedicosRegentesCubit extends Cubit<AdminMedicosRegentesState> {
   Future<void> load() async {
     emit(const AdminMedicosRegentesLoading());
     final result =
-        await _getMedicos(const GetMedicosRegentesParams(soloActivos: false));
+        await _getMedicos(const GetMedicosRegentesParams(
+      soloActivos: false,
+      includeContacto: true,
+    ));
     result.fold(
       (f) => emit(AdminMedicosRegentesError(f.message)),
       (items) => emit(AdminMedicosRegentesLoaded(items)),

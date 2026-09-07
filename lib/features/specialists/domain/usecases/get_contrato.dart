@@ -60,8 +60,9 @@ class SubirFirmaContratoParams {
   });
 }
 
-/// Sube la imagen de la firma manuscrita del contrato al storage y devuelve la URL.
-class SubirFirmaContrato
+/// Sube la imagen de la firma manuscrita del contrato al storage (bucket
+  /// privado) y devuelve el path de storage para servirlo con URL firmada.
+  class SubirFirmaContrato
     extends UseCase<String, SubirFirmaContratoParams> {
   final ISpecialistsRepository _repository;
   SubirFirmaContrato(this._repository);

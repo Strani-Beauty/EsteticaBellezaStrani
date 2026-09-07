@@ -18,7 +18,10 @@
 - **Este checklist es la prueba MANUAL en la interfaz web, pendiente de ejecutar**
   con las cuentas de prueba. Cada ítem se completa al verificar visualmente el flujo.
 
-## Cuentas (clave `Test1234!`)
+## Cuentas
+
+> **Nota (2026-09-07):** las contraseñas de las cuentas `*@test` (sin dominio) se rotaron por seguridad —
+> ver `supabase/.temp/seed_passwords.txt` (gitignored). Las cuentas `@test.com` conservan `Test1234!`.
 
 | Rol | Email | Notas |
 |---|---|---|

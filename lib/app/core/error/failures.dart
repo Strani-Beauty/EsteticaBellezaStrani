@@ -61,3 +61,30 @@ class TelemedinaFailure extends Failure {
 class ImmutableRecordFailure extends Failure {
   const ImmutableRecordFailure([super.message = 'Este registro ya no puede ser modificado.']);
 }
+
+/// Convierte una excepción cruda en un mensaje de usuario claro, evitando
+/// filtrar detalles técnicos (PostgrestException, ClientException, etc.).
+///
+/// Si la excepción es de tipo técnico se muestra únicamente el prefijo amigable;
+/// en caso contrario se conserva el mensaje de la excepción (los datasources ya
+/// lanzan `Exception('mensaje legible')` en los flujos esperados).
+String mensajeDeErrorAmigable(String prefijo, Object error) {
+  final texto = error.toString();
+  const tecnicos = <String>[
+    'PostgrestException',
+    'ClientException',
+    'TimeoutException',
+    'FormatException',
+    'TypeError',
+    'CastError',
+    'SocketException',
+  ];
+  if (tecnicos.any(texto.contains)) {
+    return prefijo;
+  }
+  final limpio = texto
+      .replaceFirst('Exception: ', '')
+      .replaceFirst('_ClientSocketException: ', '')
+      .trim();
+  return limpio.isEmpty ? prefijo : '$prefijo: $limpio';
+}

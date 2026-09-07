@@ -792,7 +792,6 @@ class SupabaseService {
       await _client.from('profiles').update({
         'activo': aprobado,
         'evaluation_passed': aprobado,
-        'payment_completed': aprobado,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', profileId);
       debugPrint('✅ [saveQualifyTestValidation] profiles actualizado');

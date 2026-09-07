@@ -37,6 +37,7 @@ abstract class ISpecialistsRepository {
   // ── Médicos Regentes ─────────────────────────────────────────
   Future<Either<Failure, List<MedicoRegenteEntity>>> getMedicosRegentes({
     bool soloActivos = true,
+    bool includeContacto = false,
   });
 
   Future<Either<Failure, MedicoRegenteEntity>> createMedicoRegente({

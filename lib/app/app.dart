@@ -155,6 +155,7 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
         title: 'Estética y Belleza Strani',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        scaffoldMessengerKey: scaffoldMessengerKey,
         routerConfig: appRouter,
       ),
     );

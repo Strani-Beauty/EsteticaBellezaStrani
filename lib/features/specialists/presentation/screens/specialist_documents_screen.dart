@@ -176,8 +176,11 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     final rechazado = docs
         .where((d) => d.estadoRevision == EstadoRevisionDocumento.rechazado)
         .toList();
-    final enRevision = docs.any((d) =>
-        d.activo && d.estadoRevision == EstadoRevisionDocumento.pendiente);
+    final activoPendiente = docs
+        .where((d) =>
+            d.activo && d.estadoRevision == EstadoRevisionDocumento.pendiente)
+        .toList();
+    final enRevision = activoPendiente.isNotEmpty;
 
     // Precedencia: un documento ACTIVO en revisión (re-subida) manda sobre el
     // rechazo anterior; sin activo, se muestra el rechazo de la última versión.
@@ -192,16 +195,19 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
       estado = _EstadoRequisito.pendiente;
     }
 
+    // Tipo a re-subir: prioriza el PENDIENTE activo (reemplazo) y, si no,
+    // el último rechazado.
+    final TipoDocumento? tipoReSubida = enRevision
+        ? activoPendiente.last.tipoDocumento
+        : (rechazado.isNotEmpty ? rechazado.last.tipoDocumento : null);
+
     return _DocumentoTile(
       requisito: requisito,
       estado: estado,
       motivo:
           rechazado.isNotEmpty ? rechazado.last.observacionRevision : null,
       cargando: _uploading,
-      onSelect: () => _seleccionarArchivo(
-        requisito,
-        tipo: rechazado.isNotEmpty ? rechazado.last.tipoDocumento : null,
-      ),
+      onSelect: () => _seleccionarArchivo(requisito, tipo: tipoReSubida),
     );
   }
 
@@ -359,7 +365,21 @@ class _DocumentoTile extends StatelessWidget {
             else if (estado == _EstadoRequisito.completado)
               const Icon(Icons.check_circle, color: AppTheme.cBrandGreen)
             else if (estado == _EstadoRequisito.enRevision)
-              const Icon(Icons.schedule_rounded, color: Colors.orange)
+              // Un documento en revisión puede reemplazarse con una versión
+              // corregida antes de que el admin lo apruebe/rechace.
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 150),
+                child: SizedBox(
+                  height: 40,
+                  child: OutlinedButton(
+                    onPressed: onSelect,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text('Reemplazar'),
+                  ),
+                ),
+              )
             else
               // Un botón como hijo no-flex de un Row recibe ancho ilimitado
               // (0..∞), por lo que se acota con `maxWidth` y deja que crezca

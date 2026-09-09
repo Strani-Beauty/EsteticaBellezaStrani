@@ -231,6 +231,23 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
+  /// Cambia la contraseña validando la contraseña actual (post-login).
+  /// Si la actual es incorrecta se emite [AuthError] y NO se cambia nada.
+  Future<void> changePasswordWithVerification({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    emit(const AuthLoading());
+    final result = await _authRepository.changePasswordWithVerification(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => _emitRefreshedProfile(),
+    );
+  }
+
   /// Recarga el perfil tras una operación que cambia datos de sesión
   /// sin mostrar spinner de pantalla completa.
   Future<void> _emitRefreshedProfile() async {

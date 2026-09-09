@@ -33,6 +33,14 @@ abstract class IAuthRepository {
   /// Cambia la contraseña del usuario autenticado.
   Future<Either<Failure, void>> changePassword(String newPassword);
 
+  /// Cambia la contraseña del usuario autenticado validando primero la
+  /// contraseña actual (post-login). Fallará con credenciales inválidas si
+  /// la contraseña actual es incorrecta.
+  Future<Either<Failure, void>> changePasswordWithVerification({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   // ── Profile ─────────────────────────────────────────────────
   Future<Either<Failure, ProfileEntity>> getCurrentProfile();
 

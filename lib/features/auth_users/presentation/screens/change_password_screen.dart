@@ -66,7 +66,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 20),
                 _passwordField('Contraseña actual', _currentCtrl, () => setState(
-                    () => _obscureCurrent = !_obscureCurrent), _obscureCurrent),
+                    () => _obscureCurrent = !_obscureCurrent), _obscureCurrent,
+                    validator: (v) {
+                  if (v == null || v.isEmpty) return 'Ingresa tu contraseña actual';
+                  return null;
+                }),
                 const SizedBox(height: 14),
                 _passwordField('Nueva contraseña', _newCtrl, () => setState(
                     () => _obscureNew = !_obscureNew), _obscureNew,
@@ -139,6 +143,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    context.read<AuthCubit>().changePassword(_newCtrl.text);
+    context.read<AuthCubit>().changePasswordWithVerification(
+          currentPassword: _currentCtrl.text,
+          newPassword: _newCtrl.text,
+        );
   }
 }

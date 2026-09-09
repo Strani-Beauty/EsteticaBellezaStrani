@@ -87,6 +87,25 @@ class AuthSupabaseDataSource {
     await _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  /// Cambia la contraseña validando primero la contraseña actual.
+  /// GoTrue NO verifica la contraseña actual en `updateUser`, así que se
+  /// re-autentica primero: si la actual es incorrecta lanza
+  /// `invalid_credentials` y no se cambia nada.
+  Future<void> updatePasswordWithCurrent({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = currentUser;
+    if (user == null || user.email == null) {
+      throw AuthException('Sesión no activa.');
+    }
+    await _client.auth.signInWithPassword(
+      email: user.email!,
+      password: currentPassword,
+    );
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
   User? get currentUser => _client.auth.currentUser;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

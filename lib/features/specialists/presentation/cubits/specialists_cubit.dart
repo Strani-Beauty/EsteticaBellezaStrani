@@ -488,8 +488,10 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     String? nombreArchivo,
     String? urlArchivo,
   }) async {
-    final current = state;
-    if (current is! SpecialistsLoaded) return;
+    // Si el estado actual es de error, se reintenta sobre una base vacía para
+    // no dejar la subida bloqueada de forma permanente.
+    final base = state is SpecialistsLoaded ? state as SpecialistsLoaded
+        : const SpecialistsLoaded();
 
     final result = await _registerDocumento(RegisterDocumentoParams(
       especialistaId: especialistaId,
@@ -499,7 +501,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     ));
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
-      (doc) => emit(current.copyWith(documentos: [...current.documentos, doc])),
+      (doc) => emit(base.copyWith(documentos: [...base.documentos, doc])),
     );
   }
 
@@ -510,8 +512,8 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required Uint8List bytes,
     required String nombreArchivo,
   }) async {
-    final current = state;
-    if (current is! SpecialistsLoaded) return;
+    final base = state is SpecialistsLoaded ? state as SpecialistsLoaded
+        : const SpecialistsLoaded();
 
     final result = await _subirDocumento(SubirDocumentoParams(
       especialistaId: especialistaId,
@@ -521,7 +523,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     ));
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
-      (doc) => emit(current.copyWith(documentos: [...current.documentos, doc])),
+      (doc) => emit(base.copyWith(documentos: [...base.documentos, doc])),
     );
   }
 

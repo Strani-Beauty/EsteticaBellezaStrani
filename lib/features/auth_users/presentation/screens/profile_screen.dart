@@ -50,6 +50,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mi Perfil'),
+        leading: IconButton(
+          onPressed: () => context.go(AppRoutes.services),
+          tooltip: 'Volver',
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
         actions: [
           IconButton(
             onPressed: () => context.go(AppRoutes.changePassword),

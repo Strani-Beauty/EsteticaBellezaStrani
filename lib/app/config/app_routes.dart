@@ -134,6 +134,23 @@ class AppRoutes {
 /// visibles (p.ej. el catálogo re-valida el estado médico tras la renovación).
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
+/// Llave global del `ScaffoldMessenger` para mostrar mensajes (SnackBars)
+/// desde fuera del árbol de widgets (p.ej. los redirects por rol del router).
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+/// Muestra un SnackBar global vía la llave del ScaffoldMessenger.
+void showGlobalSnackBar(String message) {
+  scaffoldMessengerKey.currentState
+    ?..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+}
+
 /// GoRouter con guards de navegación basados en estado de AuthCubit
 final GoRouter appRouter = GoRouter(
   initialLocation: AppRoutes.welcome,
@@ -145,6 +162,7 @@ final GoRouter appRouter = GoRouter(
       authState: authCubit.state,
       location: state.matchedLocation,
       onDeactivated: () => authCubit.signOut(),
+      onRoleMismatch: showGlobalSnackBar,
     );
   },
   routes: [

@@ -1,5 +1,6 @@
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
+import 'package:esteticaybellezastrani/features/auth_users/domain/entities/profile_entity.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 
 /// Lógica pura de redirect de GoRouter.
@@ -10,6 +11,7 @@ String? resolveAuthRedirect({
   required AuthState authState,
   required String location,
   required void Function() onDeactivated,
+  void Function(String message)? onRoleMismatch,
 }) {
   final publicRoutes = [
     AppRoutes.welcome,
@@ -60,17 +62,32 @@ String? resolveAuthRedirect({
 
     // ── Guards por rol (cierran deep-links con sesión de otro rol) ──
     if (_esRutaAdmin(location) && !profile.isAdmin) {
+      onRoleMismatch?.call(_mensajeRol(profile, 'administración'));
       return _redirectByRole(profile.rolNombre);
     }
     if (_esRutaEspecialista(location) && !profile.isSpecialist) {
+      onRoleMismatch?.call(_mensajeRol(profile, 'especialista'));
       return _redirectByRole(profile.rolNombre);
     }
     if (location == AppRoutes.completeProfile && !profile.isPatient) {
+      onRoleMismatch?.call(_mensajeRol(profile, 'paciente'));
       return _redirectByRole(profile.rolNombre);
     }
   }
 
   return null;
+}
+
+String _mensajeRol(ProfileEntity profile, String area) {
+  switch (profile.rolNombre) {
+    case AppConstants.rolPaciente:
+      return 'No eres especialista. Pasa a Servicios.';
+    case AppConstants.rolEspecialista:
+      return 'No eres administrador. Accede a tus datos de especialista.';
+    case AppConstants.rolAdministrador:
+    default:
+      return 'Esta sección no corresponde a tu perfil ($area).';
+  }
 }
 
 bool _esRutaAdmin(String location) {

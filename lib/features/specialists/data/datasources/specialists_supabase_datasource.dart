@@ -144,25 +144,28 @@ class SpecialistsSupabaseDataSource {
 
   /// Registra un médico regente. Queda en estado PENDIENTE (activo=false)
   /// hasta que un administrador lo valide (ver [updateMedicoRegente]).
+  ///
+  /// Usa la RPC `registrar_medico_regente` (SECURITY DEFINER): tras el
+  /// endurecimiento de RLS el SELECT de `medicos_regentes` es solo-admin, por lo
+  /// que un `insert().select()` (RETURNING) de un especialista lanzaba 42501.
+  /// La función devuelve solo campos públicos (sin teléfono/correo).
   Future<MedicoRegenteModel> createMedicoRegente({
     required String nombre,
     String? numeroLicencia,
     String? telefono,
     String? correo,
   }) async {
-    final now = DateTime.now().toIso8601String();
-    final res = await _client.from('medicos_regentes').insert({
-      'nombre': nombre,
-      'numero_licencia': numeroLicencia,
-      'telefono': telefono,
-      'correo': correo,
-      'estado': 'PENDIENTE',
-      'activo': false,
-      'created_at': now,
-      'updated_at': now,
-    }).select().maybeSingle();
+    final res = await _client.rpc(
+      'registrar_medico_regente',
+      params: {
+        'p_nombre': nombre,
+        'p_numero_licencia': numeroLicencia,
+        'p_telefono': telefono,
+        'p_correo': correo,
+      },
+    );
     if (res == null) throw Exception('No se pudo registrar el médico regente');
-    return MedicoRegenteModel.fromJson(res);
+    return MedicoRegenteModel.fromJson(Map<String, dynamic>.from(res));
   }
 
   Future<MedicoRegenteModel> updateMedicoRegente(
@@ -280,6 +283,49 @@ class SpecialistsSupabaseDataSource {
     int versionDocumento = 1,
   }) async {
     final now = DateTime.now().toIso8601String();
+
+    // Si ya existe un PENDIENTE activo del mismo tipo, se reemplaza esa fila
+    // (UPDATE permitido por el trigger `proteger_revision_documento`, que solo
+    // bloquea estado/observacion/activo) en vez de apilar otro PENDIENTE.
+    final pendiente = await _client
+        .from('documentos_especialista')
+        .select('id')
+        .eq('especialista_id', especialistaId)
+        .eq('tipo_documento', tipoDocumento.toDb)
+        .eq('estado_revision', 'PENDIENTE')
+        .eq('activo', true)
+        .maybeSingle();
+
+    if (pendiente != null) {
+      final id = pendiente['id'] as String;
+      final res = await _client
+          .from('documentos_especialista')
+          .update({
+            'nombre_archivo': nombreArchivo,
+            'url_archivo': urlArchivo,
+            'version_documento': versionDocumento,
+            'updated_at': now,
+          })
+          .eq('id', id)
+          .select()
+          .maybeSingle();
+      if (res == null) throw Exception('No se pudo actualizar el documento');
+      return DocumentoEspecialistaModel.fromJson(res);
+    }
+
+    // Un tipo APROBADO no puede re-subirse (regla de negocio).
+    final aprobado = await _client
+        .from('documentos_especialista')
+        .select('id')
+        .eq('especialista_id', especialistaId)
+        .eq('tipo_documento', tipoDocumento.toDb)
+        .eq('estado_revision', 'APROBADO')
+        .maybeSingle();
+    if (aprobado != null) {
+      throw Exception(
+          'Este documento ya fue aprobado; no puedes re-subirlo.');
+    }
+
     final res = await _client.from('documentos_especialista').insert({
       'especialista_id': especialistaId,
       'tipo_documento': tipoDocumento.toDb,

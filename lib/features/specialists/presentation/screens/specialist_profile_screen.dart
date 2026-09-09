@@ -208,7 +208,14 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
   Widget build(BuildContext context) {
     final profile = context.read<AuthCubit>().currentProfile;
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Perfil de Especialista')),
+      appBar: AppBar(
+        title: const Text('Mi Perfil de Especialista'),
+        leading: IconButton(
+          onPressed: () => context.go(AppRoutes.specialistHome),
+          tooltip: 'Volver',
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
+      ),
       body: BlocListener<SpecialistsCubit, SpecialistsState>(
         listener: (context, state) {
           if (state is SpecialistsError) {

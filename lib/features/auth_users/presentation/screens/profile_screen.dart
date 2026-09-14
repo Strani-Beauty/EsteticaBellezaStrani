@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
+import 'package:esteticaybellezastrani/app/config/map_config.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
+import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/paciente_entity.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
 import '../cubits/auth_cubit.dart';
+import '../widgets/avatar_selector.dart';
 import '../widgets/avatar_view.dart';
 
 /// Pantalla del perfil del usuario autenticado.
-/// Permite consultar la información básica y actualizar nombre/teléfono.
+/// Permite consultar y actualizar la información del perfil. Para pacientes se
+/// edita el set completo (avatar, nombre, teléfono, fecha de nacimiento, género
+/// y dirección con mapa); para el resto de roles solo avatar/nombre/teléfono.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -16,10 +28,23 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  static const _generoOptions = ['Femenino', 'Masculino', 'Otro', 'Prefiero no decir'];
+
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
+  final MapController _mapController = MapController();
+
   bool _editing = false;
   bool _loaded = false;
+
+  String? _avatarUrl;
+  DateTime? _fechaNacimiento;
+  String? _genero;
+  LatLng _selectedLocation = kDefaultLocation;
+  bool _ubicacionConfirmada = false;
+  String? _addressError;
+  bool _searchingLocation = false;
 
   @override
   void didChangeDependencies() {
@@ -30,11 +55,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _loadProfile() {
+  Future<void> _loadProfile() async {
     final profile = context.read<AuthCubit>().currentProfile;
-    if (profile != null) {
-      _nameCtrl.text = profile.fullName ?? '';
-      _phoneCtrl.text = profile.phone ?? '';
+    if (profile == null) return;
+
+    _nameCtrl.text = profile.fullName ?? '';
+    _phoneCtrl.text = profile.phone ?? '';
+    _avatarUrl = profile.avatarUrl;
+
+    if (profile.isPatient) {
+      _addressCtrl.text = profile.address ?? '';
+      if (isValidMapCoordinate(profile.latitude, profile.longitude)) {
+        _selectedLocation = LatLng(profile.latitude!, profile.longitude!);
+        _ubicacionConfirmada = true;
+      }
+
+      PacienteEntity? paciente;
+      final pacRes = await sl<GetMiPaciente>()();
+      pacRes.fold((f) => null, (p) => paciente = p);
+      if (!mounted) return;
+      _fechaNacimiento = paciente?.fechaNacimiento;
+      _genero = paciente?.genero;
     }
   }
 
@@ -42,6 +83,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -108,15 +151,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Center(
-                    child: AvatarView(
-                      avatarUrl: profile.avatarUrl,
-                      isPatient: profile.isPatient,
-                      isAdmin: profile.isAdmin,
-                      isSpecialist: profile.isSpecialist,
-                      seed: profile.id,
-                      diameter: 88,
-                      showBorder: false,
-                    ),
+                    child: _editing
+                        ? AvatarSelector(
+                            avatarUrl: _avatarUrl,
+                            onChanged: (value) =>
+                                setState(() => _avatarUrl = value),
+                          )
+                        : AvatarView(
+                            avatarUrl: profile.avatarUrl,
+                            isPatient: profile.isPatient,
+                            isAdmin: profile.isAdmin,
+                            isSpecialist: profile.isSpecialist,
+                            seed: profile.id,
+                            diameter: 88,
+                            showBorder: false,
+                          ),
                   ),
                   const SizedBox(height: 12),
                   Center(
@@ -153,6 +202,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : (profile.phone?.isEmpty == true
                               ? 'Sin registrar'
                               : profile.phone), phoneField: _editing),
+                  if (_editing && profile.isPatient) ...[
+                    _infoTile(
+                      Icons.cake_outlined,
+                      'Fecha de nacimiento',
+                      _fechaNacimiento == null
+                          ? 'Sin registrar'
+                          : _formatFecha(_fechaNacimiento!),
+                      dateField: true,
+                    ),
+                    _infoTile(
+                      Icons.wc_outlined,
+                      'Género',
+                      _genero ?? 'Sin registrar',
+                      generoField: true,
+                    ),
+                    _infoTile(
+                      Icons.home_outlined,
+                      'Dirección',
+                      _editing
+                          ? null
+                          : (profile.address?.isEmpty == true
+                              ? 'Sin registrar'
+                              : profile.address),
+                      addressField: _editing,
+                    ),
+                    _mapTile(),
+                  ],
                   if (!_editing) ...[
                     const SizedBox(height: 24),
                     FilledButton.icon(
@@ -200,6 +276,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? value, {
     bool nameField = false,
     bool phoneField = false,
+    bool dateField = false,
+    bool generoField = false,
+    bool addressField = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -225,6 +304,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
               keyboardType: TextInputType.phone,
               decoration: AppTheme.fieldDecoration(label: 'Teléfono'),
             )
+          else if (dateField)
+            InkWell(
+              onTap: _selectFechaNacimiento,
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              child: InputDecorator(
+                decoration: AppTheme.fieldDecoration(label: 'Fecha de nacimiento'),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _fechaNacimiento == null
+                          ? 'Seleccionar fecha'
+                          : _formatFecha(_fechaNacimiento!),
+                      style: TextStyle(
+                        color: _fechaNacimiento == null
+                            ? AppTheme.cMutedText
+                            : AppTheme.cDeepAccent,
+                      ),
+                    ),
+                    const Icon(Icons.calendar_today_rounded,
+                        size: 18, color: AppTheme.cMutedText),
+                  ],
+                ),
+              ),
+            )
+          else if (generoField)
+            DropdownButtonFormField<String>(
+              initialValue: _genero,
+              items: [
+                for (final g in _generoOptions)
+                  DropdownMenuItem(value: g, child: Text(g)),
+              ],
+              decoration: AppTheme.fieldDecoration(label: 'Género'),
+              onChanged: (value) => setState(() => _genero = value),
+            )
+          else if (addressField)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _addressCtrl,
+                  decoration: AppTheme.fieldDecoration(
+                    label: 'Dirección',
+                    suffix: _searchingLocation
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.search_rounded),
+                            tooltip: 'Buscar dirección',
+                            onPressed: () => _searchLocation(),
+                          ),
+                  ),
+                  onFieldSubmitted: _searchLocation,
+                ),
+                if (_addressError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _addressError!,
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ),
+              ],
+            )
           else
             Padding(
               padding: const EdgeInsets.only(left: 28),
@@ -238,13 +384,256 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _mapTile() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.map_outlined, color: AppTheme.cDeepAccent, size: 20),
+              SizedBox(width: 8),
+              Text('Ubicación en Mapa',
+                  style: TextStyle(color: AppTheme.cMutedText)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: _openMapModalDialog,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            child: InputDecorator(
+              decoration: AppTheme.fieldDecoration(label: 'Ubicación en Mapa'),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _ubicacionConfirmada
+                        ? 'Lat: ${_selectedLocation.latitude.toStringAsFixed(5)}, '
+                            'Lng: ${_selectedLocation.longitude.toStringAsFixed(5)}'
+                        : 'Confirmar posición del PIN',
+                    style: TextStyle(
+                      color: _ubicacionConfirmada
+                          ? AppTheme.cDeepAccent
+                          : AppTheme.cMutedText,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const Icon(Icons.map_rounded,
+                      size: 18, color: AppTheme.cMutedText),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFecha(DateTime fecha) {
+    final d = fecha.day.toString().padLeft(2, '0');
+    final m = fecha.month.toString().padLeft(2, '0');
+    return '$d/$m/${fecha.year}';
+  }
+
+  Future<void> _selectFechaNacimiento() async {
+    final hoy = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _fechaNacimiento ?? hoy.subtract(const Duration(days: 365 * 20)),
+      firstDate: DateTime(1900),
+      lastDate: hoy,
+    );
+    if (picked != null) setState(() => _fechaNacimiento = picked);
+  }
+
+  Future<void> _searchLocation([String? query]) async {
+    final q = (query ?? _addressCtrl.text).trim();
+    if (q.isEmpty) {
+      setState(() => _addressError = 'Ingresa una dirección para buscar.');
+      return;
+    }
+    setState(() {
+      _searchingLocation = true;
+      _addressError = null;
+    });
+
+    final coords = await SupabaseService.geocodeAddress(q);
+
+    if (!mounted) return;
+
+    if (coords != null) {
+      setState(() {
+        _selectedLocation = coords;
+        _ubicacionConfirmada = true;
+        _searchingLocation = false;
+      });
+      _openMapModalDialog();
+    } else {
+      setState(() {
+        _searchingLocation = false;
+        _addressError =
+            'No se encontraron coordenadas exactas. Puedes ajustar el PIN en el mapa manualmente.';
+      });
+      _openMapModalDialog();
+    }
+  }
+
+  void _openMapModalDialog() {
+    LatLng tempLocation = _selectedLocation;
+    final media = MediaQuery.of(context).size;
+    const headerHeight = 46.0;
+    const bottomHeight = 54.0;
+    final modalWidth = (media.width * 0.9).clamp(280.0, 400.0);
+    final mapHeight =
+        (media.height - headerHeight - bottomHeight - 64).clamp(140.0, 380.0);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: SizedBox(
+            width: modalWidth,
+            height: headerHeight + bottomHeight + mapHeight,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  color: AppTheme.cDeepAccent,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.map_rounded, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Mapa (Houston, TX)',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                        onPressed: () => Navigator.pop(dialogCtx),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PatientMapPicker(
+                    selectedLocation: tempLocation,
+                    mapController: _mapController,
+                    height: mapHeight,
+                    onLocationChanged: (newLoc) {
+                      tempLocation = newLoc;
+                    },
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.grey.shade50,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 38,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.cDeepAccent),
+                      onPressed: () {
+                        setState(() {
+                          _selectedLocation = tempLocation;
+                          _ubicacionConfirmada = true;
+                        });
+                        Navigator.pop(dialogCtx);
+                      },
+                      icon: const Icon(Icons.check, size: 16),
+                      label: const Text('Confirmar Posición del PIN',
+                          style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _guardar() async {
     final profile = context.read<AuthCubit>().currentProfile;
     if (profile == null) return;
-    await context.read<AuthCubit>().updateProfile(
-          userId: profile.id,
-          fullName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-          phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+
+    if (profile.isPatient) {
+      final hoy = DateTime.now();
+      final fechaMin = DateTime(1900);
+      final fechaMax = hoy.subtract(const Duration(days: 365 * 10));
+      if (_fechaNacimiento == null ||
+          _fechaNacimiento!.isAfter(hoy) ||
+          _fechaNacimiento!.isBefore(fechaMin) ||
+          _fechaNacimiento!.isAfter(fechaMax)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecciona una fecha de nacimiento válida (edad mínima 10 años).'),
+            backgroundColor: AppTheme.cError,
+          ),
         );
+        return;
+      }
+      if (_genero == null || _genero!.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecciona tu género.'),
+            backgroundColor: AppTheme.cError,
+          ),
+        );
+        return;
+      }
+      if (!_ubicacionConfirmada) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Confirma tu ubicación en el mapa antes de guardar.'),
+            backgroundColor: AppTheme.cError,
+          ),
+        );
+        return;
+      }
+
+      await context.read<AuthCubit>().updateProfile(
+            userId: profile.id,
+            fullName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+            address:
+                _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+            latitude: _selectedLocation.latitude,
+            longitude: _selectedLocation.longitude,
+            avatarUrl: _avatarUrl,
+          );
+
+      // Datos clínicos del paciente.
+      if (!mounted) return;
+      final pacRes = await sl<UpdateMiPaciente>()(UpdateMiPacienteParams(
+        fechaNacimiento: _fechaNacimiento,
+        genero: _genero,
+      ));
+      pacRes.fold((f) => null, (p) => null);
+    } else {
+      await context.read<AuthCubit>().updateProfile(
+            userId: profile.id,
+            fullName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+            avatarUrl: _avatarUrl,
+          );
+    }
   }
 }

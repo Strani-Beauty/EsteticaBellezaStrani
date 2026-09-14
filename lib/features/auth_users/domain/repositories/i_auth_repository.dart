@@ -51,6 +51,7 @@ abstract class IAuthRepository {
     String? address,
     double? latitude,
     double? longitude,
+    String? avatarUrl,
     bool? activo,
     bool? paymentCompleted,
     bool? evaluationPassed,

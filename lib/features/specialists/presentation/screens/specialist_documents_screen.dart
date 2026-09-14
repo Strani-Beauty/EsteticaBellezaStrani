@@ -254,7 +254,7 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     if (mounted) setState(() => _uploading = false);
   }
 
-  void _continuar() {
+  Future<void> _continuar() async {
     if (!_completo) return;
     final cubit = context.read<SpecialistsCubit>();
     final state = cubit.state;
@@ -266,8 +266,11 @@ class _SpecialistDocumentsScreenState extends State<SpecialistDocumentsScreen> {
     if (!yaAprobado) {
       // Al completar los documentos obligatorios se mueve la solicitud a
       // EN_REVISION: el especialista queda a la espera de validación del admin.
-      cubit.solicitarVerificacion(especialistaId: widget.especialistaId);
+      // Se espera a que la solicitud termine para que el panel ya muestre el
+      // estado EN_REVISION al navegar (evita la carrera con el dashboard).
+      await cubit.solicitarVerificacion(especialistaId: widget.especialistaId);
     }
+    if (!mounted) return;
     context.go(AppRoutes.specialistHome);
   }
 }

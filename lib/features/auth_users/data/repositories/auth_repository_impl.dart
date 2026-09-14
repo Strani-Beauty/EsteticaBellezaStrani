@@ -171,6 +171,7 @@ class AuthRepositoryImpl implements IAuthRepository {
     String? address,
     double? latitude,
     double? longitude,
+    String? avatarUrl,
     bool? activo,
     bool? paymentCompleted,
     bool? evaluationPassed,
@@ -182,6 +183,7 @@ class AuthRepositoryImpl implements IAuthRepository {
       if (address != null)          data['address'] = address;
       if (latitude != null)         data['latitude'] = latitude;
       if (longitude != null)        data['longitude'] = longitude;
+      if (avatarUrl != null)        data['avatar_url'] = avatarUrl;
       if (activo != null)           data['activo'] = activo;
       if (paymentCompleted != null) data['payment_completed'] = paymentCompleted;
       if (evaluationPassed != null) data['evaluation_passed'] = evaluationPassed;

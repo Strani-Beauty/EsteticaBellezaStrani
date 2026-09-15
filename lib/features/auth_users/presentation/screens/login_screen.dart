@@ -14,7 +14,16 @@ class LoginScreen extends StatefulWidget {
   /// Si es true, arranca directamente en el formulario de alta de paciente
   /// (deep-link `?registro=paciente` desde el catálogo de servicios).
   final bool registroPaciente;
-  const LoginScreen({super.key, this.registroPaciente = false});
+
+  /// Si es true, arranca directamente en el login de especialistas
+  /// (deep-link `?login=especialista` desde la bienvenida).
+  final bool loginEspecialista;
+
+  const LoginScreen({
+    super.key,
+    this.registroPaciente = false,
+    this.loginEspecialista = false,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -41,6 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (widget.registroPaciente) {
       _selectedType = _UserType.client;
       _mode = _AuthMode.signUp;
+    } else if (widget.loginEspecialista) {
+      // Deep-link desde la bienvenida: abre el login de especialista.
+      _selectedType = _UserType.specialist;
+      _mode = _AuthMode.signIn;
     }
   }
 

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
-import '../cubits/auth_cubit.dart';
 
 /// Pantalla de bienvenida — punto de entrada público de la app.
 /// Presenta la marca Strani y dirige al usuario según su rol.
@@ -42,16 +40,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     super.dispose();
   }
 
-  /// Acceso profesional: solo entra si el usuario autenticado es especialista.
-  /// Si no hay sesión (o el rol no es especialista) se envía al login.
+  /// Acceso profesional: va directo al login de especialistas.
+  /// Si ya hay sesión, el route guard redirige por rol.
   void _openSpecialist(BuildContext context) {
-    final auth = context.read<AuthCubit>();
-    final profile = auth.currentProfile;
-    if (profile != null && profile.isSpecialist) {
-      context.go(AppRoutes.specialistHome);
-    } else {
-      context.go(AppRoutes.login);
-    }
+    context.go('${AppRoutes.login}?login=especialista');
   }
 
   @override
@@ -136,36 +128,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 text: 'encuentra ',
                 style: TextStyle(fontStyle: FontStyle.italic),
               ),
-              TextSpan(text: 'tu\nbelleza'),
+              TextSpan(text: 'tu belleza'),
             ],
           ),
         ),
         const SizedBox(height: 20),
         Text(
-          'Tratamientos personalizados con tecnología avanzada,\nevaluación médica telemática y especialistas certificados.',
+          'Nuestro spa, hasta la comodidad de tu hogar. Vive la experiencia de un spa de estética avanzada sin moverte de casa. Botox, fillers y más, aplicados por expertos certificados.',
           style: GoogleFonts.inter(fontSize: 14, color: AppTheme.cMutedText, height: 1.6),
         ),
-        const SizedBox(height: 10),
-        Text(
-          'Tu piel no necesita más productos.\nNecesita un plan médico bien indicado.',
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontStyle: FontStyle.italic,
-            color: AppTheme.cDeepAccent,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 36),
-        // Botón principal
-        _ActionButton(
-          icon: Icons.calendar_today_rounded,
-          label: 'Agendar Cita',
-          subtitle: 'Soy Paciente',
-          isPrimary: true,
-          onTap: () => context.go(AppRoutes.login),
-        ),
-        const SizedBox(height: 14),
-        // Botones secundarios
+        const SizedBox(height: 28),
+        // Botones de acceso
         Row(
           children: [
             Expanded(

@@ -1,12 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
-import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/validar_requisitos_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
@@ -64,8 +64,8 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
   }
 
   Future<void> _loadFlowStatus() async {
-    final user = SupabaseService.currentUser;
-    if (user == null) {
+    final profile = context.read<AuthCubit>().currentProfile;
+    if (profile == null) {
       if (mounted) setState(() => _isLoadingStatus = false);
       return;
     }
@@ -88,9 +88,9 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
 
   Future<void> _onServiceSelected(ServicioEntity service) async {
     final title = service.nombre;
-    final user = SupabaseService.currentUser;
+    final profile = context.read<AuthCubit>().currentProfile;
 
-    if (user == null) {
+    if (profile == null) {
       _showRegisterPrompt();
       return;
     }
@@ -133,7 +133,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
       // mostrar los puntos ya seleccionados (solo lectura); solo se pide
       // editar al iniciar otro tratamiento del mismo tipo (previo cerrado).
       final mapData = await sl<IPatientsComplianceRepository>()
-          .getFaceMapPorServicio(profileId: user.id, servicioId: service.id);
+          .getFaceMapPorServicio(profileId: profile.id, servicioId: service.id);
       if (!mounted) return;
 
       final puntos = reconstruirPuntosFaceMap(mapData?['puntos'] ?? []);
@@ -445,6 +445,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
   Widget build(BuildContext context) {
     final profile = context.watch<AuthCubit>().currentProfile;
     final name = profile?.fullName ?? profile?.email ?? 'Paciente';
+    final isLogged = profile != null;
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
@@ -469,144 +470,238 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Catálogo de Servicios'),
-              Text('Bienvenido/a, $name',
-                  style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
+              if (isLogged)
+                Text('Bienvenido/a, $name',
+                    style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
             ],
           ),
-          actions: [
-            IconButton(
-              onPressed: () => context.push(AppRoutes.misSolicitudes),
-              icon: const Icon(Icons.receipt_long_rounded, color: AppTheme.cDeepAccent),
-              tooltip: 'Mis Solicitudes',
-            ),
-            IconButton(
-              onPressed: () => context.push(AppRoutes.estadoSalud),
-              icon: const Icon(Icons.monitor_heart_rounded, color: AppTheme.cDeepAccent),
-              tooltip: 'Estado de Salud',
-            ),
-            const ProfileMenuButton(iconColor: AppTheme.cDeepAccent),
-            IconButton(
-              onPressed: () => context.read<AuthCubit>().signOut(),
-              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              tooltip: 'Cerrar Sesión',
-            ),
-          ],
+          actions: isLogged
+              ? [
+                  IconButton(
+                    onPressed: () => context.push(AppRoutes.misSolicitudes),
+                    icon: const Icon(Icons.receipt_long_rounded, color: AppTheme.cDeepAccent),
+                    tooltip: 'Mis Solicitudes',
+                  ),
+                  IconButton(
+                    onPressed: () => context.push(AppRoutes.estadoSalud),
+                    icon: const Icon(Icons.monitor_heart_rounded, color: AppTheme.cDeepAccent),
+                    tooltip: 'Estado de Salud',
+                  ),
+                  const ProfileMenuButton(iconColor: AppTheme.cDeepAccent),
+                  IconButton(
+                    onPressed: () => context.read<AuthCubit>().signOut(),
+                    icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                    tooltip: 'Cerrar Sesión',
+                  ),
+                ]
+              : [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.cDeepAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      onPressed: () => context.go(AppRoutes.login),
+                      child: const Text('Iniciar sesión'),
+                    ),
+                  ),
+                ],
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatusBanner(),
-              const SizedBox(height: 16),
-              Expanded(
-                child: BlocConsumer<CatalogCubit, CatalogState>(
-                  listener: (context, state) {
-                    if (state is CatalogError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(state.message)),
-                      );
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state is CatalogLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
-                      );
-                    }
-                    if (state is CatalogError) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No pudimos cargar el catálogo de servicios.',
-                              style: TextStyle(color: AppTheme.cMutedText),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-                              onPressed: () => context.read<CatalogCubit>().load(),
-                              icon: const Icon(Icons.refresh_rounded, size: 18),
-label: const Text('Reintentar'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    if (state is CatalogLoaded) {
-                      return _buildCatalog(state);
-                    }
-                    return const SizedBox.shrink();
-                  },
+        body: BlocConsumer<CatalogCubit, CatalogState>(
+          listener: (context, state) {
+            if (state is CatalogError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is CatalogLoading) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+              );
+            }
+            if (state is CatalogError) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 44),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No pudimos cargar el catálogo de servicios.',
+                      style: TextStyle(color: AppTheme.cMutedText),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+                      onPressed: () => context.read<CatalogCubit>().load(),
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: const Text('Reintentar'),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
+              );
+            }
+            if (state is CatalogLoaded) {
+              return Stack(
+                children: [
+                  _buildCatalog(state, isLogged: isLogged),
+                  if (state.loadingServicios)
+                    const Positioned.fill(
+                      child: ColoredBox(
+                        color: Colors.white54,
+                        child: Center(
+                          child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            }
+            return const SizedBox.shrink();
+          },
         ),
       ),
     );
   }
 
-  Widget _buildCatalog(CatalogLoaded state) {
+  Widget _buildCatalog(CatalogLoaded state, {required bool isLogged}) {
     final servicios = state.servicios;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildCategoryChips(state),
-        const SizedBox(height: 12),
-        Expanded(
-          child: servicios.isEmpty && !state.loadingServicios
-              ? const Center(
-                  child: Text(
-                    'No hay servicios disponibles en este momento.',
-                    style: TextStyle(color: AppTheme.cMutedText),
-                    textAlign: TextAlign.center,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: _buildCatalogHero()),
+        if (isLogged) ...[
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildStatusBanner(),
+            ),
+          ),
+        ],
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildCategoryChips(state),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: servicios.isEmpty
+              ? SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'No hay servicios disponibles en este momento.',
+                      style: TextStyle(color: AppTheme.cMutedText),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 )
-              : LayoutBuilder(
+              : SliverLayoutBuilder(
                   builder: (context, constraints) {
-                    final isDesktop = constraints.maxWidth >= 1000;
-                    final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
-                    final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
-                    // Aspecto más alto para que quepan la imagen completa y la
-                    // descripción completa sin recortar.
-                    final childAspectRatio = isDesktop ? 0.60 : (isTablet ? 0.55 : 0.68);
+                    final columns = constraints.crossAxisExtent >= 1000 ? 3 : 2;
+                    final rows = <List<ServicioEntity>>[];
+                    for (var i = 0; i < servicios.length; i += columns) {
+                      final end =
+                          i + columns < servicios.length ? i + columns : servicios.length;
+                      rows.add(servicios.sublist(i, end));
+                    }
 
-                    return Stack(
-                      children: [
-                        GridView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: servicios.length,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            crossAxisSpacing: 18,
-                            mainAxisSpacing: 18,
-                            childAspectRatio: childAspectRatio,
-                          ),
-                          itemBuilder: (context, i) => _ServiceCard(
-                            service: servicios[i],
-                            onTap: () => _onServiceSelected(servicios[i]),
-                          ),
-                        ),
-                        if (state.loadingServicios)
-                          const Positioned.fill(
-                            child: ColoredBox(
-                              color: Colors.white54,
-                              child: Center(
-                                child: CircularProgressIndicator(color: AppTheme.cDeepAccent),
-                              ),
+                    return SliverList.builder(
+                      itemCount: rows.length,
+                      itemBuilder: (context, rowIndex) {
+                        final row = rows[rowIndex];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 18),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                for (var i = 0; i < row.length; i++) ...[
+                                  if (i > 0) const SizedBox(width: 18),
+                                  Expanded(
+                                    child: _ServiceCard(
+                                      service: row[i],
+                                      onTap: () => _onServiceSelected(row[i]),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                      ],
+                        );
+                      },
                     );
                   },
                 ),
         ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
+    );
+  }
+
+  Widget _buildCatalogHero() {
+    final isDesktop = MediaQuery.sizeOf(context).width >= 1000;
+    final height = isDesktop ? 300.0 : 210.0;
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppTheme.cPastelPurple,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/Imagen_cat.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                const ColoredBox(color: AppTheme.cPastelPurple),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.transparent, Colors.black54],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text.rich(
+                TextSpan(
+                  children: const [
+                    TextSpan(text: 'Donde la ciencia\n'),
+                    TextSpan(
+                      text: 'encuentra ',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                    TextSpan(text: 'tu belleza'),
+                  ],
+                ),
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: isDesktop ? 34 : 26,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -786,53 +881,81 @@ class _ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final descripcionMostrada =
+        service.descripcionCorta ?? service.descripcion;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: AppTheme.cardShadow,
         ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: _buildHero(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          service.nombre,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                height: 1.2,
-                              ),
+                  Text(
+                    service.nombre,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatPrice(service),
-                        style: const TextStyle(
+                  ),
+                  if (descripcionMostrada != null &&
+                      descripcionMostrada.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      descripcionMostrada,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontSize: 11, height: 1.35, color: AppTheme.cMutedText),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _formatPrice(service),
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.cDeepAccent),
+                            color: AppTheme.cDeepAccent,
+                          ),
+                        ),
                       ),
+                      const Spacer(),
+                      if (service.duracionEstimada != null) ...[
+                        const Icon(Icons.schedule_rounded,
+                            size: 13, color: AppTheme.cMutedText),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${service.duracionEstimada} min',
+                          style: const TextStyle(fontSize: 10, color: AppTheme.cMutedText),
+                        ),
+                      ],
                     ],
                   ),
                   if (service.nombreCategoria != null) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppTheme.cPastelPurple,
                         borderRadius: BorderRadius.circular(10),
@@ -840,46 +963,19 @@ class _ServiceCard extends StatelessWidget {
                       child: Text(
                         service.nombreCategoria!,
                         style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.cDeepAccent),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.cDeepAccent,
+                        ),
                       ),
                     ),
                   ],
-                  if (service.duracionEstimada != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.schedule_rounded,
-                            size: 14, color: AppTheme.cMutedText),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${service.duracionEstimada} min',
-                          style: const TextStyle(
-                              fontSize: 11, color: AppTheme.cMutedText),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    service.descripcion ?? '',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(fontSize: 11, height: 1.35),
-                  ),
                 ],
               ),
             ),
-          ),
-          AspectRatio(
-            aspectRatio: 1,
-            child: _buildHero(),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -889,11 +985,7 @@ class _ServiceCard extends StatelessWidget {
       return Container(
         width: double.infinity,
         height: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(AppTheme.radiusLg)),
-        ),
+        color: AppTheme.cPastelPurple,
         child: Image.network(
           imagenUrl,
           fit: BoxFit.cover,
@@ -910,11 +1002,7 @@ class _ServiceCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(AppTheme.radiusLg)),
-      ),
+      color: AppTheme.cPastelPurple,
       child: _ServiceHeroImage(
         basePath: 'assets/images/service_$slug',
         fallback: _buildHeroFallback(),
@@ -948,7 +1036,7 @@ class _ServiceCard extends StatelessWidget {
       TipoPrecio.porSesion => '/sesión',
       TipoPrecio.porPlan => '/plan',
     };
-    return '\$${service.precioBase}${suffix.isEmpty ? '' : ' '}$suffix';
+    return 'Desde \$${service.precioBase}${suffix.isEmpty ? '' : ' '}$suffix';
   }
 }
 

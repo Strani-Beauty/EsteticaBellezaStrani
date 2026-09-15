@@ -29,6 +29,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
 
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _descripcionCtrl;
+  late final TextEditingController _descripcionCortaCtrl;
   late final TextEditingController _precioCtrl;
   late final TextEditingController _duracionCtrl;
 
@@ -49,6 +50,14 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
   String? _imagenUrl;
   Uint8List? _imagenBytes;
   String? _imagenNombre;
+
+  // Galería: 4 imágenes adicionales (columnas imagen_url_2.._5).
+  static const int _kGaleriaSlots = 4;
+  final List<String?> _galeriaUrls = List<String?>.filled(_kGaleriaSlots, null);
+  final List<Uint8List?> _galeriaBytes =
+      List<Uint8List?>.filled(_kGaleriaSlots, null);
+  final List<String?> _galeriaNombres =
+      List<String?>.filled(_kGaleriaSlots, null);
 
   List<CategoriaServicioEntity> get _categorias {
     final state = sl<AdminCatalogCubit>().state;
@@ -74,6 +83,8 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
     final s = widget.servicio;
     _nombreCtrl = TextEditingController(text: s?.nombre ?? '');
     _descripcionCtrl = TextEditingController(text: s?.descripcion ?? '');
+    _descripcionCortaCtrl =
+        TextEditingController(text: s?.descripcionCorta ?? s?.descripcion ?? '');
     _precioCtrl = TextEditingController(
       text: s == null ? '' : s.precioBase.toString(),
     );
@@ -82,6 +93,10 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
     );
     _categoriaId = s?.categoriaId;
     _imagenUrl = s?.imagenUrl;
+    final adicionales = s?.imagenesAdicionales ?? const [];
+    for (var i = 0; i < _kGaleriaSlots; i++) {
+      if (i < adicionales.length) _galeriaUrls[i] = adicionales[i];
+    }
     if (s != null) {
       _tipoPrecio = s.tipoPrecio;
       _activo = s.activo;
@@ -97,6 +112,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
   void dispose() {
     _nombreCtrl.dispose();
     _descripcionCtrl.dispose();
+    _descripcionCortaCtrl.dispose();
     _precioCtrl.dispose();
     _duracionCtrl.dispose();
     super.dispose();
@@ -148,6 +164,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
     final cubit = sl<AdminCatalogCubit>();
     setState(() => _guardando = true);
 
+    final descripcionCorta = _descripcionCortaCtrl.text.trim();
     final creado = await cubit.guardarServicio(
       id: widget.servicio?.id ?? '',
       categoriaId: _categoriaId,
@@ -155,6 +172,8 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       descripcion: _descripcionCtrl.text.trim().isEmpty
           ? null
           : _descripcionCtrl.text.trim(),
+      descripcionCorta:
+          descripcionCorta.isEmpty ? null : descripcionCorta,
       precioBase: double.parse(_precioCtrl.text.trim()),
       tipoPrecio: _tipoPrecio,
       duracionEstimada: _duracionCtrl.text.trim().isEmpty
@@ -166,6 +185,8 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       requiereConsentimiento: _requiereConsentimiento,
       activo: _activo,
       imagenUrl: _imagenUrl,
+      imagenesAdicionales:
+          _galeriaUrls.map((u) => u ?? '').toList(),
     );
     if (creado == null) {
       if (mounted) {
@@ -184,6 +205,24 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
         nombreArchivo: _imagenNombre ?? 'imagen.jpg',
       );
       if (!okImagen) {
+        if (mounted) {
+          setState(() => _guardando = false);
+          _mostrarErrorGuardado();
+        }
+        return;
+      }
+    }
+
+    for (var i = 0; i < _kGaleriaSlots; i++) {
+      final bytes = _galeriaBytes[i];
+      if (bytes == null) continue;
+      final okGaleria = await cubit.subirImagenServicio(
+        servicioId: servicioId,
+        bytes: bytes,
+        nombreArchivo: _galeriaNombres[i] ?? 'imagen_galeria.jpg',
+        columna: 'imagen_url_${i + 2}',
+      );
+      if (!okGaleria) {
         if (mounted) {
           setState(() => _guardando = false);
           _mostrarErrorGuardado();
@@ -256,6 +295,8 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
                   _seccionFlags(),
                   const SizedBox(height: 20),
                   _seccionImagen(),
+                  const SizedBox(height: 20),
+                  _seccionGaleria(),
                   const SizedBox(height: 20),
                   _seccionEspecialidades(),
                   const SizedBox(height: 20),
@@ -344,6 +385,16 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
               maxLines: 3,
               decoration: const InputDecoration(
                 labelText: 'Descripción',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descripcionCortaCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Descripción corta',
+                helperText: 'Se muestra completa en la tarjeta del catálogo',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -562,6 +613,124 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
       _imagenBytes = bytes;
       _imagenNombre = picked.name;
       _imagenUrl = null;
+    });
+  }
+
+  Widget _seccionGaleria() {
+    return Card(
+      elevation: 0,
+      color: AppTheme.cWhite,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        side: const BorderSide(color: Colors.black12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Galería de imágenes',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.cDarkText,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Hasta 4 imágenes adicionales del servicio (opcional).',
+              style: TextStyle(color: AppTheme.cMutedText, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < _kGaleriaSlots; i++) ...[
+              _slotGaleria(i),
+              if (i < _kGaleriaSlots - 1) const SizedBox(height: 12),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _slotGaleria(int index) {
+    final bytes = _galeriaBytes[index];
+    final url = _galeriaUrls[index];
+    final hayBytes = bytes != null;
+    final hayUrl = !hayBytes && url != null && url.trim().isNotEmpty;
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          child: SizedBox(
+            height: 64,
+            width: 64,
+            child: hayBytes
+                ? Image.memory(bytes, fit: BoxFit.cover)
+                : hayUrl
+                    ? Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const _ImagenVacia(),
+                      )
+                    : const _ImagenVacia(),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            hayBytes
+                ? (_galeriaNombres[index] ?? 'Nueva imagen')
+                : hayUrl
+                    ? 'Imagen ${index + 2}'
+                    : 'Vacío — imagen ${index + 2}',
+            style: TextStyle(
+              color: hayBytes || hayUrl ? AppTheme.cDarkText : AppTheme.cMutedText,
+              fontSize: 13,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        IconButton(
+          onPressed: () => _seleccionarImagenGaleria(index),
+          tooltip: 'Seleccionar imagen',
+          icon: const Icon(Icons.add_photo_alternate_rounded,
+              size: 22, color: AppTheme.cDeepAccent),
+        ),
+        if (hayBytes || hayUrl)
+          IconButton(
+            onPressed: () => setState(() {
+              _galeriaBytes[index] = null;
+              _galeriaNombres[index] = null;
+              _galeriaUrls[index] = null;
+            }),
+            tooltip: 'Quitar imagen',
+            icon: const Icon(Icons.delete_outline_rounded,
+                size: 20, color: AppTheme.cError),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _seleccionarImagenGaleria(int index) async {
+    final result = await FilePicker.platform
+        .pickFiles(allowMultiple: false, type: FileType.image);
+    final picked = result?.files.single;
+    if (picked == null) return;
+    final bytes = picked.bytes;
+    if (bytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo leer la imagen seleccionada.')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _galeriaBytes[index] = bytes;
+      _galeriaNombres[index] = picked.name;
+      _galeriaUrls[index] = null;
     });
   }
 

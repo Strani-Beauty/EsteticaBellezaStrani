@@ -9,6 +9,7 @@ class GuardarServicioParams {
   final int? categoriaId;
   final String nombre;
   final String? descripcion;
+  final String? descripcionCorta;
   final double precioBase;
   final TipoPrecio tipoPrecio;
   final int? duracionEstimada;
@@ -18,12 +19,14 @@ class GuardarServicioParams {
   final bool requiereConsentimiento;
   final bool activo;
   final String? imagenUrl;
+  final List<String> imagenesAdicionales;
 
   const GuardarServicioParams({
     this.id = '',
     this.categoriaId,
     required this.nombre,
     this.descripcion,
+    this.descripcionCorta,
     required this.precioBase,
     this.tipoPrecio = TipoPrecio.precioFijo,
     this.duracionEstimada,
@@ -33,6 +36,7 @@ class GuardarServicioParams {
     this.requiereConsentimiento = false,
     this.activo = true,
     this.imagenUrl,
+    this.imagenesAdicionales = const [],
   });
 }
 
@@ -49,6 +53,7 @@ class GuardarServicio extends UseCase<ServicioEntity, GuardarServicioParams> {
       categoriaId: params.categoriaId,
       nombre: params.nombre,
       descripcion: params.descripcion,
+      descripcionCorta: params.descripcionCorta,
       precioBase: params.precioBase,
       tipoPrecio: params.tipoPrecio,
       duracionEstimada: params.duracionEstimada,
@@ -58,6 +63,7 @@ class GuardarServicio extends UseCase<ServicioEntity, GuardarServicioParams> {
       requiereConsentimiento: params.requiereConsentimiento,
       activo: params.activo,
       imagenUrl: params.imagenUrl,
+      imagenesAdicionales: params.imagenesAdicionales,
     );
   }
 }

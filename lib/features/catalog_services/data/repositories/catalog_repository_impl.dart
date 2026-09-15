@@ -89,6 +89,7 @@ class CatalogRepositoryImpl implements ICatalogRepository {
     int? categoriaId,
     required String nombre,
     String? descripcion,
+    String? descripcionCorta,
     required double precioBase,
     required TipoPrecio tipoPrecio,
     int? duracionEstimada,
@@ -98,6 +99,7 @@ class CatalogRepositoryImpl implements ICatalogRepository {
     bool requiereConsentimiento = false,
     bool activo = true,
     String? imagenUrl,
+    List<String> imagenesAdicionales = const [],
   }) async {
     try {
       final model = id.isEmpty
@@ -105,6 +107,7 @@ class CatalogRepositoryImpl implements ICatalogRepository {
               categoriaId: categoriaId,
               nombre: nombre,
               descripcion: descripcion,
+              descripcionCorta: descripcionCorta,
               precioBase: precioBase,
               tipoPrecio: tipoPrecio,
               duracionEstimada: duracionEstimada,
@@ -114,12 +117,14 @@ class CatalogRepositoryImpl implements ICatalogRepository {
               requiereConsentimiento: requiereConsentimiento,
               activo: activo,
               imagenUrl: imagenUrl,
+              imagenesAdicionales: imagenesAdicionales,
             )
           : await _dataSource.updateServicio(
               id: id,
               categoriaId: categoriaId,
               nombre: nombre,
               descripcion: descripcion,
+              descripcionCorta: descripcionCorta,
               precioBase: precioBase,
               tipoPrecio: tipoPrecio,
               duracionEstimada: duracionEstimada,
@@ -129,6 +134,7 @@ class CatalogRepositoryImpl implements ICatalogRepository {
               requiereConsentimiento: requiereConsentimiento,
               activo: activo,
               imagenUrl: imagenUrl,
+              imagenesAdicionales: imagenesAdicionales,
             );
       return Right(model.toEntity());
     } catch (e) {
@@ -151,12 +157,14 @@ class CatalogRepositoryImpl implements ICatalogRepository {
     required String servicioId,
     required Uint8List bytes,
     required String nombreArchivo,
+    String columna = 'imagen_url',
   }) async {
     try {
       final url = await _dataSource.subirImagenServicio(
         servicioId: servicioId,
         bytes: bytes,
         nombreArchivo: nombreArchivo,
+        columna: columna,
       );
       return Right(url);
     } catch (e) {

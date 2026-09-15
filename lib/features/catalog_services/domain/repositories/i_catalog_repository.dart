@@ -40,6 +40,7 @@ abstract class ICatalogRepository {
     int? categoriaId,
     required String nombre,
     String? descripcion,
+    String? descripcionCorta,
     required double precioBase,
     required TipoPrecio tipoPrecio,
     int? duracionEstimada,
@@ -49,17 +50,20 @@ abstract class ICatalogRepository {
     bool requiereConsentimiento = false,
     bool activo = true,
     String? imagenUrl,
+    List<String> imagenesAdicionales = const [],
   });
 
   /// Elimina un servicio del catálogo (RPC seguro, solo admin).
   Future<Either<Failure, void>> eliminarServicio(String servicioId);
 
-  /// Sube la imagen de un servicio al bucket público y guarda la URL en
-  /// `servicios.imagen_url`. Devuelve la URL pública (solo admin).
+  /// Sube la imagen de un servicio al bucket público y guarda la URL en la
+  /// columna indicada de `servicios` (`imagen_url`, `imagen_url_2`..`_5`).
+  /// Devuelve la URL pública (solo admin).
   Future<Either<Failure, String>> subirImagenServicio({
     required String servicioId,
     required Uint8List bytes,
     required String nombreArchivo,
+    String columna = 'imagen_url',
   });
 
   /// Requisitos configurados de un servicio (especialidades + cuestionarios).

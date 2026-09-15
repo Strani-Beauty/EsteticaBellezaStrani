@@ -106,6 +106,7 @@ class CatalogServicesSupabaseDataSource {
     int? categoriaId,
     required String nombre,
     String? descripcion,
+    String? descripcionCorta,
     required double precioBase,
     required TipoPrecio tipoPrecio,
     int? duracionEstimada,
@@ -115,11 +116,13 @@ class CatalogServicesSupabaseDataSource {
     bool requiereConsentimiento = false,
     bool activo = true,
     String? imagenUrl,
+    List<String> imagenesAdicionales = const [],
   }) async {
     final res = await _client.from('servicios').insert({
       'categoria_id': categoriaId,
       'nombre': nombre,
       'descripcion': descripcion,
+      'descripcion_corta': descripcionCorta,
       'precio_base': precioBase,
       'tipo_precio': tipoPrecio.toDb,
       'duracion_estimada': duracionEstimada,
@@ -129,11 +132,24 @@ class CatalogServicesSupabaseDataSource {
       'requiere_consentimiento': requiereConsentimiento,
       'activo': activo,
       'imagen_url': (imagenUrl == null || imagenUrl.isEmpty) ? null : imagenUrl,
+      ..._mapImagenesAdicionales(imagenesAdicionales),
     }).select().maybeSingle();
     if (res == null) {
       throw Exception('No se pudo crear el servicio.');
     }
     return ServicioModel.fromJson(res);
+  }
+
+  /// Construye el mapa de columnas `imagen_url_2`..`imagen_url_5` desde la
+  /// lista de URLs adicionales (índices 0-3). Columnas sin valor → null.
+  Map<String, dynamic> _mapImagenesAdicionales(List<String> imagenes) {
+    return {
+      for (var i = 0; i < 4; i++)
+        'imagen_url_${i + 2}': i < imagenes.length &&
+                imagenes[i].trim().isNotEmpty
+            ? imagenes[i].trim()
+            : null,
+    };
   }
 
   /// Actualiza un servicio (solo admin vía RLS).
@@ -142,6 +158,7 @@ class CatalogServicesSupabaseDataSource {
     int? categoriaId,
     required String nombre,
     String? descripcion,
+    String? descripcionCorta,
     required double precioBase,
     required TipoPrecio tipoPrecio,
     int? duracionEstimada,
@@ -151,11 +168,13 @@ class CatalogServicesSupabaseDataSource {
     bool requiereConsentimiento = false,
     bool activo = true,
     String? imagenUrl,
+    List<String> imagenesAdicionales = const [],
   }) async {
     final res = await _client.from('servicios').update({
       'categoria_id': categoriaId,
       'nombre': nombre,
       'descripcion': descripcion,
+      'descripcion_corta': descripcionCorta,
       'precio_base': precioBase,
       'tipo_precio': tipoPrecio.toDb,
       'duracion_estimada': duracionEstimada,
@@ -165,6 +184,7 @@ class CatalogServicesSupabaseDataSource {
       'requiere_consentimiento': requiereConsentimiento,
       'activo': activo,
       'imagen_url': (imagenUrl == null || imagenUrl.isEmpty) ? null : imagenUrl,
+      ..._mapImagenesAdicionales(imagenesAdicionales),
     }).eq('id', id).select().maybeSingle();
     if (res == null) {
       throw Exception('No se pudo actualizar el servicio.');
@@ -192,28 +212,29 @@ class CatalogServicesSupabaseDataSource {
   // ── Imagen del servicio (storage) ─────────────────────────
 
   /// Sube la imagen de un servicio al bucket público `imagenes-servicios`
-  /// (path `<servicioId>/imagen_<ts>.<ext>`), actualiza `servicios.imagen_url`
-  /// con la URL pública y la devuelve. Solo admin vía storage policy.
+  /// (path `<servicioId>/imagen_<columna>_<ts>.<ext>`), actualiza la columna
+  /// indicada de `servicios` (`imagen_url`, `imagen_url_2`..`_5`) con la URL
+  /// pública y la devuelve. Solo admin vía storage policy.
   Future<String> subirImagenServicio({
     required String servicioId,
     required Uint8List bytes,
     required String nombreArchivo,
+    String columna = 'imagen_url',
   }) async {
     final ext = nombreArchivo.contains('.')
         ? nombreArchivo.substring(nombreArchivo.lastIndexOf('.'))
         : '.jpg';
-    final path =
-        '$servicioId/imagen_${DateTime.now().millisecondsSinceEpoch}$ext';
+    final path = '$servicioId/imagen_${columna}_'
+        '${DateTime.now().millisecondsSinceEpoch}$ext';
     await _client.storage
         .from(AppConstants.bucketImagenesServicios)
         .uploadBinary(path, bytes);
-    final publicUrl = _client.storage
+    final url = _client.storage
         .from(AppConstants.bucketImagenesServicios)
         .getPublicUrl(path);
-    final url = publicUrl;
     final res = await _client
         .from('servicios')
-        .update({'imagen_url': url}).eq('id', servicioId).select('imagen_url')
+        .update({columna: url}).eq('id', servicioId).select(columna)
         .maybeSingle();
     if (res == null) {
       throw Exception('No se pudo guardar la imagen del servicio.');

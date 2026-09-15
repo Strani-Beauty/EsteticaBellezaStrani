@@ -7,6 +7,7 @@ class ServicioModel {
   final int? categoriaId;
   final String nombre;
   final String? descripcion;
+  final String? descripcionCorta;
   final double precioBase;
   final TipoPrecio tipoPrecio;
   final int? duracionEstimada;
@@ -16,6 +17,7 @@ class ServicioModel {
   final bool requiereConsentimiento;
   final bool activo;
   final String? imagenUrl;
+  final List<String> imagenesAdicionales;
   final CategoriaServicioEntity? categoria;
 
   const ServicioModel({
@@ -23,6 +25,7 @@ class ServicioModel {
     this.categoriaId,
     required this.nombre,
     this.descripcion,
+    this.descripcionCorta,
     required this.precioBase,
     this.tipoPrecio = TipoPrecio.precioFijo,
     this.duracionEstimada,
@@ -32,6 +35,7 @@ class ServicioModel {
     this.requiereConsentimiento = false,
     this.activo = true,
     this.imagenUrl,
+    this.imagenesAdicionales = const [],
     this.categoria,
   });
 
@@ -47,6 +51,7 @@ class ServicioModel {
       categoriaId: (json['categoria_id'] as num?)?.toInt(),
       nombre: json['nombre'] as String? ?? '',
       descripcion: json['descripcion'] as String?,
+      descripcionCorta: json['descripcion_corta'] as String?,
       precioBase: (json['precio_base'] as num?)?.toDouble() ?? 0,
       tipoPrecio:
           TipoPrecio.fromDb(json['tipo_precio'] as String?) ??
@@ -59,6 +64,11 @@ class ServicioModel {
           json['requiere_consentimiento'] as bool? ?? false,
       activo: json['activo'] as bool? ?? true,
       imagenUrl: json['imagen_url'] as String?,
+      imagenesAdicionales: [
+        for (final i in const [2, 3, 4, 5])
+          if ((json['imagen_url_$i'] as String?)?.trim().isNotEmpty ?? false)
+            json['imagen_url_$i'] as String,
+      ],
       categoria: categoria,
     );
   }
@@ -69,6 +79,7 @@ class ServicioModel {
       categoriaId: categoriaId,
       nombre: nombre,
       descripcion: descripcion,
+      descripcionCorta: descripcionCorta,
       precioBase: precioBase,
       tipoPrecio: tipoPrecio,
       duracionEstimada: duracionEstimada,
@@ -78,6 +89,7 @@ class ServicioModel {
       requiereConsentimiento: requiereConsentimiento,
       activo: activo,
       imagenUrl: imagenUrl,
+      imagenesAdicionales: imagenesAdicionales,
       categoria: categoria,
     );
   }

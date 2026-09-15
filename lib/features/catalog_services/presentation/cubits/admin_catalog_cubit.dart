@@ -215,6 +215,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
     int? categoriaId,
     required String nombre,
     String? descripcion,
+    String? descripcionCorta,
     required double precioBase,
     required TipoPrecio tipoPrecio,
     int? duracionEstimada,
@@ -224,6 +225,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
     bool requiereConsentimiento = false,
     bool activo = true,
     String? imagenUrl,
+    List<String> imagenesAdicionales = const [],
   }) async {
     if (state is! AdminCatalogLoaded) return null;
     final base = state as AdminCatalogLoaded;
@@ -234,6 +236,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
       categoriaId: categoriaId,
       nombre: nombre,
       descripcion: descripcion,
+      descripcionCorta: descripcionCorta,
       precioBase: precioBase,
       tipoPrecio: tipoPrecio,
       duracionEstimada: duracionEstimada,
@@ -243,6 +246,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
       requiereConsentimiento: requiereConsentimiento,
       activo: activo,
       imagenUrl: imagenUrl,
+      imagenesAdicionales: imagenesAdicionales,
     ));
     if (res.isLeft()) {
       emit(base.copyWith(
@@ -293,12 +297,14 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
     return true;
   }
 
-  /// Sube la imagen de un servicio al bucket público y actualiza
-  /// `servicios.imagen_url`. Devuelve true si fue exitoso.
+  /// Sube la imagen de un servicio al bucket público y actualiza la columna
+  /// indicada de `servicios` (`imagen_url`, `imagen_url_2`..`_5`).
+  /// Devuelve true si fue exitoso.
   Future<bool> subirImagenServicio({
     required String servicioId,
     required Uint8List bytes,
     required String nombreArchivo,
+    String columna = 'imagen_url',
   }) async {
     if (state is! AdminCatalogLoaded) return false;
     final base = state as AdminCatalogLoaded;
@@ -308,6 +314,7 @@ class AdminCatalogCubit extends Cubit<AdminCatalogState> {
       servicioId: servicioId,
       bytes: bytes,
       nombreArchivo: nombreArchivo,
+      columna: columna,
     ));
     if (res.isLeft()) {
       emit(base.copyWith(

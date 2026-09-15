@@ -177,6 +177,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => LoginScreen(
         registroPaciente: state.uri.queryParameters['registro'] == 'paciente',
         loginEspecialista: state.uri.queryParameters['login'] == 'especialista',
+        loginPaciente: state.uri.queryParameters['login'] == 'paciente',
       ),
     ),
     GoRoute(

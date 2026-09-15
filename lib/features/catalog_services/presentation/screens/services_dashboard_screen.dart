@@ -91,7 +91,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     final profile = context.read<AuthCubit>().currentProfile;
 
     if (profile == null) {
-      _showRegisterPrompt();
+      context.go('${AppRoutes.login}?login=paciente');
       return;
     }
 
@@ -275,41 +275,6 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
   /// Aviso para visitantes sin cuenta: para seleccionar un servicio deben
   /// registrarse como pacientes. Ofrece "Registrar" (va al alta de paciente) o
   /// "Seguir explorando" (permanece en el catálogo).
-  void _showRegisterPrompt() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-        title: const Row(
-          children: [
-            Icon(Icons.person_add_alt_rounded, color: AppTheme.cDeepAccent),
-            SizedBox(width: 10),
-            Expanded(child: Text('Regístrate como paciente')),
-          ],
-        ),
-        content: const Text(
-          'Debes registrarte como paciente para seleccionar cualquier servicio.',
-          style: TextStyle(fontSize: 14, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Seguir explorando'),
-          ),
-          FilledButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              context.go('${AppRoutes.login}?registro=paciente');
-            },
-            icon: const Icon(Icons.person_add_alt_1_rounded),
-            label: const Text('Registrar'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showBlockedReservationModal({
     required String title,
     required String message,
@@ -450,7 +415,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthUnauthenticated) {
-          context.go(AppRoutes.login);
+          context.go('${AppRoutes.login}?login=paciente');
         }
       },
       child: Scaffold(
@@ -502,7 +467,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                         backgroundColor: AppTheme.cDeepAccent,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
-                      onPressed: () => context.go(AppRoutes.login),
+                      onPressed: () => context.go('${AppRoutes.login}?login=paciente'),
                       child: const Text('Iniciar sesión'),
                     ),
                   ),
@@ -928,30 +893,28 @@ class _ServiceCard extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          _formatPrice(service),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.cDeepAccent,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      if (service.duracionEstimada != null) ...[
+                  Text(
+                    _formatPrice(service),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.cDeepAccent,
+                    ),
+                  ),
+                  if (service.duracionEstimada != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
                         const Icon(Icons.schedule_rounded,
-                            size: 13, color: AppTheme.cMutedText),
+                            size: 12, color: AppTheme.cMutedText),
                         const SizedBox(width: 3),
                         Text(
                           '${service.duracionEstimada} min',
                           style: const TextStyle(fontSize: 10, color: AppTheme.cMutedText),
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+                  ],
                   if (service.nombreCategoria != null) ...[
                     const SizedBox(height: 8),
                     Container(

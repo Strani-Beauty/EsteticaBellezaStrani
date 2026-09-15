@@ -12,7 +12,7 @@ const kActiveMapEngine = MapEngine.openStreetMap;
 const kOsmTileUrlTemplate = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 /// User-Agent de aplicación para Nominatim.
-const kNominatimUserAgent = 'EsteticaBellezaStrani/2.0';
+const kNominatimUserAgent = 'MERAKISpaOnsite/2.0';
 
 /// Package name para TileLayer de OSM.
 const kUserAgentPackageName = 'com.esteticaybellezastrani.app';

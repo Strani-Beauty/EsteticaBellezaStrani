@@ -112,7 +112,7 @@ INSERT INTO auth.users (
   '00000000-0000-0000-0000-000000000000', '40000000-0000-0000-0000-000000000001',
   'authenticated', 'authenticated', 'admin@strani.com', crypt('Test1234!', gen_salt('bf')),
   now(), '{"provider":"email","providers":["email"]}',
-  '{"role":"Administrador","full_name":"Administrador Strani"}', now(), now()
+  '{"role":"Administrador","full_name":"Administrador MERAKI"}', now(), now()
 ) ON CONFLICT (id) DO NOTHING;
 
 UPDATE public.profiles

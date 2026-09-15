@@ -5,7 +5,7 @@ import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 
 /// Pantalla de bienvenida — punto de entrada público de la app.
-/// Presenta la marca Strani y dirige al usuario según su rol.
+/// Presenta la marca MERAKI spa onsite y dirige al usuario según su rol.
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -134,7 +134,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         ),
         const SizedBox(height: 20),
         Text(
-          'Nuestro spa, hasta la comodidad de tu hogar. Vive la experiencia de un spa de estética avanzada sin moverte de casa. Botox, fillers y más, aplicados por expertos certificados.',
+          'Convierte tu casa en tu spa favorito. Nos trasladamos hasta ti para mimarte con tratamientos de botox, rellenos y estética facial y corporal con la calidad de una clínica y la calidez de estar en casa.',
           style: GoogleFonts.inter(fontSize: 14, color: AppTheme.cMutedText, height: 1.6),
         ),
         const SizedBox(height: 28),
@@ -283,7 +283,7 @@ class _BrandLogo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Strani',
+              'MERAKI',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -292,7 +292,7 @@ class _BrandLogo extends StatelessWidget {
               ),
             ),
             Text(
-              'ESTÉTICA & BELLEZA',
+              'SPA ONSITE',
               style: GoogleFonts.inter(
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700,

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Flutter app **Estética y Belleza Strani** — plataforma de gestión de servicios estéticos (especialistas, citas, pagos, tratamientos). Flutter 3.x / Dart SDK `^3.12.2`, backend Supabase.
+Flutter app **MERAKI spa onsite** — plataforma de gestión de servicios estéticos (especialistas, citas, pagos, tratamientos). Flutter 3.x / Dart SDK `^3.12.2`, backend Supabase.
 
 ## Rol de experto Senior en Flutter y Supabase
 

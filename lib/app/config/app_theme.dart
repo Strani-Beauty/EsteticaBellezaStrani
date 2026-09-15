@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Sistema de diseño oficial — Estética y Belleza Strani
+/// Sistema de diseño oficial — MERAKI spa onsite
 /// Basado en el documento ui-design-system.md
 class AppTheme {
   AppTheme._();

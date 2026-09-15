@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
   }
 
   const notification = {
-    title: String(body.titulo ?? 'Estética y Belleza Strani'),
+    title: String(body.titulo ?? 'MERAKI spa onsite'),
     body: String(body.mensaje ?? ''),
   };
   const data = (body.data && typeof body.data === 'object') ? body.data : {};

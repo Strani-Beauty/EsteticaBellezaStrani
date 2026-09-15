@@ -1,6 +1,6 @@
 ---
 name: stripe-pagos-strani
-description: Guía de integración de pagos Stripe en Flutter Web con Edge Functions de Supabase para Estética y Belleza Strani. Usar cuando se trabaje en Stripe, pagos, checkout, Checkout Session, PaymentIntent, PaymentSheet, webhook, suscripciones/membresía, o en los módulos payments_stripe y las edge functions create-payment-intent / stripe-webhook / verify-payment.
+description: Guía de integración de pagos Stripe en Flutter Web con Edge Functions de Supabase para MERAKI spa onsite. Usar cuando se trabaje en Stripe, pagos, checkout, Checkout Session, PaymentIntent, PaymentSheet, webhook, suscripciones/membresía, o en los módulos payments_stripe y las edge functions create-payment-intent / stripe-webhook / verify-payment.
 ---
 
 # Guía de Integración Stripe — Flutter Web + Supabase Edge Functions
@@ -11,7 +11,7 @@ description: Guía de integración de pagos Stripe en Flutter Web con Edge Funct
 
 ---
 
-## Contexto del proyecto (Estética y Belleza Strani)
+## Contexto del proyecto (MERAKI spa onsite)
 
 Datos reales del proyecto para sustituir los placeholders genéricos:
 

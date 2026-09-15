@@ -1,6 +1,6 @@
 # 14 — Seguridad, Privacidad, Validaciones y Manejo de Errores
 
-**Proyecto:** Estética y Belleza Strani
+**Proyecto:** MERAKI spa onsite
 **Fecha:** 2026-09-07
 **Versión:** 1.0
 **Objetivo:** dictamen de las 15 actividades de seguridad/privacidad/validaciones/errores, evidencia de la auditoría aplicada y checklist manual de verificación antes de las pruebas manuales por módulo.

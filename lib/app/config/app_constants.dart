@@ -1,9 +1,9 @@
-/// Constantes globales de la aplicación Estética y Belleza Strani.
+/// Constantes globales de la aplicación MERAKI spa onsite.
 class AppConstants {
   AppConstants._();
 
   // ── Negocio ────────────────────────────────────────────────
-  static const String appName = 'Estética y Belleza Strani';
+  static const String appName = 'MERAKI spa onsite';
   static const String appVersion = '2.0.0';
 
   /// Monto del depósito inicial (USD) — configurable desde configuracion_sistema

@@ -265,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Bienvenido/a a Strani',
+                  Text('Bienvenido/a a MERAKI spa onsite',
                       style: Theme.of(context).textTheme.titleMedium),
                   Text('Selecciona tu perfil de ingreso:',
                       style: Theme.of(context).textTheme.bodySmall),

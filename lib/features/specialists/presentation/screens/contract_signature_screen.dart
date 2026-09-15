@@ -79,7 +79,7 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
               children: [
                 const Text(
                   'Al firmar aceptas los términos y condiciones de prestación '
-                  'de servicios de Estética y Belleza Strani.',
+                  'de servicios de MERAKI spa onsite.',
                   style: TextStyle(color: AppTheme.cMutedText),
                 ),
                 const SizedBox(height: 16),

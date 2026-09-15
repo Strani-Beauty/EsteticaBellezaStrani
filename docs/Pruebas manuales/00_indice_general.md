@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Proyecto** | Estética y Belleza Strani |
+| **Proyecto** | MERAKI spa onsite |
 | **Fecha** | 2026-08-14 |
 | **Versión** | 1.0 |
 | **Objetivo** | Pruebas de usuario por módulo, diseñadas para revelar errores de flujo y de código |

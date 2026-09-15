@@ -2,7 +2,7 @@
 
 - **Fecha**: 2026-08-14
 - **Proveedor elegido**: Gmail / Google Workspace.
-- **Aplicación**: Estética y Belleza Strani (Supabase, proyecto ref `hhyjremkguvphmjuaazp`).
+- **Aplicación**: MERAKI spa onsite (Supabase, proyecto ref `hhyjremkguvphmjuaazp`).
 - **Objetivo**: que Supabase entregue los correos transaccionales (confirmación de correo, recuperación de contraseña) → desbloquea las pruebas AU-H-03 y AU-H-10.
 
 ## Configuración en Supabase (dashboard)

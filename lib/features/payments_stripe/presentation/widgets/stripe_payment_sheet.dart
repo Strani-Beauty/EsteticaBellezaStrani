@@ -9,7 +9,7 @@ import '../cubits/payments_cubit.dart';
 /// true si hay una publishable key configurada en `.env`.
 bool stripeConfigurado() => AppEnv.stripePublishableKey.isNotEmpty;
 
-const String kStripeMerchantName = 'Estética y Belleza Strani';
+const String kStripeMerchantName = 'MERAKI spa onsite';
 
 /// Cobra [monto] con el PaymentSheet de Stripe y devuelve el id del
 /// PaymentIntent confirmado.

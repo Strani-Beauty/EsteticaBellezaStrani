@@ -1,4 +1,4 @@
-# Reglas de acceso por rol — Estética y Belleza Strani
+# Reglas de acceso por rol — MERAKI spa onsite
 
 **Fecha:** 2026-08-13
 **Alcance:** rutas GoRouter (`lib/app/config/app_routes.dart` + `route_guard.dart`), RLS de Supabase (migraciones `20260813*`) y gestión de usuarios por el admin (`lib/features/admin_users`).

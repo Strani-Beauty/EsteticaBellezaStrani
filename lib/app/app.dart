@@ -152,7 +152,7 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
         }
       },
       child: MaterialApp.router(
-        title: 'Estética y Belleza Strani',
+        title: 'MERAKI spa onsite',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         scaffoldMessengerKey: scaffoldMessengerKey,

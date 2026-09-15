@@ -377,6 +377,9 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
             PatientMapPicker(
               selectedLocation: _selectedLocation,
               onLocationChanged: (loc) => _selectedLocation = loc,
+              resolveAddress: (p) =>
+                  SupabaseService.reverseGeocodeAddress(p.latitude, p.longitude),
+              onAddressResolved: (addr) => _addressCtrl.text = addr,
               height: 190,
             ),
             const SizedBox(height: 8),

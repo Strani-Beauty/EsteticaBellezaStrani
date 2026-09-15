@@ -14,6 +14,7 @@ class SupabaseService {
 
   // ── Caché de Sesión & Rate-Limiting para Geocoding ──
   static final Map<String, LatLng> _geocodeCache = {};
+  static final Map<String, String> _reverseGeocodeCache = {};
   static DateTime? _lastGeocodeAt;
   static DateTime? _edgeRetryAfter;
 
@@ -229,6 +230,80 @@ class SupabaseService {
 
   static void clearGeocodeCache() {
     _geocodeCache.clear();
+    _reverseGeocodeCache.clear();
+  }
+
+  /// Resuelve la dirección (display_name) de unas coordenadas (reverse geocoding)
+  /// con Caché y Throttling (Rate Limiting).
+  static Future<String?> reverseGeocodeAddress(double lat, double lng) async {
+    final cacheKey = '${lat.toStringAsFixed(5)},${lng.toStringAsFixed(5)}';
+    if (_reverseGeocodeCache.containsKey(cacheKey)) {
+      debugPrint('📍 [Reverse Geocoding Cache Hit]: $cacheKey');
+      return _reverseGeocodeCache[cacheKey];
+    }
+
+    await _respectRateLimit();
+
+    // 1. Intentar vía Supabase Edge Function
+    String? address = await _reverseViaEdgeFunction(lat, lng);
+
+    // 2. Fallback directo a Nominatim si Edge Function falla u offline
+    address ??= await _reverseViaNominatimFallback(lat, lng);
+
+    if (address != null && address.isNotEmpty) {
+      _reverseGeocodeCache[cacheKey] = address;
+    }
+
+    return address;
+  }
+
+  static Future<String?> _reverseViaEdgeFunction(double lat, double lng) async {
+    final retryAfter = _edgeRetryAfter;
+    if (retryAfter != null && DateTime.now().isBefore(retryAfter)) {
+      return null;
+    }
+
+    try {
+      final response = await _client.functions
+          .invoke('geocode-address', body: {'lat': lat, 'lng': lng})
+          .timeout(const Duration(seconds: 5));
+
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['found'] == true) {
+        final address = data['address'] as String?;
+        if (address != null && address.isNotEmpty) {
+          return address;
+        }
+      }
+      return null;
+    } catch (e) {
+      _edgeRetryAfter = DateTime.now().add(const Duration(seconds: 60));
+      debugPrint('⚠️ Supabase Edge Function geocode-address (reverse) no disponible: $e');
+      return null;
+    }
+  }
+
+  static Future<String?> _reverseViaNominatimFallback(double lat, double lng) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?lat=${Uri.encodeComponent(lat.toString())}&lon=${Uri.encodeComponent(lng.toString())}&format=json&accept-language=es&countrycodes=us',
+      );
+      final resp = await http.get(url, headers: {
+        'User-Agent': kNominatimUserAgent,
+        'Accept-Language': 'es',
+      }).timeout(const Duration(seconds: 6));
+
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body) as Map<String, dynamic>;
+        final address = data['display_name'] as String?;
+        if (address != null && address.isNotEmpty) {
+          return address;
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Reverse Nominatim fallback error: $e');
+    }
+    return null;
   }
 
   // ══════════════════════════════════════════════════════════════

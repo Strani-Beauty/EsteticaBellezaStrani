@@ -317,6 +317,9 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
                 PatientMapPicker(
                   selectedLocation: _selectedLocation,
                   onLocationChanged: (loc) => _selectedLocation = loc,
+                  resolveAddress: (p) =>
+                      SupabaseService.reverseGeocodeAddress(p.latitude, p.longitude),
+                  onAddressResolved: (addr) => _addressCtrl.text = addr,
                   height: 170,
                 ),
                 const SizedBox(height: 8),

@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
-import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/resizable_map_dialog.dart';
 
 /// Pantalla del formulario de dirección del paciente con mapa en ventana emergente cuadrada.
 class PatientAddressScreen extends StatefulWidget {
@@ -104,97 +104,35 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
         _isGeocoding = false;
         _statusMessage = 'Ubicación localizada. Puedes verificar el PIN en el mapa.';
       });
-      _openSquareMapDialog();
+      _openMapModalDialog();
     } else {
       setState(() {
         _isGeocoding = false;
         _statusMessage = 'No se encontró la dirección. Se mantuvo la ubicación actual en Houston, TX.';
       });
-      _openSquareMapDialog();
+      _openMapModalDialog();
     }
   }
 
-  /// Desplegar mapa en una ventana emergente cuadrada (aprox 1/4 del tamaño de la pantalla total)
-  void _openSquareMapDialog() {
-    LatLng tempLoc = _selectedLocation;
-    final media = MediaQuery.of(context).size;
-    const headerHeight = 46.0;
-    const bottomHeight = 54.0;
-    // Dimensiones adaptativas: ancho proporcional al dispositivo y alto que
-    // siempre cabe en la pantalla (evita overflow en landscape/teclado).
-    final modalWidth = (media.width * 0.9).clamp(280.0, 400.0);
-    final mapHeight = (media.height - headerHeight - bottomHeight - 64).clamp(160.0, 380.0);
-
-    showDialog(
+  /// Desplegar la ventana modal de mapa uniforme y redimensionable.
+  Future<void> _openMapModalDialog() async {
+    final result = await showDialog<LatLng>(
       context: context,
-      builder: (dialogCtx) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-          clipBehavior: Clip.antiAlias,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: SizedBox(
-            width: modalWidth,
-            height: headerHeight + bottomHeight + mapHeight,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  color: AppTheme.cDeepAccent,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Seleccionar Posición del PIN',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
-                        onPressed: () => Navigator.pop(dialogCtx),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: PatientMapPicker(
-                    selectedLocation: tempLoc,
-                    mapController: _mapController,
-                    height: mapHeight,
-                    onLocationChanged: (newLoc) {
-                      tempLoc = newLoc;
-                    },
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.grey.shade50,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 38,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-                      onPressed: () {
-                        setState(() {
-                          _selectedLocation = tempLoc;
-                          _ubicacionConfirmada = true;
-                          _statusMessage = 'PIN actualizado en el formulario.';
-                        });
-                        Navigator.pop(dialogCtx);
-                      },
-                      icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text('Confirmar Posición del PIN', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (_) => ResizableMapDialog(
+        initialLocation: _selectedLocation,
+        title: 'Seleccionar Posición del PIN',
+        mapController: _mapController,
+        resolveAddress: (p) =>
+            SupabaseService.reverseGeocodeAddress(p.latitude, p.longitude),
+        onAddressResolved: (addr) => _addressCtrl.text = addr,
+      ),
     );
+    if (result == null || !mounted) return;
+    setState(() {
+      _selectedLocation = result;
+      _ubicacionConfirmada = true;
+      _statusMessage = 'PIN actualizado en el formulario.';
+    });
   }
 
   /// Guardar la latitud, longitud y dirección en Supabase
@@ -277,7 +215,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Dirección de Residencia',
+                'Dirección de la cita',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
               ),
               const SizedBox(height: 4),
@@ -293,7 +231,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                 textInputAction: TextInputAction.search,
                 onFieldSubmitted: (_) => _searchAddress(),
                 decoration: AppTheme.fieldDecoration(
-                  label: 'Dirección Completa',
+                  label: 'Dirección de la cita',
                   hint: 'Ej: Main St, Houston, TX',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _isGeocoding
@@ -335,7 +273,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
 
               // Botón de activación del Mapa Emergente Cuadrado
               InkWell(
-                onTap: _openSquareMapDialog,
+                onTap: _openMapModalDialog,
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 child: Container(
                   padding: const EdgeInsets.all(14),

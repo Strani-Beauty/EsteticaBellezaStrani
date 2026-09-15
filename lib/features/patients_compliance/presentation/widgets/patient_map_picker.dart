@@ -12,12 +12,20 @@ class PatientMapPicker extends StatefulWidget {
   final MapController? mapController;
   final double height;
 
+  /// Resuelve la dirección de un punto al tocar el mapa (reverse geocoding).
+  final Future<String?> Function(LatLng point)? resolveAddress;
+
+  /// Notifica la dirección resuelta tras tocar el mapa (si [resolveAddress] existe).
+  final ValueChanged<String>? onAddressResolved;
+
   const PatientMapPicker({
     super.key,
     required this.selectedLocation,
     required this.onLocationChanged,
     this.mapController,
     this.height = 200,
+    this.resolveAddress,
+    this.onAddressResolved,
   });
 
   @override
@@ -27,6 +35,7 @@ class PatientMapPicker extends StatefulWidget {
 class _PatientMapPickerState extends State<PatientMapPicker> {
   late MapController _internalController;
   late LatLng _location;
+  bool _resolving = false;
 
   MapController get _controller => widget.mapController ?? _internalController;
 
@@ -56,6 +65,19 @@ class _PatientMapPickerState extends State<PatientMapPicker> {
     // y notifica al padre para que capture el valor final al confirmar.
     setState(() => _location = point);
     widget.onLocationChanged(point);
+
+    // Reverse geocoding opcional: resuelve y coloca la dirección exacta del punto.
+    final resolver = widget.resolveAddress;
+    if (resolver != null) {
+      setState(() => _resolving = true);
+      resolver(point).then((address) {
+        if (!mounted) return;
+        setState(() => _resolving = false);
+        if (address != null && address.isNotEmpty) {
+          widget.onAddressResolved?.call(address);
+        }
+      });
+    }
   }
 
   void _recenterDefault() {
@@ -226,6 +248,45 @@ class _PatientMapPickerState extends State<PatientMapPicker> {
               ],
             ),
           ),
+        // Overlay de resolución de dirección (reverse geocoding)
+          if (_resolving)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white.withValues(alpha: 0.55),
+                alignment: Alignment.center,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.cDeepAccent,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Resolviendo dirección...',
+                        style: TextStyle(fontSize: 11, color: AppTheme.cDarkText),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

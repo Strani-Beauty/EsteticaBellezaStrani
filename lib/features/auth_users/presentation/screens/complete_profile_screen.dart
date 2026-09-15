@@ -12,7 +12,7 @@ import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/paciente_entity.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
-import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/patient_map_picker.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/resizable_map_dialog.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/patient_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/widgets/stripe_payment_sheet.dart';
@@ -149,97 +149,24 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     }
   }
 
-/// Abrir ventana emergente cuadrada (1/4 del tamaño de la pantalla total) con el mapa
-  void _openMapModalDialog() {
-    LatLng tempLocation = _selectedLocation;
-    final media = MediaQuery.of(context).size;
-    const headerHeight = 46.0;
-    const bottomHeight = 54.0;
-    // Dimensiones adaptativas: ancho proporcional al dispositivo y alto que
-    // siempre cabe en la pantalla (evita overflow en landscape/teclado).
-    final modalWidth = (media.width * 0.9).clamp(280.0, 400.0);
-    final mapHeight = (media.height - headerHeight - bottomHeight - 64).clamp(140.0, 380.0);
-
-    showDialog(
+/// Abrir la ventana modal de mapa uniforme y redimensionable.
+  Future<void> _openMapModalDialog() async {
+    final result = await showDialog<LatLng>(
       context: context,
-      builder: (dialogCtx) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          ),
-          clipBehavior: Clip.antiAlias,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: SizedBox(
-            width: modalWidth,
-            height: headerHeight + bottomHeight + mapHeight,
-            child: Column(
-              children: [
-                // Header modal
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  color: AppTheme.cDeepAccent,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.map_rounded, color: Colors.white, size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'Mapa (Houston, TX)',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(Icons.close, color: Colors.white, size: 18),
-                        onPressed: () => Navigator.pop(dialogCtx),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Mapa cuadrado interactivo
-                Expanded(
-                  child: PatientMapPicker(
-                    selectedLocation: tempLocation,
-                    mapController: _mapController,
-                    height: mapHeight,
-                    onLocationChanged: (newLoc) {
-                      tempLocation = newLoc;
-                    },
-                  ),
-                ),
-
-                // Botón de confirmación inferior
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.grey.shade50,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 38,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-                      onPressed: () {
-                        setState(() {
-                          _selectedLocation = tempLocation;
-                          _ubicacionConfirmada = true;
-                        });
-                        Navigator.pop(dialogCtx);
-                      },
-                      icon: const Icon(Icons.check, size: 16),
-                      label: const Text('Confirmar Posición del PIN', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (_) => ResizableMapDialog(
+        initialLocation: _selectedLocation,
+        title: 'Mapa (Houston, TX)',
+        mapController: _mapController,
+        resolveAddress: (p) =>
+            SupabaseService.reverseGeocodeAddress(p.latitude, p.longitude),
+        onAddressResolved: (addr) => _addressCtrl.text = addr,
+      ),
     );
+    if (result == null || !mounted) return;
+    setState(() {
+      _selectedLocation = result;
+      _ubicacionConfirmada = true;
+    });
   }
 
   /// Cerrar sesión y volver a la pantalla de bienvenida.
@@ -752,7 +679,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 textInputAction: TextInputAction.search,
                 onFieldSubmitted: _searchLocation,
                 decoration: AppTheme.fieldDecoration(
-                  label: 'Dirección de Habitación',
+                  label: 'Dirección de la cita',
                   hint: 'Ej: Main St, Houston, TX',
                   prefix: const Icon(Icons.location_on_outlined, color: AppTheme.cDeepAccent),
                   suffix: _searchingLocation

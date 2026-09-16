@@ -159,11 +159,13 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(
           children: [
             Icon(Icons.medical_services_rounded, color: AppTheme.cDeepAccent, size: 26),
             SizedBox(width: 10),
-            Text('Evaluación Médica Interna'),
+            Expanded(child: Text('Evaluación Médica Interna')),
           ],
         ),
         content: Column(
@@ -189,7 +191,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
               _triggerInternalEvaluation();
             },
             icon: const Icon(Icons.local_hospital_rounded, size: 18),
-            label: const Text('Evaluación Médica Interna'),
+            label: const Text('Continuar'),
           ),
         ],
       ),
@@ -243,6 +245,8 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
               ),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              constraints: const BoxConstraints(maxWidth: 440),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -286,11 +290,13 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: const Row(
           children: [
             Icon(Icons.verified_user_rounded, color: AppTheme.cSuccess, size: 28),
             SizedBox(width: 10),
-            Text('Dictamen Aprobado'),
+            Expanded(child: Text('Dictamen Aprobado')),
           ],
         ),
         content: Column(
@@ -367,6 +373,8 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 440),
         title: Row(
           children: [
             Icon(
@@ -375,7 +383,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
               size: 28,
             ),
             const SizedBox(width: 10),
-            Text(bloqueado ? 'Dictamen NO APTO' : 'Revisión requerida'),
+            Expanded(child: Text(bloqueado ? 'Dictamen NO APTO' : 'Revisión requerida')),
           ],
         ),
         content: Column(

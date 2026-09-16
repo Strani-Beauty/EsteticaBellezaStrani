@@ -9,7 +9,8 @@ import 'avatar_preset.dart';
 /// Vista circular compartida del avatar.
 ///
 /// Resuelve, en orden:
-///   * preset (`avatar_N`) → SVG DiceBear del preset;
+///   * preset (`avatar_N`) → retrato empaquetado (`assetPath`) o SVG DiceBear
+///     del preset;
 ///   * path de storage / URL pública legacy → URL firmada (`createSignedUrl`)
 ///     → `CachedNetworkImage`;
 ///   * null + paciente → DiceBear determinístico (seed = user id);
@@ -41,8 +42,13 @@ class AvatarView extends StatelessWidget {
 
     Widget child;
     if (preset != null) {
-      final svg = dicebearSvgFor(avatarUrl);
-      child = _DiceBearAvatar(svg: svg!, diameter: diameter);
+      final assetPath = preset.assetPath;
+      if (assetPath != null) {
+        child = _PresetAvatar(assetPath: assetPath, diameter: diameter);
+      } else {
+        final svg = dicebearSvgFor(avatarUrl);
+        child = _DiceBearAvatar(svg: svg!, diameter: diameter);
+      }
     } else if (avatarUrl != null && avatarUrl!.isNotEmpty) {
       child = _SignedAvatar(value: avatarUrl!, diameter: diameter);
     } else if (isPatient && seed != null && seed!.isNotEmpty) {
@@ -215,6 +221,33 @@ class _DiceBearAvatar extends StatelessWidget {
       width: diameter,
       height: diameter,
       child: SvgPicture.string(svg, fit: BoxFit.cover),
+    );
+  }
+}
+
+/// Avatar predefinido con retrato empaquetado (JPEG local).
+class _PresetAvatar extends StatelessWidget {
+  final String assetPath;
+  final double diameter;
+
+  const _PresetAvatar({required this.assetPath, required this.diameter});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: diameter,
+      height: diameter,
+      child: Image.asset(
+        assetPath,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Center(
+          child: Icon(
+            Icons.person_rounded,
+            size: diameter * 0.55,
+            color: AppTheme.cDeepAccent,
+          ),
+        ),
+      ),
     );
   }
 }

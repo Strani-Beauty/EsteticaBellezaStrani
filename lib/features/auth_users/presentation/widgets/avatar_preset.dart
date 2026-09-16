@@ -9,14 +9,15 @@ import 'package:dicebear_styles/miniavs.dart';
 import 'package:dicebear_styles/open_peeps.dart';
 import 'package:flutter/material.dart';
 
-/// Avatar predefinido del selector: la clave se persiste en `avatar_url` y el
-/// estilo/seed de DiceBear determinan el SVG que se renderiza.
+/// Avatar predefinido del selector: la clave se persiste en `avatar_url`.
 ///
-/// Cada preset usa un estilo DiceBear distinto y un seed fijo, de modo que la
-/// misma clave siempre produce el mismo avatar (offline y determinístico).
+/// Si `assetPath` no es null se renderiza el retrato empaquetado (JPEG
+/// `assets/images/avatares/avatar_N.jpg`); si es null se usa el estilo/seed de
+/// DiceBear para generar el SVG (offline y determinístico).
 class AvatarPreset {
   final String key;
   final String label;
+  final String? assetPath;
   final String style;
   final String seed;
   final Color color;
@@ -24,6 +25,7 @@ class AvatarPreset {
   const AvatarPreset({
     required this.key,
     required this.label,
+    this.assetPath,
     required this.style,
     required this.seed,
     required this.color,
@@ -34,56 +36,64 @@ class AvatarPreset {
 const List<AvatarPreset> avatarPresets = [
   AvatarPreset(
     key: 'avatar_1',
-    label: 'Hombre joven',
+    label: 'Hombre adulto mayor',
+    assetPath: 'assets/images/avatares/avatar_1.jpg',
     style: 'adventurer',
     seed: 'strani-adventurer-1',
     color: Color(0xFFF7D6E0),
   ),
   AvatarPreset(
     key: 'avatar_2',
-    label: 'Hombre adulto',
+    label: 'Mujer adulta mayor',
+    assetPath: 'assets/images/avatares/avatar_2.jpg',
     style: 'avataaars',
     seed: 'strani-avataaars-2',
     color: Color(0xFFBEE1E6),
   ),
   AvatarPreset(
     key: 'avatar_3',
-    label: 'Mujer joven',
+    label: 'Mujer adulta',
+    assetPath: 'assets/images/avatares/avatar_3.jpg',
     style: 'lorelei',
     seed: 'strani-lorelei-3',
     color: Color(0xFFE2ECE9),
   ),
   AvatarPreset(
     key: 'avatar_4',
-    label: 'Mujer adulta',
+    label: 'Hombre 3era edad',
+    assetPath: 'assets/images/avatares/avatar_4.jpg',
     style: 'micah',
     seed: 'strani-micah-4',
     color: Color(0xFFFFF3CD),
   ),
   AvatarPreset(
     key: 'avatar_5',
-    label: 'Tercera edad hombre',
+    label: 'Mujer 3era edad',
+    assetPath: 'assets/images/avatares/avatar_5.jpg',
     style: 'fun_emoji',
     seed: 'strani-fun-emoji-5',
     color: Color(0xFFF7D6E0),
   ),
   AvatarPreset(
     key: 'avatar_6',
-    label: 'Tercera edad mujer',
+    label: 'Hombre adulto',
+    assetPath: 'assets/images/avatares/avatar_6.jpg',
     style: 'open_peeps',
     seed: 'strani-open-peeps-6',
     color: Color(0xFFBEE1E6),
   ),
   AvatarPreset(
     key: 'avatar_7',
-    label: 'Adulto mayor hombre',
+    label: 'Mujer joven',
+    assetPath: 'assets/images/avatares/avatar_7.jpg',
     style: 'big_ears',
     seed: 'strani-big-ears-7',
     color: Color(0xFFE2ECE9),
   ),
   AvatarPreset(
     key: 'avatar_8',
-    label: 'Adulto mayor mujer',
+    label: 'Hombre joven',
+    assetPath: 'assets/images/avatares/avatar_8.jpg',
     style: 'miniavs',
     seed: 'strani-miniavs-8',
     color: Color(0xFFFFF3CD),

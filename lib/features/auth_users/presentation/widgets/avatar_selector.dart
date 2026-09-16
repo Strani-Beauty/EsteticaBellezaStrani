@@ -13,7 +13,7 @@ import 'avatar_view.dart';
 /// Selector de avatar para el perfil del paciente (AU-H-08).
 ///
 /// Ofrece dos modos:
-///  * Avatares predefinidos: avatares DiceBear creativos; se guardan como clave
+///  * Avatares predefinidos: retratos empaquetados; se guardan como clave
 ///    `avatar_N` en `avatar_url`.
 ///  * Subir foto propia: se sube al bucket privado `avatars` y se guarda el
 ///    **path de storage** en `avatar_url` (se lee con URL firmada).
@@ -150,7 +150,8 @@ class _Preview extends StatelessWidget {
   }
 }
 
-/// Tile de un avatar predefinido (avatar DiceBear circular pequeño + etiqueta).
+/// Tile de un avatar predefinido (retrato o avatar DiceBear circular pequeño
+/// + etiqueta).
 class _PresetTile extends StatelessWidget {
   final AvatarPreset preset;
   final bool selected;
@@ -164,7 +165,8 @@ class _PresetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final svg = dicebearSvgFor(preset.key)!;
+    final assetPath = preset.assetPath;
+    final svg = assetPath == null ? dicebearSvgFor(preset.key)! : null;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusSm),
@@ -186,7 +188,9 @@ class _PresetTile extends StatelessWidget {
               child: SizedBox(
                 width: 38,
                 height: 38,
-                child: SvgPicture.string(svg, fit: BoxFit.cover),
+                child: assetPath != null
+                    ? Image.asset(assetPath, fit: BoxFit.cover)
+                    : SvgPicture.string(svg!, fit: BoxFit.cover),
               ),
             ),
           ),

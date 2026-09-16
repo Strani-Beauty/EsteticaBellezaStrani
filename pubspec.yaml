@@ -71,5 +71,6 @@ flutter:
   assets:
     - .env
     - assets/images/
+    - assets/images/avatares/
     - assets/icons/
     - assets/face_maps/

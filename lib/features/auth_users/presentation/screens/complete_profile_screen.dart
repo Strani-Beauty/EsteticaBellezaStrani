@@ -233,6 +233,17 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       avatarUrl: _avatarUrl,
     );
 
+    // Espejar la dirección en `direcciones_paciente` (la usa el resumen de
+    // solicitud y el RPC de creación de solicitudes).
+    if (_addressCtrl.text.trim().isNotEmpty) {
+      await SupabaseService.savePatientAddress(
+        profileId: userId,
+        address: _addressCtrl.text.trim(),
+        latitude: _selectedLocation.latitude,
+        longitude: _selectedLocation.longitude,
+      );
+    }
+
     if (!mounted) return;
 
     if (savedProfile.containsKey('error')) {
@@ -512,13 +523,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       amount: monto,
                       paymentReference: stripeRef,
                     );
-                    // Guardar dirección principal
-                    await SupabaseService.savePatientAddress(
-                      profileId: userId,
-                      address: _addressCtrl.text.trim(),
-                      latitude: _selectedLocation.latitude,
-                      longitude: _selectedLocation.longitude,
-                    );
+                    // La dirección principal ya se espejó en `direcciones_paciente`
+                    // al guardar el perfil (_guardarDatos).
 
                     _stripeModalOpen = false;
                     if (dialogCtx.mounted) Navigator.pop(dialogCtx);

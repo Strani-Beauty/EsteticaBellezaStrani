@@ -169,6 +169,13 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
         longitude: _selectedLocation.longitude,
       );
 
+      await SupabaseService.savePatientAddress(
+        profileId: user.id,
+        address: _addressCtrl.text.trim(),
+        latitude: _selectedLocation.latitude,
+        longitude: _selectedLocation.longitude,
+      );
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

@@ -160,7 +160,33 @@ class SolicitudesReservaSupabaseDataSource {
         .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
-    if (res == null) return null;
+
+    // Auto-reparación: si no hay fila en `direcciones_paciente`, tomar la
+    // dirección guardada en `profiles` y crear el espejo (es_principal).
+    if (res == null) {
+      final profile = await _client
+          .from('profiles')
+          .select('address, latitude, longitude')
+          .eq('id', profileId)
+          .maybeSingle();
+      final direccion = (profile?['address'] as String?)?.trim();
+      if (direccion == null || direccion.isEmpty) return null;
+      final latitud = (profile?['latitude'] as num?)?.toDouble() ?? 0;
+      final longitud = (profile?['longitude'] as num?)?.toDouble() ?? 0;
+      res = await _client
+          .from('direcciones_paciente')
+          .insert({
+            'paciente_id': pacienteId,
+            'direccion': direccion,
+            'latitud': latitud,
+            'longitud': longitud,
+            'es_principal': true,
+          })
+          .select()
+          .maybeSingle();
+      if (res == null) return null;
+    }
+
     return DireccionPrincipalEntity(
       id: res['id']?.toString() ?? '',
       direccion: res['direccion']?.toString() ?? '',

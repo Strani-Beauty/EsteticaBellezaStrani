@@ -548,6 +548,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             avatarUrl: _avatarUrl,
           );
 
+      // Espejar la dirección en `direcciones_paciente` (la usa el resumen de
+      // solicitud y el RPC de creación de solicitudes).
+      final addrGuardada = _addressCtrl.text.trim();
+      if (addrGuardada.isNotEmpty) {
+        await SupabaseService.savePatientAddress(
+          profileId: profile.id,
+          address: addrGuardada,
+          latitude: _selectedLocation.latitude,
+          longitude: _selectedLocation.longitude,
+        );
+      }
+
       // Datos clínicos del paciente.
       if (!mounted) return;
       final pacRes = await sl<UpdateMiPaciente>()(UpdateMiPacienteParams(

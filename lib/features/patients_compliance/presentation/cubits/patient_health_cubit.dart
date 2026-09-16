@@ -189,7 +189,7 @@ class PatientHealthCubit extends Cubit<PatientHealthState> {
     );
   }
 
-  /// Registra la validación de telemedicina (requisitos 10-11).
+  /// Registra la validación de la Evaluación Médica Interna (requisitos 10-11).
   Future<ValidacionTelemedicinaEntity?> registrarValidacion({
     required bool aprobado,
     required String proveedor,

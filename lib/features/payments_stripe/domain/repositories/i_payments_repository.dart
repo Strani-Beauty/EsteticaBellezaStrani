@@ -9,7 +9,7 @@ import '../entities/transaccion_entity.dart';
 /// La implementación vive en data/. Las pantallas migran de SupabaseService
 /// a este contrato vía GetIt.
 abstract class IPaymentsRepository {
-  /// Crea la cadena solicitudes → pagos → transacciones al aprobarse Qualify
+  /// Crea la cadena solicitudes → pagos → transacciones al aprobarse la Evaluación Médica Interna
   /// (depósito $30 previamente cobrado en la cuota inicial).
   Future<String?> createSolicitudAndPayment({
     required String profileId,

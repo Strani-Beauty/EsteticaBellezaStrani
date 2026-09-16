@@ -52,7 +52,7 @@ class NotFoundFailure extends Failure {
   const NotFoundFailure([super.message = 'Recurso no encontrado.']);
 }
 
-/// Error de telemedicina / validación médica (RN-020, RN-022)
+/// Error de evaluación médica (RN-020, RN-022)
 class TelemedinaFailure extends Failure {
   const TelemedinaFailure(super.message, {super.code});
 }

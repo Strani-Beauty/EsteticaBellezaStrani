@@ -21,6 +21,11 @@ migrate_working_dir/
 !.env.example
 *openapi*.json
 
+# Originales de avatares IA (no se empaquetan)
+assets/icons/Avatares/
+assets/icons/Gemini_Generated_Image_1ccasg1ccasg1cca.jfif
+assets/icons/stitch_generador_de_avatares_personalizados.zip
+
 # Supabase CLI
 supabase/.temp/
 

@@ -108,7 +108,7 @@ class PaymentsCubit extends Cubit<PaymentsState> {
     );
   }
 
-  /// Crea solicitud + pago + transacción al aprobarse Qualify.
+  /// Crea solicitud + pago + transacción al aprobarse la Evaluación Médica Interna.
   Future<String?> crearSolicitudDeposito({
     required String profileId,
     required String stripePaymentRef,

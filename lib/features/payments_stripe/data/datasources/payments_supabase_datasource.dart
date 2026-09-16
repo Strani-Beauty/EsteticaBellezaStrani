@@ -28,7 +28,7 @@ class PaymentsSupabaseDataSource {
   }
 
   /// Lee el depósito configurado en `configuracion_sistema` (default $30).
-  /// Solo aplica a la cuota inicial de Qualify (telemedicina/medicina interna).
+  /// Solo aplica a la cuota inicial de la Evaluación Médica Interna.
   Future<double> _getDepositoReserva() async {
     try {
       final res = await _client
@@ -164,10 +164,10 @@ class PaymentsSupabaseDataSource {
     }).eq('usuario_id', profileId);
   }
 
-  // ── Solicitud + pago + transacción (al aprobarse Qualify) ─
+  // ── Solicitud + pago + transacción (al aprobarse la Evaluación) ─
 
   /// Crea la cadena `solicitudes` → `pagos` → `transacciones`.
-  /// Se llama una única vez al aprobarse Qualify (depósito $30 ya cobrado).
+  /// Se llama una única vez al aprobarse la Evaluación Médica Interna (depósito $30 ya cobrado).
   Future<String?> createSolicitudAndPayment({
     required String profileId,
     required String stripePaymentRef,

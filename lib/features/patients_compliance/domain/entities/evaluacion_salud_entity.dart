@@ -116,7 +116,7 @@ class EvaluacionSaludEntity extends Equatable {
   List<Object?> get props => [id, pacienteId, cuestionarioId, versionCuestionario];
 }
 
-/// Validación médica externa (Qualify / Telemedicina / Medicina Interna).
+/// Validación de la Evaluación Médica Interna.
 class ValidacionTelemedicinaEntity extends Equatable {
   final String id; // uuid
   final String pacienteId; // FK pacientes.id

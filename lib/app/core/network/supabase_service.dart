@@ -402,7 +402,7 @@ class SupabaseService {
   }
 
   /// Crea la cadena: `solicitudes` → `pagos` → `transacciones`
-  /// Se llama una única vez al aprobarse la evaluación Qualify.
+  /// Se llama una única vez al aprobarse la Evaluación Médica Interna.
   static Future<String?> createSolicitudAndPayment({
     required String profileId,
     required String stripePaymentRef,
@@ -800,23 +800,22 @@ class SupabaseService {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // GUARDAR DICTAMEN QUALIFY (VALIDACIÓN TELEMEDICINA)
+  // GUARDAR DICTAMEN (EVALUACIÓN MÉDICA INTERNA)
   // ══════════════════════════════════════════════════════════════
 
-  /// Guarda el resultado de la evaluación Qualify en `validaciones_telemedicina`
   /// Guarda el resultado de la evaluación médica en `validaciones_telemedicina`
-  /// Admite modalidades: 'Telemedicina' (Qualify u otros) o 'Medicina Interna'
+  /// Modalidad interna única: 'Medicina Interna'.
   /// Validez oficial de 1 año (365 días) desde la fecha de aprobación.
-  static Future<void> saveQualifyTestValidation({
+  static Future<void> saveMedicalEvaluation({
     required String profileId,
     required bool aprobado,
-    String proveedor = 'Telemedicina',
+    String proveedor = 'Medicina Interna',
   }) async {
-    debugPrint('🏥 [saveQualifyTestValidation] profileId=$profileId aprobado=$aprobado proveedor=$proveedor');
+    debugPrint('🏥 [saveMedicalEvaluation] profileId=$profileId aprobado=$aprobado proveedor=$proveedor');
 
     final pacienteId = await _ensurePaciente(profileId);
     if (pacienteId == null) {
-      debugPrint('❌ [saveQualifyTestValidation] No se pudo obtener pacienteId');
+      debugPrint('❌ [saveMedicalEvaluation] No se pudo obtener pacienteId');
       return;
     }
 
@@ -842,7 +841,7 @@ class SupabaseService {
           'fecha_vencimiento': fechaVencimiento.toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', existing['id']);
-        debugPrint('✅ [saveQualifyTestValidation] Validación ($proveedor) actualizada (Vence: $fechaVencimiento)');
+        debugPrint('✅ [saveMedicalEvaluation] Validación ($proveedor) actualizada (Vence: $fechaVencimiento)');
       } else {
         // Insertar nueva
         await _client.from('validaciones_telemedicina').insert({
@@ -856,10 +855,10 @@ class SupabaseService {
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         });
-        debugPrint('✅ [saveQualifyTestValidation] Validación ($proveedor) insertada (Vence: $fechaVencimiento)');
+        debugPrint('✅ [saveMedicalEvaluation] Validación ($proveedor) insertada (Vence: $fechaVencimiento)');
       }
     } catch (e) {
-      debugPrint('❌ [saveQualifyTestValidation] ERROR: $e');
+      debugPrint('❌ [saveMedicalEvaluation] ERROR: $e');
     }
 
     // Actualizar profiles
@@ -869,9 +868,9 @@ class SupabaseService {
         'evaluation_passed': aprobado,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', profileId);
-      debugPrint('✅ [saveQualifyTestValidation] profiles actualizado');
+      debugPrint('✅ [saveMedicalEvaluation] profiles actualizado');
     } catch (e) {
-      debugPrint('❌ [saveQualifyTestValidation] ERROR profiles.update: $e');
+      debugPrint('❌ [saveMedicalEvaluation] ERROR profiles.update: $e');
     }
   }
 
@@ -880,14 +879,14 @@ class SupabaseService {
   // ══════════════════════════════════════════════════════════════
 
   /// Verifica pago, cuestionario y evaluación médica del paciente.
-  /// Comprueba validez de 1 año (365 días) por Telemedicina o Medicina Interna.
+  /// Comprueba validez de 1 año (365 días) de la Evaluación Médica Interna.
   static Future<Map<String, dynamic>> checkPatientFlowStatus({
     required String profileId,
   }) async {
     bool paymentCompleted = false;
     bool hasCompletedQuestionnaire = false;
     String evaluationStatus = 'PENDIENTE';
-    String proveedorEvaluacion = 'Telemedicina';
+    String proveedorEvaluacion = 'Medicina Interna';
     DateTime? fechaVencimiento;
     bool isExpired = false;
 
@@ -922,7 +921,7 @@ class SupabaseService {
           debugPrint('📋 [checkPatientFlowStatus] Cuestionario encontrado: $eval');
         }
 
-        // 3. Validación clínica (Telemedicina o Medicina Interna)
+        // 3. Validación clínica (Evaluación Médica Interna)
         final val = await _client
             .from('validaciones_telemedicina')
             .select('estado, proveedor, fecha_vencimiento, fecha_validacion, created_at')
@@ -1312,7 +1311,7 @@ class SupabaseService {
     }
   }
 
-  /// Verifica los prerrequisitos específicos de un servicio (Telemedicina, Face Map, Fotos, Consentimiento)
+  /// Verifica los prerrequisitos específicos de un servicio (evaluación médica, Face Map, Fotos, Consentimiento)
   static Future<Map<String, bool>> checkServicePrerequisites({
     required Map<String, dynamic> serviceData,
     required String profileId,

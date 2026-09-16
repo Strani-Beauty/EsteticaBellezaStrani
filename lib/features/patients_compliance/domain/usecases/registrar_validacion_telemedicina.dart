@@ -17,7 +17,7 @@ class RegistrarValidacionTelemedicinaParams {
   });
 }
 
-/// Registra la validación de telemedicina vía RPC segura con fecha de
+/// Registra la validación médica vía RPC segura con fecha de
 /// aprobación (now) y vencimiento (+365 días).
 class RegistrarValidacionTelemedicina
     extends UseCase<ValidacionTelemedicinaEntity, RegistrarValidacionTelemedicinaParams> {

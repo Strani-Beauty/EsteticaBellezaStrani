@@ -176,7 +176,7 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
     }
   }
 
-  // ── Validación de telemedicina ─────────────────────────────────────────────
+  // ── Validación médica ─────────────────────────────────────────────
 
   @override
   Future<Either<Failure, ValidacionTelemedicinaEntity>> registrarValidacionTelemedicina({
@@ -207,9 +207,9 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
       if (msg.contains('RN-020') || msg.toLowerCase().contains('rn-020')) {
         return Left(TelemedinaFailure('RN-020: no puedes solicitar este servicio sin validación vigente.', code: 'RN020'));
       }
-      return Left(ServerFailure('No se pudo registrar la validación de telemedicina: $e'));
+      return Left(ServerFailure('No se pudo registrar la validación médica: $e'));
     } catch (e) {
-      return Left(ServerFailure('No se pudo registrar la validación de telemedicina: $e'));
+      return Left(ServerFailure('No se pudo registrar la validación médica: $e'));
     }
   }
 
@@ -219,7 +219,7 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
       final model = await _datasource.fetchMiValidacion();
       return Right(model?.toEntity());
     } catch (e) {
-      return Left(ServerFailure('No se pudo consultar la validación de telemedicina: $e'));
+      return Left(ServerFailure('No se pudo consultar la validación médica: $e'));
     }
   }
 
@@ -244,7 +244,7 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
         cuestionarioCompletado: evaluacion != null,
         evaluacionResultado: evaluacion?.resultado?.toDb() ?? 'PENDIENTE',
         validacionEstado: validacionEstado,
-        proveedor: validacion?.proveedor ?? 'Telemedicina',
+        proveedor: validacion?.proveedor ?? 'Medicina Interna',
         fechaVencimiento: validacion?.fechaVencimiento,
       ));
     } catch (e) {
@@ -299,10 +299,10 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
 
   /// Reimplementado sobre la RPC segura (`registrar_validacion_telemedicina`).
   @override
-  Future<void> saveQualifyTestValidation({
+  Future<void> saveMedicalEvaluation({
     required String profileId,
     required bool aprobado,
-    String proveedor = 'Telemedicina',
+    String proveedor = 'Medicina Interna',
   }) async {
     await _datasource.registrarValidacionTelemedicina(
       aprobado: aprobado,

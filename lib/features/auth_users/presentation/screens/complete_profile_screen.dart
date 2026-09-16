@@ -286,7 +286,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     // ── Ya llenó cuestionario → revisar dictamen de evaluación médica ──
     if (evaluationStatus == 'VENCIDA') {
-      _showExpiredEvaluationDialog(status['proveedorEvaluacion']?.toString() ?? 'Telemedicina / Medicina Interna');
+      _showExpiredEvaluationDialog(status['proveedorEvaluacion']?.toString() ?? 'Medicina Interna');
     } else if (evaluationStatus == 'RECHAZADA') {
       _showNegativeEvaluationDialog();
     } else if (evaluationStatus == 'APROBADA') {
@@ -337,7 +337,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               _showStripeModal();
             },
             icon: const Icon(Icons.payment_rounded, size: 18),
-            label: const Text('Pagar \$30 USD y Renovar Evaluation'),
+            label: const Text('Pagar \$30 USD y Renovar Evaluación'),
           ),
         ],
       ),
@@ -361,7 +361,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         ]),
         content: const SingleChildScrollView(
           child: Text(
-            'Tu evaluación médica previa con Qualify no resultó apta para este servicio en este momento.',
+            'Tu Evaluación Médica Interna previa no resultó apta para este servicio en este momento.',
             style: TextStyle(fontSize: 14),
           ),
         ),
@@ -546,7 +546,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           serviceName: 'Estética y Belleza General',
           stripePaymentRef: stripeRef,
           onCompleted: () async {
-            // El cuestionario ya ejecutó Qualify internamente.
+            // El cuestionario ya ejecutó la Evaluación Médica Interna.
             // Refrescamos el perfil y volvemos a llevar al paciente al catálogo.
             Navigator.pop(ctx);
             await context.read<AuthCubit>().refreshProfile();

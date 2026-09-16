@@ -16,7 +16,7 @@ class CrearSolicitudDepositoParams {
   });
 }
 
-/// Crea la cadena solicitud → pago → transacción al aprobarse Qualify.
+/// Crea la cadena solicitud → pago → transacción al aprobarse la Evaluación Médica Interna.
 class CrearSolicitudDeposito
     extends UseCase<String?, CrearSolicitudDepositoParams> {
   final IPaymentsRepository _repository;

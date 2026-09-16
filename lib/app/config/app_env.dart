@@ -9,7 +9,7 @@ class AppEnv {
   static String get stripePublishableKey => _get('STRIPE_PUBLISHABLE_KEY', '');
   static String get mapboxToken => _get('MAPBOX_ACCESS_TOKEN', '');
   static String get googleMapsKey => _get('GOOGLE_MAPS_API_KEY', '');
-  static String get qualifyApiUrl => _get('QUALIFY_API_URL', '');
+  static String get internalEvaluationApiUrl => _get('INTERNAL_EVALUATION_API_URL', '');
 
   /// Valida que existan las variables imprescindibles de Supabase.
   /// Debe llamarse tras cargar el .env en main(). Lanza StateError si faltan.

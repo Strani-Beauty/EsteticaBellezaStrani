@@ -1,6 +1,6 @@
 import '../../domain/entities/evaluacion_salud_entity.dart';
 
-/// Modelo de `validaciones_telemedicina`.
+/// Modelo de la validación médica (`validaciones_telemedicina`).
 class ValidacionTelemedicinaModel {
   final String id;
   final String pacienteId;

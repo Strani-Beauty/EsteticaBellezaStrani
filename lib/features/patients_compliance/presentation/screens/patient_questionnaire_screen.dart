@@ -9,12 +9,12 @@ import 'package:esteticaybellezastrani/features/patients_compliance/presentation
 
 /// Screen de Cuestionario Clínico Pre-Tratamiento.
 /// Carga las preguntas reales del cuestionario activo (BD) y las renderiza
-/// según `tipo_respuesta`. Al aprobarse, registra la validación de
-/// telemedicina con fechas reales (validez 1 año).
+/// según `tipo_respuesta`. Al aprobarse, registra la validación médica
+/// interna con fechas reales (validez 1 año).
 class PatientQuestionnaireScreen extends StatefulWidget {
   final String? serviceName;
   final VoidCallback? onCompleted;
-  /// Referencia del pago de Stripe (se usa al crear la solicitud al aprobarse Qualify)
+  /// Referencia del pago de Stripe (se usa al crear la solicitud al aprobarse la evaluación)
   final String? stripePaymentRef;
 
   const PatientQuestionnaireScreen({
@@ -149,7 +149,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     }
   }
 
-  // ── Modalidad de evaluación (Qualify simulado) ────────────────────────────
+  // ── Evaluación Médica Interna ─────────────────────────────────────────────
 
   void _showEvaluationModalitySelector() {
     showDialog(
@@ -163,7 +163,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           children: [
             Icon(Icons.medical_services_rounded, color: AppTheme.cDeepAccent, size: 26),
             SizedBox(width: 10),
-            Text('Modalidad de Evaluación'),
+            Text('Evaluación Médica Interna'),
           ],
         ),
         content: Column(
@@ -171,40 +171,33 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
-              'Selecciona el canal médico para dictaminar tu aptitud clínica:',
+              'Tu aptitud clínica será dictaminada por nuestro departamento médico interno.',
               style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
             ),
             SizedBox(height: 12),
             Text(
-              '📌 Nota: La aprobación clínica por cualquiera de las dos modalidades otorga una validez oficial de 1 año (365 días) para acceder a todos nuestros servicios.',
+              '📌 Nota: La aprobación clínica otorga una validez oficial de 1 año (365 días) para acceder a todos nuestros servicios.',
               style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.cDeepAccent),
             ),
           ],
         ),
         actions: [
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _triggerEvaluationProcess(proveedor: 'Medicina Interna');
-            },
-            icon: const Icon(Icons.local_hospital_rounded, size: 18),
-            label: const Text('Medicina Interna'),
-          ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
             onPressed: () {
               Navigator.pop(ctx);
-              _triggerEvaluationProcess(proveedor: 'Telemedicina');
+              _triggerInternalEvaluation();
             },
-            icon: const Icon(Icons.videocam_rounded, size: 18),
-            label: const Text('Telemedicina'),
+            icon: const Icon(Icons.local_hospital_rounded, size: 18),
+            label: const Text('Evaluación Médica Interna'),
           ),
         ],
       ),
     );
   }
 
-  void _triggerEvaluationProcess({required String proveedor}) {
+  void _triggerInternalEvaluation() {
+    const proveedor = 'Medicina Interna';
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -235,7 +228,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
               if (!mounted) return;
 
               if (validacion != null) {
-                _showQualifySuccessModal(proveedor: proveedor, validacion: validacion);
+                _showEvaluationSuccessModal(validacion: validacion);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -257,12 +250,12 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                   const CircularProgressIndicator(color: AppTheme.cDeepAccent),
                   const SizedBox(height: 20),
                   Text(
-                    'Evaluación Médica ($proveedor)',
+                    'Evaluación Médica Interna',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Procesando cuestionario y expediente clínico con el departamento de $proveedor...',
+                    'Procesando cuestionario y expediente clínico con el departamento de Medicina Interna...',
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
                   ),
@@ -280,8 +273,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     );
   }
 
-  void _showQualifySuccessModal({
-    required String proveedor,
+  void _showEvaluationSuccessModal({
     required ValidacionTelemedicinaEntity validacion,
   }) {
     final fecha = validacion.fechaValidacion;
@@ -306,7 +298,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '¡Evaluación Exitosa por $proveedor!',
+              '¡Evaluación Médica Interna Exitosa!',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             const SizedBox(height: 8),
@@ -593,7 +585,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                     : const Icon(Icons.send_rounded),
                 label: Text(_isSubmitting
                     ? 'Procesando...'
-                    : 'Enviar y Evaluar con Qualify'),
+                    : 'Enviar y Evaluar'),
               ),
             ),
           ],

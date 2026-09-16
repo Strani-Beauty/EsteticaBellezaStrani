@@ -21,7 +21,7 @@ class EstadoSaludEntity extends Equatable {
   });
 
   /// Habilitado para solicitar servicios con requisito médico (RN-020):
-  /// validación de telemedicina APROBADA y no vencida.
+  /// validación médica APROBADA y no vencida.
   bool get habilitado =>
       validacionEstado == 'APROBADA' &&
       (fechaVencimiento == null || fechaVencimiento!.isAfter(DateTime.now()));

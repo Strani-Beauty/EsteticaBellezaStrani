@@ -6,8 +6,8 @@ import 'package:esteticaybellezastrani/features/patients_compliance/domain/entit
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/patient_health_cubit.dart';
 
 /// Consulta el estado integral de salud del paciente (requisito 13):
-/// cuota inicial, cuestionario, resultado de evaluación, validación de
-/// telemedicina con su vencimiento y siguiente paso sugerido.
+/// cuota inicial, cuestionario, resultado de evaluación, validación de la
+/// Evaluación Médica Interna con su vencimiento y siguiente paso sugerido.
 class EstadoSaludScreen extends StatelessWidget {
   const EstadoSaludScreen({super.key});
 
@@ -193,7 +193,7 @@ class _EstadoSaludViewState extends State<_EstadoSaludView> {
                 const SizedBox(height: 2),
                 Text(
                   habilitado
-                      ? 'Tu validación médica está vigente (${estado.proveedor}).'
+                      ? 'Tu Evaluación Médica Interna está vigente.'
                       : 'Completa los pasos pendientes para habilitar tus reservas.',
                   style: const TextStyle(fontSize: 12, color: AppTheme.cDarkText),
                 ),
@@ -272,7 +272,7 @@ class _EstadoSaludViewState extends State<_EstadoSaludView> {
   String _validacionLabel(EstadoSaludEntity estado) {
     switch (estado.validacionEstado) {
       case 'APROBADA':
-        return estado.validacionVencida ? 'Vencida' : 'Aprobada (${estado.proveedor})';
+        return estado.validacionVencida ? 'Vencida' : 'Aprobada (Evaluación Médica Interna)';
       case 'RECHAZADA':
         return 'Rechazada';
       case 'VENCIDA':

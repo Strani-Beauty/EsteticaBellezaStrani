@@ -496,7 +496,7 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            tile('Requiere telemedicina (RN-020)',
+            tile('Requiere evaluación médica (RN-020)',
                 'Se valida la evaluación de salud antes de la solicitud', 
                 _requiereTelemedicina,
                 (v) => setState(() => _requiereTelemedicina = v)),

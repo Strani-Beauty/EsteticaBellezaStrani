@@ -263,7 +263,7 @@ class PatientsComplianceSupabaseDataSource {
     return res != null;
   }
 
-  // ── Validación de telemedicina (autoridad: RPC en BD) ──────────────────────
+  // ── Validación médica (autoridad: RPC en BD) ──────────────────────
 
   Future<Map<String, dynamic>> registrarValidacionTelemedicina({
     required bool aprobado,

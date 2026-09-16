@@ -83,9 +83,9 @@ abstract class IPatientsComplianceRepository {
     int cuestionarioId,
   );
 
-  // ── Validación de telemedicina ─────────────────────────────────────────────
+  // ── Validación médica ─────────────────────────────────────────────
 
-  /// Registra la validación de telemedicina vía RPC segura
+  /// Registra la validación médica vía RPC segura
   /// (`registrar_validacion_telemedicina`): fija fecha de aprobación (now) y
   /// fecha de vencimiento (+365 días).
   Future<Either<Failure, ValidacionTelemedicinaEntity>> registrarValidacionTelemedicina({
@@ -94,7 +94,7 @@ abstract class IPatientsComplianceRepository {
     String? codigoReferencia,
   });
 
-  /// Validación de telemedicina actual del paciente.
+  /// Validación médica actual del paciente.
   Future<Either<Failure, ValidacionTelemedicinaEntity?>> getMiValidacion();
 
   // ── Estado del flujo y acceso ──────────────────────────────────────────────
@@ -120,10 +120,11 @@ abstract class IPatientsComplianceRepository {
     required Map<String, String> answers,
   });
 
-  Future<void> saveQualifyTestValidation({
+  /// Guarda el dictamen de la Evaluación Médica Interna.
+  Future<void> saveMedicalEvaluation({
     required String profileId,
     required bool aprobado,
-    String proveedor = 'Telemedicina',
+    String proveedor = 'Medicina Interna',
   });
 
   Future<bool> saveFaceMapRecord({

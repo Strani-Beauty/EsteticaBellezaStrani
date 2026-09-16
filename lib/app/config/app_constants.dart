@@ -12,7 +12,7 @@ class AppConstants {
   /// Radio de búsqueda de especialistas por defecto (km)
   static const double radioDefaultKm = 10.0;
 
-  /// Días máximos de validez de la evaluación médica (telemedicina)
+  /// Días máximos de validez de la evaluación médica interna
   static const int diasValidezEvaluacion = 365;
 
   // ── Roles ──────────────────────────────────────────────────
@@ -56,7 +56,7 @@ class AppConstants {
   static const String tratamientoEnProceso = 'EN_PROCESO';
   static const String tratamientoCompletado = 'COMPLETADO';
 
-  // ── Estados de Validación Telemedicina ────────────────────
+  // ── Estados de Validación Médica ────────────────────────────
   static const String validacionPendiente = 'PENDIENTE';
   static const String validacionAprobada = 'APROBADA';
   static const String validacionRechazada = 'RECHAZADA';

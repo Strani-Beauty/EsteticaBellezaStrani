@@ -29,7 +29,6 @@ class ServicesDashboardScreen extends StatefulWidget {
 class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with RouteAware {
   bool _isLoadingStatus = true;
   String _evaluationStatus = 'PENDIENTE';
-  String _proveedorEvaluacion = 'Telemedicina';
   bool _isExpired = false;
 
   @override
@@ -76,7 +75,6 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
         setState(() {
           final result = res.fold((f) => null, (r) => r);
           _evaluationStatus = result?.reason ?? 'PENDIENTE';
-          _proveedorEvaluacion = 'Telemedicina';
           _isExpired = result?.reason == 'VENCIDA';
           _isLoadingStatus = false;
         });
@@ -340,7 +338,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Tu evaluación médica por $_proveedorEvaluacion ha cumplido 1 año de validez (365 días).',
+                'Tu Evaluación Médica Interna ha cumplido 1 año de validez (365 días).',
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
@@ -388,7 +386,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
         ),
         content: const SingleChildScrollView(
           child: Text(
-            'Para acceder a reservar o cancelar cualquier servicio del catálogo, primero debes completar la cuota inicial de \$30 USD y la evaluación médica (Telemedicina o Medicina Interna).',
+            'Para acceder a reservar o cancelar cualquier servicio del catálogo, primero debes completar la cuota inicial de \$30 USD y la Evaluación Médica Interna.',
             style: TextStyle(fontSize: 13),
           ),
         ),
@@ -656,9 +654,9 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                     TextSpan(text: 'tu belleza'),
                   ],
                 ),
-                style: GoogleFonts.playfairDisplay(
+                style: GoogleFonts.gfsDidot(
                   fontSize: isDesktop ? 34 : 26,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w400,
                   color: Colors.white,
                   height: 1.2,
                 ),
@@ -732,7 +730,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Evaluación Aprobada ($_proveedorEvaluacion)',
+                    'Evaluación Médica Interna Aprobada',
                     style: const TextStyle(fontSize: 13, color: AppTheme.cBrandGreen, fontWeight: FontWeight.bold),
                   ),
                   Text(

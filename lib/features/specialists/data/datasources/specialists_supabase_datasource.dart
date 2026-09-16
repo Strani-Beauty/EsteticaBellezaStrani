@@ -440,7 +440,7 @@ class SpecialistsSupabaseDataSource {
   }) async {
     await _client.from('especialistas').update({
       'en_linea': enLinea,
-      'ultima_conexion': DateTime.now().toIso8601String(),
+      'ultima_conexion': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', especialistaId);
   }
 

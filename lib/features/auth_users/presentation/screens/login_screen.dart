@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
@@ -265,8 +266,13 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Bienvenido/a a MERAKI spa onsite',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Bienvenido/a a MERAKI spa onsite',
+                    style: GoogleFonts.gfsDidot(
+                      fontSize: 17,
+                      color: AppTheme.cDarkText,
+                    ),
+                  ),
                   Text('Selecciona tu perfil de ingreso:',
                       style: Theme.of(context).textTheme.bodySmall),
                 ],

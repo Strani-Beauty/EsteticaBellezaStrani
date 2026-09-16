@@ -139,35 +139,51 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         ),
         const SizedBox(height: 28),
         // Botones de acceso
-        Row(
-          children: [
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.medical_services_rounded,
-                label: 'Especialistas',
-                subtitle: 'Acceso profesional',
-                isPrimary: false,
-                onTap: () => _openSpecialist(context),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _ActionButton(
-                icon: Icons.spa_rounded,
-                label: 'Explorar Servicios',
-                subtitle: 'Ver catálogo',
-                isPrimary: false,
-                onTap: () => context.go(AppRoutes.services),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // En escritorio (ancho suficiente por botón) van lado a lado;
+            // en móvil/tablet se apilan a ancho completo para que el texto
+            // no se corte y ambos botones mantengan el mismo tamaño.
+            final sideBySide = constraints.maxWidth >= 460;
+            final especialistas = _ActionButton(
+              icon: Icons.medical_services_rounded,
+              label: 'Especialistas',
+              subtitle: 'Acceso profesional',
+              isPrimary: false,
+              onTap: () => _openSpecialist(context),
+            );
+            final explorar = _ActionButton(
+              icon: Icons.spa_rounded,
+              label: 'Explorar Servicios',
+              subtitle: 'Ver catálogo',
+              isPrimary: false,
+              onTap: () => context.go(AppRoutes.services),
+            );
+            if (sideBySide) {
+              return Row(
+                children: [
+                  Expanded(child: especialistas),
+                  const SizedBox(width: 12),
+                  Expanded(child: explorar),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                especialistas,
+                const SizedBox(height: 12),
+                explorar,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 32),
         const Wrap(
           spacing: 14,
           runSpacing: 8,
           children: [
-            _TrustBadge(icon: Icons.verified_user_rounded, text: 'Evaluación Qualify'),
+            _TrustBadge(icon: Icons.verified_user_rounded, text: 'Evaluación Médica Interna'),
             _TrustBadge(icon: Icons.lock_rounded,          text: 'Pago Seguro'),
             _TrustBadge(icon: Icons.star_rounded,          text: 'Especialistas Certificados'),
           ],
@@ -284,11 +300,11 @@ class _BrandLogo extends StatelessWidget {
           children: [
             Text(
               'MERAKI',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.cDeepAccent,
+              style: GoogleFonts.gfsDidot(
+                fontSize: 32,
+                letterSpacing: 3,
                 height: 1.0,
+                color: AppTheme.cDeepAccent,
               ),
             ),
             Text(
@@ -297,6 +313,14 @@ class _BrandLogo extends StatelessWidget {
                 fontSize: 8.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2.8,
+                color: AppTheme.cMutedText,
+              ),
+            ),
+            Text(
+              'μεράκι · con alma',
+              style: GoogleFonts.gfsDidot(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
                 color: AppTheme.cMutedText,
               ),
             ),
@@ -340,7 +364,8 @@ class _ActionButtonState extends State<_ActionButton> {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           transform: Matrix4.translationValues(0, _hovered ? -2.0 : 0.0, 0),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
             gradient: widget.isPrimary ? AppTheme.primaryGradient : null,
             color:    widget.isPrimary ? null : Colors.white,
@@ -363,7 +388,7 @@ class _ActionButtonState extends State<_ActionButton> {
                 size: 20,
               ),
               const SizedBox(width: 12),
-              Flexible(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

@@ -65,7 +65,16 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
   }
 
   void _recenterMine(MarketplaceLoaded state) {
-    if (state.miLatitud == null || state.miLongitud == null) return;
+    if (state.miLatitud == null || state.miLongitud == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Aún no has guardado tu ubicación. Configúrala en tu perfil para centrar el mapa.',
+          ),
+        ),
+      );
+      return;
+    }
     _mapController.move(LatLng(state.miLatitud!, state.miLongitud!), kFocusMapZoom);
   }
 
@@ -264,7 +273,16 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
             ],
           ),
 
-          if (state.solicitudes.isEmpty)
+          if (state.miLatitud == null || state.miLongitud == null)
+            Positioned(
+              top: 12,
+              left: 12,
+              right: 12,
+              child: _AvisoUbicacion(
+                onConfigurar: () => context.push(AppRoutes.specialistProfile),
+              ),
+            )
+          else if (state.solicitudes.isEmpty)
             Positioned(
               top: 12,
               left: 12,
@@ -280,7 +298,7 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
                     ],
                   ),
                   child: const Text(
-                    'No hay pacientes buscando especialista en este momento.',
+                    'No hay solicitudes dentro de tu radio de búsqueda en este momento.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, fontWeight: FontWeight.w600),
                   ),
@@ -797,6 +815,50 @@ class _PatientListSheet extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+}
+
+class _AvisoUbicacion extends StatelessWidget {
+  final VoidCallback onConfigurar;
+
+  const _AvisoUbicacion({required this.onConfigurar});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 4),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.location_off_rounded,
+                color: AppTheme.cGoldAccent, size: 18),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Aún no has guardado tu ubicación. Configúrala para ver las solicitudes de pacientes cercanos.',
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.cDarkText,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: onConfigurar,
+              child: const Text('Configurar'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

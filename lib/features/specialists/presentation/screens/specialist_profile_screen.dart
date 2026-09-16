@@ -131,6 +131,19 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
       longitude: _selectedLocation.longitude,
       hourlyRate: double.tryParse(_hourlyRateCtrl.text.trim()),
     );
+
+    // Mantiene la ubicación base (`ubicaciones_especialista`) alineada con el
+    // PIN del mapa y la búsqueda por proximidad (igual que _guardarProfesional).
+    final especialista = _especialista;
+    if (especialista != null &&
+        isValidMapCoordinate(_selectedLocation.latitude, _selectedLocation.longitude)) {
+      await specialistsCubit.saveLocation(
+        especialistaId: especialista.id,
+        latitud: _selectedLocation.latitude,
+        longitud: _selectedLocation.longitude,
+      );
+    }
+
     await authCubit.refreshProfile();
     if (!mounted) return;
     setState(() {

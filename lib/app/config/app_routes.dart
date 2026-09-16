@@ -16,6 +16,7 @@ import 'package:esteticaybellezastrani/features/auditoria/presentation/cubits/ad
 import 'package:esteticaybellezastrani/features/auditoria/presentation/screens/admin_auditoria_screen.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/services_dashboard_screen.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/screens/service_detail_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_home_screen.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/screens/specialist_documents_screen.dart';
@@ -76,6 +77,7 @@ class AppRoutes {
   static const String resetPassword        = '/auth/reset-password';
   static const String completeProfile      = '/complete-profile';
   static const String services             = '/services';
+  static const String serviceDetail         = '/service-detail';
   static const String appointments         = '/appointments';
   static const String treatment            = '/treatment/:id';
   static const String payment              = '/payment/:id';
@@ -206,6 +208,15 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => BlocProvider<CatalogCubit>.value(
         value: sl<CatalogCubit>(),
         child: const ServicesDashboardScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.serviceDetail,
+      name: 'serviceDetail',
+      builder: (context, state) => ServiceDetailScreen(
+        service: state.extra is ServicioEntity
+            ? state.extra as ServicioEntity
+            : const ServicioEntity(id: '', nombre: '', precioBase: 0),
       ),
     ),
     GoRoute(

@@ -10,6 +10,7 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/validar_requisitos_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
+import 'package:esteticaybellezastrani/features/catalog_services/presentation/widgets/service_image_hero.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/validar_acceso_rn020.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
@@ -92,6 +93,14 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
       context.go('${AppRoutes.login}?login=paciente');
       return;
     }
+
+    // ── Vista a página completa del detalle (antes del flujo de reserva) ──
+    final detalleResultado = await context.push(
+      AppRoutes.serviceDetail,
+      extra: service,
+    );
+    if (!mounted) return;
+    if (detalleResultado != 'reservar') return;
 
     // ── REGLA ESTRICTA RN-020 / RN-022: Validar acceso (capa limpia) ──
     final ruleRes = await sl<ValidarAccesoRN020>()();
@@ -892,7 +901,7 @@ class _ServiceCard extends StatelessWidget {
                   ],
                   const SizedBox(height: 8),
                   Text(
-                    _formatPrice(service),
+                    formatPrecioServicio(service),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
@@ -941,136 +950,6 @@ class _ServiceCard extends StatelessWidget {
   }
 
   Widget _buildHero() {
-    final imagenUrl = service.imagenUrl;
-    if (imagenUrl != null && imagenUrl.trim().isNotEmpty) {
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: AppTheme.cPastelPurple,
-        child: Image.network(
-          imagenUrl,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (context, error, stackTrace) =>
-              _buildHeroFallback(),
-        ),
-      );
-    }
-
-    final slug = _slugify(service.nombre);
-
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: AppTheme.cPastelPurple,
-      child: _ServiceHeroImage(
-        basePath: 'assets/images/service_$slug',
-        fallback: _buildHeroFallback(),
-      ),
-    );
+    return ServiceImageHero(service: service, fit: BoxFit.cover);
   }
-
-  Widget _buildHeroFallback() {
-    final icon = _iconForServicio(service);
-
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.cPastelPink, AppTheme.cPastelPurple],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Icon(icon, size: 52, color: AppTheme.cDeepAccent),
-      ),
-    );
-  }
-
-  String _formatPrice(ServicioEntity service) {
-    final suffix = switch (service.tipoPrecio) {
-      TipoPrecio.precioFijo => '',
-      TipoPrecio.porUnidad => '/unidad',
-      TipoPrecio.porJeringa => '/jeringa',
-      TipoPrecio.porSesion => '/sesión',
-      TipoPrecio.porPlan => '/plan',
-    };
-    return 'Desde \$${service.precioBase}${suffix.isEmpty ? '' : ' '}$suffix';
-  }
-}
-
-IconData _iconForServicio(ServicioEntity service) {
-  final nombre = service.nombre.toLowerCase();
-  final categoria = service.nombreCategoria?.toLowerCase() ?? '';
-
-  if (nombre.contains('inyectable') || nombre.contains('toxina') || nombre.contains('jeringa') || categoria.contains('inyectable')) {
-    return Icons.local_hospital;
-  }
-  if (nombre.contains('lás') || nombre.contains('lase') || nombre.contains('pulsada')) {
-    return Icons.wb_incandescent;
-  }
-  if (nombre.contains('corporal') || nombre.contains('cuerpo') || nombre.contains('lipólisis') || nombre.contains('reductor') || nombre.contains('moldeamiento')) {
-    return Icons.accessibility_new;
-  }
-  if (nombre.contains('mesoterapia') || nombre.contains('adelgazamiento') || nombre.contains('nutricion')) {
-    return Icons.fitness_center;
-  }
-  if (nombre.contains('rejuvenecimiento') || nombre.contains('facial') || nombre.contains('piel') || nombre.contains('peeling') || nombre.contains('booster') || nombre.contains('skin')) {
-    return Icons.face;
-  }
-  return Icons.spa;
-}
-
-const _kServiceAssetExtensions = ['.jpg', '.jfif', '.jpeg', '.png', '.webp'];
-
-/// Widget de hero que intenta cargar `assets/images/service_<slug>` probando
-/// cada extensión soportada. Si ninguna existe, muestra el fallback (gradiente
-/// con ícono) sin depender del AssetManifest.
-class _ServiceHeroImage extends StatefulWidget {
-  final String basePath;
-  final Widget fallback;
-
-  const _ServiceHeroImage({required this.basePath, required this.fallback});
-
-  @override
-  State<_ServiceHeroImage> createState() => _ServiceHeroImageState();
-}
-
-class _ServiceHeroImageState extends State<_ServiceHeroImage> {
-  int _extIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_extIndex >= _kServiceAssetExtensions.length) return widget.fallback;
-
-    final path = widget.basePath + _kServiceAssetExtensions[_extIndex];
-    return Image.asset(
-      path,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      errorBuilder: (context, error, stackTrace) {
-        final next = _extIndex + 1;
-        if (next >= _kServiceAssetExtensions.length) return widget.fallback;
-        _extIndex = next;
-        return build(context);
-      },
-    );
-  }
-}
-
-/// Convierte un texto a slug para asset: minúsculas, sin acentos, sin
-/// caracteres especiales y con los espacios como guion bajo.
-String _slugify(String input) {
-  const accents = {
-    'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u',
-    'ñ': 'n', 'Á': 'a', 'É': 'e', 'Í': 'i', 'Ó': 'o', 'Ú': 'u', 'Ü': 'u', 'Ñ': 'n',
-  };
-  final buffer = StringBuffer();
-  for (final char in input.toLowerCase().trim().split('')) {
-    buffer.write(accents[char] ?? (RegExp(r'[a-z0-9 ]').hasMatch(char) ? char : ''));
-  }
-  return buffer.toString().trim().replaceAll(RegExp(r'\s+'), '_');
 }

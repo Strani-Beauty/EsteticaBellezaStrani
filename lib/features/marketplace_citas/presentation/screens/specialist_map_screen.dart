@@ -7,7 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
+import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/specialists/data/services/presence_service.dart';
 import 'package:esteticaybellezastrani/features/specialists/presentation/cubits/specialists_cubit.dart';
 import '../../domain/entities/solicitud_pendiente_entity.dart';
 import '../../domain/entities/especialista_mapa_entity.dart';
@@ -38,6 +40,7 @@ class _SpecialistMapScreenState extends State<SpecialistMapScreen> {
       final usuarioId = context.read<AuthCubit>().currentProfile?.id;
       if (usuarioId != null && usuarioId.isNotEmpty) {
         context.read<SpecialistsCubit>().loadDashboard(usuarioId: usuarioId);
+        sl<PresenceService>().start(usuarioId);
       }
     });
   }

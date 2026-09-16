@@ -163,6 +163,7 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
               especialistaId: especialista.id,
               disponibilidad: state.disponibilidad,
               habilitado: especialista.isApproved,
+              usuarioId: context.read<AuthCubit>().currentProfile?.id,
             ),
             const SizedBox(height: 16),
             _ExpedienteCard(

@@ -1,0 +1,4 @@
+project_id = "hhyjremkguvphmjuaazp"
+
+[functions.geocode-address]
+verify_jwt = true

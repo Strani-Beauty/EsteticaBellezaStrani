@@ -9,6 +9,7 @@ import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
+import 'package:esteticaybellezastrani/app/core/utils/validators.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/paciente_entity.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
@@ -619,8 +620,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   hint: '+58 412 1234567',
                   prefix: const Icon(Icons.phone_outlined, color: AppTheme.cDeepAccent),
                 ),
-                validator: (v) => v == null || v.trim().isEmpty
-                    ? 'Ingresa tu número telefónico' : null,
+                validator: (v) => validarTelefono(v),
               ),
               const SizedBox(height: 14),
 

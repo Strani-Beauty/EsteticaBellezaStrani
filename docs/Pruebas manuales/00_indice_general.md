@@ -32,21 +32,21 @@
 
 | Cuenta | Rol | Estado requerido | Se usa en |
 |---|---|---|---|
-| `admin@test` | Administrador | Activo, con acceso al panel | 03, 04, 11 |
-| `esp.nuevo@test` | Especialista | Recién registrado, sin perfil de especialista | 02, 11 |
-| `esp.revision@test` | Especialista | Documentos subidos, `EN_REVISION` | 02, 03, 11 |
-| `esp.aprobado@test` | Especialista | `APROBADO`, contrato firmado, disponible, con ubicación | 06, 09, 11 |
-| `esp.rechazado@test` | Especialista | `RECHAZADO` con observación | 02, 03 |
-| `esp.bloqueado@test` | Especialista | `BLOQUEADO` con observación | 02, 03, 11 |
-| `pac.nuevo@test` | Paciente | Recién registrado, perfil incompleto | 01, 07, 08, 11 |
-| `pac.activo@test` | Paciente | Evaluación `APROBADA` vigente, pagos completos | 05, 11 |
-| `pac.vencido@test` | Paciente | Evaluación `VENCIDA` | 05 |
-| `pac.rechazado@test` | Paciente | Evaluación `RECHAZADA` | 05 |
-| `pac.desactivado@test` | Paciente | `profiles.activo=false` | 04, 11 |
-| `esp.desactivado@test` | Especialista | `profiles.activo=false` | 04, 11 |
+| `admin@test.com` | Administrador | Activo, con acceso al panel | 03, 04, 11 |
+| `esp.nuevo@test.com` | Especialista | Recién registrado, sin perfil de especialista | 02, 11 |
+| `esp.revision@test.com` | Especialista | Documentos subidos, `EN_REVISION` | 02, 03, 11 |
+| `esp.aprobado@test.com` | Especialista | `APROBADO`, contrato firmado, disponible, con ubicación | 06, 09, 11 |
+| `esp.rechazado@test.com` | Especialista | `RECHAZADO` con observación | 02, 03 |
+| `esp.bloqueado@test.com` | Especialista | `BLOQUEADO` con observación | 02, 03, 11 |
+| `pac.nuevo@test.com` | Paciente | Recién registrado, perfil incompleto | 01, 07, 08, 11 |
+| `pac.activo@test.com` | Paciente | Evaluación `APROBADA` vigente, pagos completos | 05, 11 |
+| `pac.vencido@test.com` | Paciente | Evaluación `VENCIDA` | 05 |
+| `pac.rechazado@test.com` | Paciente | Evaluación `RECHAZADA` | 05 |
+| `pac.desactivado@test.com` | Paciente | `profiles.activo=false` | 04, 11 |
+| `esp.desactivado@test.com` | Especialista | `profiles.activo=false` | 04, 11 |
 
-> **Nota (2026-09-07):** por seguridad se rotaron las contraseñas de las cuentas `*@test` (sin dominio).
-> Ver `supabase/.temp/seed_passwords.txt` (gitignored). Las cuentas `@test.com` conservan `Test1234!`.
+> **Nota (2026-09-17):** las cuentas de la matriz usan `@test.com` (dominio con punto, requisito de validación de correo). Por seguridad se rotaron sus contraseñas.
+> Ver `supabase/.temp/seed_passwords.txt` (gitignored). Las cuentas `@test.com` del seed `seed_test_data.sql` (p. ej. `admin@strani.com`, `paciente1@test.com`) conservan `Test1234!`.
 
 ## Entorno de prueba
 

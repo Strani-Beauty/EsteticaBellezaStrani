@@ -7,6 +7,7 @@ import '../../../../app/config/app_theme.dart';
 import '../../../../app/config/app_routes.dart';
 import '../../../../app/config/map_config.dart';
 import '../../../../app/core/network/supabase_service.dart';
+import '../../../../app/core/utils/validators.dart';
 import '../../../../app/core/di/injection.dart';
 import '../../../auth_users/presentation/cubits/auth_cubit.dart';
 import '../../../patients_compliance/presentation/widgets/patient_map_picker.dart';
@@ -28,6 +29,7 @@ class SpecialistProfileScreen extends StatefulWidget {
 }
 
 class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _fullNameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
@@ -120,6 +122,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
     final specialistsCubit = context.read<SpecialistsCubit>();
     final usuarioId = authCubit.currentProfile?.id;
     if (usuarioId == null) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _guardando = true);
     await specialistsCubit.guardarDatosPersonales(
@@ -291,16 +294,30 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
         label: Text(_editingPersonal ? 'Cancelar' : 'Editar'),
       ),
       child: _editingPersonal
-          ? Column(
+          ? Form(
+              key: _formKey,
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _field('Nombre completo', _fullNameCtrl, Icons.person_outline),
+                _field('Nombre completo', _fullNameCtrl, Icons.person_outline,
+                    validator: (v) =>
+                        (v?.trim().isEmpty ?? true) ? 'Ingresa tu nombre' : null),
                 const SizedBox(height: 12),
                 _field('Teléfono', _phoneCtrl, Icons.phone_outlined,
-                    keyboardType: TextInputType.phone),
+                    keyboardType: TextInputType.phone,
+                    validator: (v) => validarTelefono(v)),
                 const SizedBox(height: 12),
                 _field('Tarifa por hora (USD)', _hourlyRateCtrl, Icons.attach_money,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (v) {
+                      final t = (v ?? '').trim();
+                      if (t.isEmpty) return 'Ingresa tu tarifa por hora';
+                      final valor = double.tryParse(t);
+                      if (valor == null || valor <= 0) {
+                        return 'Ingresa un monto válido mayor a 0';
+                      }
+                      return null;
+                    }),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _addressCtrl,
@@ -357,6 +374,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
                   ),
                 ),
               ],
+              ),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +504,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
   }
 
   Widget _field(String label, TextEditingController ctrl, IconData icon,
-      {TextInputType? keyboardType}) {
+      {TextInputType? keyboardType, String? Function(String?)? validator}) {
     return TextFormField(
       controller: ctrl,
       keyboardType: keyboardType,
@@ -494,6 +512,7 @@ class _SpecialistProfileScreenState extends State<SpecialistProfileScreen> {
         label: label,
         prefix: Icon(icon, color: AppTheme.cDeepAccent),
       ),
+      validator: validator,
     );
   }
 

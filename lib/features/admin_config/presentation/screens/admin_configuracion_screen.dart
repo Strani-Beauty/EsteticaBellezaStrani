@@ -84,30 +84,35 @@ class _AdminConfiguracionScreenState extends State<AdminConfiguracionScreen> {
 
   Future<void> _editar(ConfigSistemaEntity item) async {
     final ctrl = TextEditingController(text: item.valor);
+    final formKey = GlobalKey<FormState>();
     final nuevo = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(item.clave),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.descripcion != null) ...[
-              Text(item.descripcion!,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.cMutedText)),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              keyboardType: TextInputType.text,
-              decoration: InputDecoration(
-                labelText: 'Valor (${item.tipoDato})',
-                border: const OutlineInputBorder(),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (item.descripcion != null) ...[
+                Text(item.descripcion!,
+                    style: const TextStyle(
+                        fontSize: 12, color: AppTheme.cMutedText)),
+                const SizedBox(height: 12),
+              ],
+              TextFormField(
+                controller: ctrl,
+                autofocus: true,
+                keyboardType: TextInputType.text,
+                decoration: InputDecoration(
+                  labelText: 'Valor (${item.tipoDato})',
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (v) => _validarValor(item.tipoDato, v),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -115,7 +120,10 @@ class _AdminConfiguracionScreenState extends State<AdminConfiguracionScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            onPressed: () {
+              if (!(formKey.currentState?.validate() ?? false)) return;
+              Navigator.pop(ctx, ctrl.text);
+            },
             child: const Text('Guardar'),
           ),
         ],
@@ -125,6 +133,23 @@ class _AdminConfiguracionScreenState extends State<AdminConfiguracionScreen> {
     await context
         .read<AdminConfiguracionCubit>()
         .update(item.clave, nuevo.trim());
+  }
+
+  String? _validarValor(String tipoDato, String? v) {
+    final valor = (v ?? '').trim();
+    switch (tipoDato.toUpperCase()) {
+      case 'NUMERIC':
+        if (double.tryParse(valor) == null) return 'Debe ser un número';
+        return null;
+      case 'BOOLEAN':
+        if (valor.toLowerCase() != 'true' && valor.toLowerCase() != 'false') {
+          return 'Debe ser true o false';
+        }
+        return null;
+      default:
+        if (valor.isEmpty) return 'Ingresa un valor';
+        return null;
+    }
   }
 }
 

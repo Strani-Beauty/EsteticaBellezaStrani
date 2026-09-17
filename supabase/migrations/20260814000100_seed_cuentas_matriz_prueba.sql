@@ -2,10 +2,10 @@
 -- Migración: seed de cuentas de la matriz de pruebas manuales (doc 00).
 -- -----------------------------------------------------------------------------
 -- Cuentas (clave Test1234!):
---   admin@test, esp.nuevo@test, esp.revision@test, esp.aprobado@test,
---   esp.rechazado@test, esp.bloqueado@test, esp.desactivado@test,
---   pac.nuevo@test, pac.activo@test, pac.vencido@test, pac.rechazado@test,
---   pac.desactivado@test
+--   admin@test.com, esp.nuevo@test.com, esp.revision@test.com, esp.aprobado@test.com,
+--   esp.rechazado@test.com, esp.bloqueado@test.com, esp.desactivado@test.com,
+--   pac.nuevo@test.com, pac.activo@test.com, pac.vencido@test.com, pac.rechazado@test.com,
+--   pac.desactivado@test.com
 -- El trigger handle_new_user (aplicado antes) crea profiles/pacientes al insertar
 -- en auth.users. Esta migración NO toca cuentas que ya existan con el mismo email.
 -- Idempotente. Correr SIEMPRE después de la migración 20260814000000.
@@ -33,53 +33,53 @@ INSERT INTO auth.users (
 )
 SELECT * FROM (VALUES
  ('00000000-0000-0000-0000-000000000000'::uuid, '90000000-0000-0000-0000-000000000001'::uuid, 'authenticated', 'authenticated',
-  'admin@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'admin@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
-  '{"role":"Administrador","full_name":"Administrador Test","phone":"+1 555 0100"}'::jsonb, '', '', '', '', now(), now()),
+  '{"role":"Administrador","full_name":"Administrador Test","phone":"+15550100100"}'::jsonb, '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000002',
-  'authenticated', 'authenticated', 'esp.nuevo@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'esp.nuevo@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Especialista Nuevo","phone":"+1 555 0101"}', '', '', '', '', now(), now()),
+  '{"role":"Especialista","full_name":"Especialista Nuevo","phone":"+15550100101"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000003',
-  'authenticated', 'authenticated', 'esp.revision@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'esp.revision@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. En Revisión","phone":"+1 555 0102"}', '', '', '', '', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. En Revisión","phone":"+15550100102"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000004',
-  'authenticated', 'authenticated', 'esp.aprobado@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'esp.aprobado@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Dra. Aprobada Test","phone":"+1 555 0103"}', '', '', '', '', now(), now()),
+  '{"role":"Especialista","full_name":"Dra. Aprobada Test","phone":"+15550100103"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000005',
-  'authenticated', 'authenticated', 'esp.rechazado@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'esp.rechazado@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. Rechazado","phone":"+1 555 0104"}', '', '', '', '', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. Rechazado","phone":"+15550100104"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000006',
-  'authenticated', 'authenticated', 'esp.bloqueado@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'esp.bloqueado@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. Bloqueado","phone":"+1 555 0105"}', '', '', '', '', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. Bloqueado","phone":"+15550100105"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000007',
-  'authenticated', 'authenticated', 'esp.desactivado@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'esp.desactivado@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Especialista","full_name":"Esp. Desactivado","phone":"+1 555 0106"}', '', '', '', '', now(), now()),
+  '{"role":"Especialista","full_name":"Esp. Desactivado","phone":"+15550100106"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000008',
-  'authenticated', 'authenticated', 'pac.nuevo@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'pac.nuevo@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Nuevo","phone":"+1 555 0107"}', '', '', '', '', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Nuevo","phone":"+15550100107"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-000000000009',
-  'authenticated', 'authenticated', 'pac.activo@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'pac.activo@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Activo","phone":"+1 555 0108"}', '', '', '', '', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Activo","phone":"+15550100108"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-00000000000A',
-  'authenticated', 'authenticated', 'pac.vencido@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'pac.vencido@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Vencido","phone":"+1 555 0109"}', '', '', '', '', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Vencido","phone":"+15550100109"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-00000000000B',
-  'authenticated', 'authenticated', 'pac.rechazado@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'pac.rechazado@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Rechazado","phone":"+1 555 0110"}', '', '', '', '', now(), now()),
+  '{"role":"Paciente","full_name":"Paciente Rechazado","phone":"+15550100110"}', '', '', '', '', now(), now()),
  ('00000000-0000-0000-0000-000000000000', '90000000-0000-0000-0000-00000000000C',
-  'authenticated', 'authenticated', 'pac.desactivado@test', crypt('Test1234!', gen_salt('bf')), now(),
+  'authenticated', 'authenticated', 'pac.desactivado@test.com', crypt('Test1234!', gen_salt('bf')), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"role":"Paciente","full_name":"Paciente Desactivado","phone":"+1 555 0111"}', '', '', '', '', now(), now())
+  '{"role":"Paciente","full_name":"Paciente Desactivado","phone":"+15550100111"}', '', '', '', '', now(), now())
 ) AS v(instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 WHERE NOT EXISTS (SELECT 1 FROM auth.users u WHERE u.email = v.email);
 
@@ -92,25 +92,25 @@ SELECT gen_random_uuid(), u.id::text, u.id,
        jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', TRUE, 'phone_verified', FALSE),
        'email', now(), now(), now()
 FROM auth.users u
-WHERE u.email LIKE '%@test'
+WHERE u.email LIKE '%@test.com'
   AND NOT EXISTS (SELECT 1 FROM auth.identities i WHERE i.user_id = u.id);
 
 -- 2. Estados de profiles ---------------------------------------------------------
 UPDATE public.profiles p SET activo = TRUE, updated_at = now()
-WHERE p.email IN ('admin@test', 'esp.aprobado@test');
+WHERE p.email IN ('admin@test.com', 'esp.aprobado@test.com');
 
 UPDATE public.profiles p SET activo = FALSE, updated_at = now()
-WHERE p.email IN ('esp.desactivado@test', 'pac.desactivado@test');
+WHERE p.email IN ('esp.desactivado@test.com', 'pac.desactivado@test.com');
 
 -- pac.activo: onboarding completo (dirección+cuota+evaluación) -------------------
 UPDATE public.profiles p
 SET activo = TRUE, payment_completed = TRUE, evaluation_passed = TRUE, updated_at = now()
-WHERE p.email = 'pac.activo@test';
+WHERE p.email = 'pac.activo@test.com';
 
 UPDATE public.pacientes pac
 SET activo = TRUE, updated_at = now()
 FROM public.profiles p
-WHERE pac.usuario_id = p.id AND p.email = 'pac.activo@test';
+WHERE pac.usuario_id = p.id AND p.email = 'pac.activo@test.com';
 
 -- 3. Evaluaciones de telemedicina -------------------------------------------------
 INSERT INTO public.validaciones_telemedicina (
@@ -121,7 +121,7 @@ SELECT 'A0000000-0000-0000-0000-000000000001'::uuid, pac.id, 'Telemedicina',
        'MAT-' || pac.id, now(), now() + interval '365 days', 'APROBADA', now(), now()
 FROM public.pacientes pac
 JOIN public.profiles p ON p.id = pac.usuario_id
-WHERE p.email = 'pac.activo@test'
+WHERE p.email = 'pac.activo@test.com'
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.validaciones_telemedicina (
@@ -132,7 +132,7 @@ SELECT 'A0000000-0000-0000-0000-000000000002'::uuid, pac.id, 'Telemedicina',
        'MAT-' || pac.id, now() - interval '400 days', now() - interval '35 days', 'VENCIDA', now(), now()
 FROM public.pacientes pac
 JOIN public.profiles p ON p.id = pac.usuario_id
-WHERE p.email = 'pac.vencido@test'
+WHERE p.email = 'pac.vencido@test.com'
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.validaciones_telemedicina (
@@ -143,7 +143,7 @@ SELECT 'A0000000-0000-0000-0000-000000000003'::uuid, pac.id, 'Telemedicina',
        'MAT-' || pac.id, now() - interval '20 days', now() + interval '345 days', 'RECHAZADA', now(), now()
 FROM public.pacientes pac
 JOIN public.profiles p ON p.id = pac.usuario_id
-WHERE p.email = 'pac.rechazado@test'
+WHERE p.email = 'pac.rechazado@test.com'
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. Médico regente (para que esp.aprobado pase el wizard profesional) ------------
@@ -159,7 +159,7 @@ INSERT INTO public.especialistas (
 )
 SELECT 'C0000000-0000-0000-0000-000000000001'::uuid, p.id, NULL, 'TX-LIC-REV1', 'EN_REVISION',
        now() - interval '2 days', NULL, NULL, FALSE, TRUE, now(), now()
-FROM public.profiles p WHERE p.email = 'esp.revision@test'
+FROM public.profiles p WHERE p.email = 'esp.revision@test.com'
 ON CONFLICT (usuario_id) DO UPDATE SET
   estado_verificacion = EXCLUDED.estado_verificacion,
   updated_at = now();
@@ -172,7 +172,7 @@ INSERT INTO public.especialistas (
 SELECT 'C0000000-0000-0000-0000-000000000002'::uuid, p.id, 'B0000000-0000-0000-0000-000000000001'::uuid,
        'TX-MD-9901', 'APROBADO',
        now() - interval '10 days', now(), NULL, TRUE, TRUE, now(), now()
-FROM public.profiles p WHERE p.email = 'esp.aprobado@test'
+FROM public.profiles p WHERE p.email = 'esp.aprobado@test.com'
 ON CONFLICT (usuario_id) DO UPDATE SET
   medico_regente_id = EXCLUDED.medico_regente_id,
   estado_verificacion = EXCLUDED.estado_verificacion,
@@ -188,7 +188,7 @@ INSERT INTO public.especialistas (
 )
 SELECT 'C0000000-0000-0000-0000-000000000003'::uuid, p.id, NULL, 'TX-LIC-REC1', 'RECHAZADO',
        now() - interval '5 days', NULL, 'Documentación ilegible. Reenvíe licencia vigente.', FALSE, TRUE, now(), now()
-FROM public.profiles p WHERE p.email = 'esp.rechazado@test'
+FROM public.profiles p WHERE p.email = 'esp.rechazado@test.com'
 ON CONFLICT (usuario_id) DO UPDATE SET
   estado_verificacion = EXCLUDED.estado_verificacion,
   observacion = EXCLUDED.observacion,
@@ -201,7 +201,7 @@ INSERT INTO public.especialistas (
 )
 SELECT 'C0000000-0000-0000-0000-000000000004'::uuid, p.id, NULL, 'TX-LIC-BLO1', 'BLOQUEADO',
        now() - interval '8 days', NULL, 'Cuenta bloqueada por incumplimiento contractual.', FALSE, TRUE, now(), now()
-FROM public.profiles p WHERE p.email = 'esp.bloqueado@test'
+FROM public.profiles p WHERE p.email = 'esp.bloqueado@test.com'
 ON CONFLICT (usuario_id) DO UPDATE SET
   estado_verificacion = EXCLUDED.estado_verificacion,
   observacion = EXCLUDED.observacion,
@@ -214,7 +214,7 @@ INSERT INTO public.especialistas (
 )
 SELECT 'C0000000-0000-0000-0000-000000000005'::uuid, p.id, NULL, 'TX-LIC-DES1', 'APROBADO',
        now() - interval '3 days', now(), NULL, FALSE, FALSE, now(), now()
-FROM public.profiles p WHERE p.email = 'esp.desactivado@test'
+FROM public.profiles p WHERE p.email = 'esp.desactivado@test.com'
 ON CONFLICT (usuario_id) DO UPDATE SET
   estado_verificacion = EXCLUDED.estado_verificacion,
   activo = EXCLUDED.activo,
@@ -226,7 +226,7 @@ SELECT esp.id, esp2.id, now()
 FROM public.especialistas esp
 JOIN public.profiles p ON p.id = esp.usuario_id
 JOIN public.especialidades esp2 ON esp2.nombre = 'Medicina Estética'
-WHERE p.email = 'esp.aprobado@test'
+WHERE p.email = 'esp.aprobado@test.com'
 ON CONFLICT (especialista_id, especialidad_id) DO NOTHING;
 
 INSERT INTO public.especialista_especialidades (especialista_id, especialidad_id, created_at)
@@ -234,7 +234,7 @@ SELECT esp.id, esp2.id, now()
 FROM public.especialistas esp
 JOIN public.profiles p ON p.id = esp.usuario_id
 JOIN public.especialidades esp2 ON esp2.nombre = 'Toxina Botulínica'
-WHERE p.email = 'esp.aprobado@test'
+WHERE p.email = 'esp.aprobado@test.com'
 ON CONFLICT (especialista_id, especialidad_id) DO NOTHING;
 
 -- 7. Documentos requeridos del especialista aprobado (para no reenviar al wizard) --
@@ -249,7 +249,7 @@ SELECT 'D0000000-0000-0000-0000-000000000001'::uuid, esp.id,
        'APROBADO'::public.estado_revision_enum, NULL, now(), 1, TRUE, now(), now()
 FROM public.especialistas esp
 JOIN public.profiles p ON p.id = esp.usuario_id
-WHERE p.email = 'esp.aprobado@test'
+WHERE p.email = 'esp.aprobado@test.com'
   AND NOT EXISTS (SELECT 1 FROM public.documentos_especialista d
                   WHERE d.especialista_id = esp.id AND d.tipo_documento = 'IDENTIFICACION');
 
@@ -264,7 +264,7 @@ SELECT 'D0000000-0000-0000-0000-000000000002'::uuid, esp.id,
        'APROBADO'::public.estado_revision_enum, NULL, now(), 1, TRUE, now(), now()
 FROM public.especialistas esp
 JOIN public.profiles p ON p.id = esp.usuario_id
-WHERE p.email = 'esp.aprobado@test'
+WHERE p.email = 'esp.aprobado@test.com'
   AND NOT EXISTS (SELECT 1 FROM public.documentos_especialista d
                   WHERE d.especialista_id = esp.id AND d.tipo_documento = 'LICENCIA');
 
@@ -273,4 +273,4 @@ ALTER TABLE public.especialistas ENABLE TRIGGER trg_proteger_verificacion_especi
 ALTER TABLE public.documentos_especialista ENABLE TRIGGER trg_proteger_revision_documento;
 
 -- 9. Resumen ------------------------------------------------------------------------
-SELECT 'Usuarios matriz' AS seccion, count(*) FROM public.profiles WHERE email LIKE '%@test';
+SELECT 'Usuarios matriz' AS seccion, count(*) FROM public.profiles WHERE email LIKE '%@test.com';

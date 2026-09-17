@@ -8,6 +8,7 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/map_config.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
+import 'package:esteticaybellezastrani/app/core/utils/validators.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/paciente_entity.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
@@ -30,6 +31,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   static const _generoOptions = ['Femenino', 'Masculino', 'Otro', 'Prefiero no decir'];
 
+  final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
@@ -147,26 +149,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
             }
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: _editing
-                        ? AvatarSelector(
-                            avatarUrl: _avatarUrl,
-                            onChanged: (value) =>
-                                setState(() => _avatarUrl = value),
-                          )
-                        : AvatarView(
-                            avatarUrl: profile.avatarUrl,
-                            isPatient: profile.isPatient,
-                            isAdmin: profile.isAdmin,
-                            isSpecialist: profile.isSpecialist,
-                            seed: profile.id,
-                            diameter: 88,
-                            showBorder: false,
-                          ),
-                  ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: _editing
+                          ? AvatarSelector(
+                              avatarUrl: _avatarUrl,
+                              onChanged: (value) =>
+                                  setState(() => _avatarUrl = value),
+                            )
+                          : AvatarView(
+                              avatarUrl: profile.avatarUrl,
+                              isPatient: profile.isPatient,
+                              isAdmin: profile.isAdmin,
+                              isSpecialist: profile.isSpecialist,
+                              seed: profile.id,
+                              diameter: 88,
+                              showBorder: false,
+                            ),
+                    ),
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
@@ -262,6 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ],
+                ),
               ),
             );
           },
@@ -297,12 +302,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextFormField(
               controller: _nameCtrl,
               decoration: AppTheme.fieldDecoration(label: 'Nombre completo'),
+              validator: (v) =>
+                  (v?.trim().isEmpty ?? true) ? 'Ingresa tu nombre' : null,
             )
           else if (phoneField)
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
               decoration: AppTheme.fieldDecoration(label: 'Teléfono'),
+              validator: (v) => validarTelefono(v, requerido: false),
             )
           else if (dateField)
             InkWell(
@@ -501,6 +509,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _guardar() async {
     final profile = context.read<AuthCubit>().currentProfile;
     if (profile == null) return;
+
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     if (profile.isPatient) {
       final hoy = DateTime.now();

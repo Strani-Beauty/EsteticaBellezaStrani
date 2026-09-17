@@ -17,7 +17,7 @@ Panel de verificación de especialistas (doc 03); efectos clínicos en el pacien
 
 ## Precondiciones generales
 
-- Cuenta `admin@test`.
+- Cuenta `admin@test.com`.
 - Usuarios de los tres roles para la lista; `esp.desactivado` y `pac.desactivado` ya creados o por crear durante la prueba.
 - ⚑ Un segundo dispositivo con sesión activa de especialista y otra de paciente.
 

@@ -17,7 +17,7 @@ Panel admin que aprueba/rechaza (doc 03), marketplace (doc 06), ejecución de ci
 
 ## Precondiciones generales
 
-- Cuentas: `esp.nuevo`, `esp.revision`, `esp.aprobado`, `esp.rechazado`, `esp.bloqueado`, `admin@test`.
+- Cuentas: `esp.nuevo`, `esp.revision`, `esp.aprobado`, `esp.rechazado`, `esp.bloqueado`, `admin@test.com`.
 - Al menos un médico regente ACTIVO existente en BD.
 - Permisos de ubicación y cámara/galería según plataforma.
 

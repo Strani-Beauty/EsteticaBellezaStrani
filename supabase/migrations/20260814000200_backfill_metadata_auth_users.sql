@@ -21,18 +21,18 @@
 -- a profiles/pacientes/auth.identities).
 DELETE FROM auth.users u
 WHERE u.email IN (
-    'admin@test',
-    'esp.nuevo@test',
-    'esp.revision@test',
-    'esp.aprobado@test',
-    'esp.rechazado@test',
-    'esp.bloqueado@test',
-    'esp.desactivado@test',
-    'pac.nuevo@test',
-    'pac.activo@test',
-    'pac.vencido@test',
-    'pac.rechazado@test',
-    'pac.desactivado@test'
+    'admin@test.com',
+    'esp.nuevo@test.com',
+    'esp.revision@test.com',
+    'esp.aprobado@test.com',
+    'esp.rechazado@test.com',
+    'esp.bloqueado@test.com',
+    'esp.desactivado@test.com',
+    'pac.nuevo@test.com',
+    'pac.activo@test.com',
+    'pac.vencido@test.com',
+    'pac.rechazado@test.com',
+    'pac.desactivado@test.com'
   )
   AND u.email_confirmed_at IS NULL;
 
@@ -64,4 +64,4 @@ WHERE p.id = u.id
 -- 5. Resumen ------------------------------------------------------------------------
 SELECT email, COALESCE(raw_app_meta_data ->> 'provider', 'SIN_PROVIDER') AS provider,
        raw_user_meta_data ->> 'phone' AS meta_phone, email_confirmed_at
-FROM auth.users WHERE email LIKE '%@test' ORDER BY email;
+FROM auth.users WHERE email LIKE '%@test.com' ORDER BY email;

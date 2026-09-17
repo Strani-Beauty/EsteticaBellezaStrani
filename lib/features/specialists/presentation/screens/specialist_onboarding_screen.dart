@@ -7,6 +7,7 @@ import '../../../../app/config/app_theme.dart';
 import '../../../../app/config/app_routes.dart';
 import '../../../../app/config/map_config.dart';
 import '../../../../app/core/network/supabase_service.dart';
+import '../../../../app/core/utils/validators.dart';
 import '../../../auth_users/presentation/cubits/auth_cubit.dart';
 import '../../../patients_compliance/presentation/widgets/patient_map_picker.dart';
 import '../../domain/entities/especialidad_entity.dart';
@@ -327,8 +328,7 @@ class _SpecialistOnboardingScreenState extends State<SpecialistOnboardingScreen>
                 hint: '+58 412 1234567',
                 prefix: const Icon(Icons.phone_outlined, color: AppTheme.cDeepAccent),
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Ingresa tu teléfono' : null,
+              validator: (v) => validarTelefono(v),
             ),
             const SizedBox(height: 12),
             TextFormField(

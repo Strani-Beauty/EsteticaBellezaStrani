@@ -409,9 +409,11 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Requerido';
-                if (double.tryParse(v.trim()) == null) {
+                final valor = double.tryParse(v.trim());
+                if (valor == null) {
                   return 'Debe ser un número';
                 }
+                if (valor <= 0) return 'Debe ser mayor a 0';
                 return null;
               },
             ),
@@ -443,9 +445,11 @@ class _AdminServicioDetailScreenState extends State<AdminServicioDetailScreen> {
               ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Requerido';
-                if (int.tryParse(v.trim()) == null) {
+                final valor = int.tryParse(v.trim());
+                if (valor == null) {
                   return 'Debe ser un número entero';
                 }
+                if (valor <= 0) return 'Debe ser mayor a 0';
                 return null;
               },
             ),

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
+import 'package:esteticaybellezastrani/app/core/utils/validators.dart';
 import '../cubits/auth_cubit.dart';
 import '../widgets/role_selector_card.dart';
 import '../widgets/auth_form_section.dart';
@@ -350,16 +351,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (v) => v!.trim().isEmpty ? 'Ingresa tu nombre' : null),
                 const SizedBox(height: 14),
                 _field('Teléfono (opcional)', _phoneCtrl, Icons.phone_outlined,
-                    keyboardType: TextInputType.phone),
+                    keyboardType: TextInputType.phone,
+                    validator: (v) => validarTelefono(v, requerido: false)),
                 const SizedBox(height: 14),
               ],
               _field('Correo Electrónico', _emailCtrl, Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
-                    if (!v.contains('@')) return 'Correo no válido';
-                    return null;
-                  }),
+                  validator: (v) => validarCorreo(v)),
               const SizedBox(height: 14),
               _passwordField(isSignIn),
               const SizedBox(height: 24),
@@ -503,6 +501,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _showRecoveryDialog() async {
     final recoveryCtrl = TextEditingController();
+    final recoveryKey = GlobalKey<FormState>();
     final enviado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -515,14 +514,18 @@ class _LoginScreenState extends State<LoginScreen> {
             Expanded(child: Text('Recuperar contraseña')),
           ],
         ),
-        content: TextField(
-          controller: recoveryCtrl,
-          keyboardType: TextInputType.emailAddress,
-          autofocus: true,
-          decoration: AppTheme.fieldDecoration(
-            label: 'Correo Electrónico',
-            prefix: const Icon(Icons.email_outlined,
-                color: AppTheme.cDeepAccent),
+        content: Form(
+          key: recoveryKey,
+          child: TextFormField(
+            controller: recoveryCtrl,
+            keyboardType: TextInputType.emailAddress,
+            autofocus: true,
+            decoration: AppTheme.fieldDecoration(
+              label: 'Correo Electrónico',
+              prefix: const Icon(Icons.email_outlined,
+                  color: AppTheme.cDeepAccent),
+            ),
+            validator: (v) => validarCorreo(v),
           ),
         ),
         actions: [
@@ -532,8 +535,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           FilledButton(
             onPressed: () {
+              if (!(recoveryKey.currentState?.validate() ?? false)) return;
               final email = recoveryCtrl.text.trim();
-              if (!email.contains('@')) return;
               context.read<AuthCubit>().resetPassword(email);
               Navigator.pop(ctx, true);
             },

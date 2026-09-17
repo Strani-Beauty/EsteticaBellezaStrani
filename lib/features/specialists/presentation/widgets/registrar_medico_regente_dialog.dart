@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
+import 'package:esteticaybellezastrani/app/core/utils/validators.dart';
 
 /// Diálogo para registrar un nuevo médico regente.
 /// Devuelve el mapa con los datos capturados o null si se cancela.
@@ -88,6 +89,7 @@ class _RegistrarMedicoRegenteDialogState
                   prefix: const Icon(Icons.phone_outlined, color: AppTheme.cDeepAccent),
                 ),
                 textInputAction: TextInputAction.next,
+                validator: (v) => validarTelefono(v, requerido: false),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -99,6 +101,7 @@ class _RegistrarMedicoRegenteDialogState
                 ),
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submit(),
+                validator: (v) => validarCorreo(v, requerido: false),
               ),
               const SizedBox(height: 8),
               const Align(

@@ -17,7 +17,7 @@ Gestión de activación de usuarios (doc 04), flujo del especialista que envía 
 
 ## Precondiciones generales
 
-- Cuenta `admin@test` (rol Administrador).
+- Cuenta `admin@test.com` (rol Administrador).
 - Especialistas en distintos estados: `esp.nuevo` (PENDIENTE), `esp.revision` (EN_REVISION), `esp.aprobado`, `esp.rechazado`, `esp.bloqueado`.
 - Al menos un médico regente PENDIENTE y uno ACTIVO.
 

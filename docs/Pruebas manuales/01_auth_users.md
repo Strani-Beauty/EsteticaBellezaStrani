@@ -18,7 +18,7 @@ Flujo clínico del paciente (cuestionario/evaluación → doc 07), pagos del onb
 ## Precondiciones generales
 
 - `.env` válido; Supabase alcanzable.
-- Cuentas de la matriz (doc 00): `pac.nuevo`, `pac.activo`, `esp.nuevo`, `esp.aprobado`, `admin@test`.
+- Cuentas de la matriz (doc 00): `pac.nuevo`, `pac.activo`, `esp.nuevo`, `esp.aprobado`, `admin@test.com`.
 - Acceso al correo de prueba para confirmar registros y recibir deep links de recuperación.
 
 ## 1. Camino feliz
@@ -30,7 +30,7 @@ Flujo clínico del paciente (cuestionario/evaluación → doc 07), pagos del onb
 | AU-H-03 | Confirmación de correo | Registro recién hecho | 1. Abrir el correo 2. Confirmar | Cuenta confirmada; login posible. **Nota (2026-08-17)**: el link usa PKCE y el code verifier queda en el mismo browser donde se registró; ya no se borra al cerrar la pestaña, así que confirma aunque haya una sesión previa. Si el enlace se abre desde otro browser/dispositivo no se puede usar: la app lo avisa y sugiere iniciar sesión o reenviar. | Crítica | | |
 | AU-H-04 | Login de paciente confirmado | Cuenta confirmada | 1. `/login` 2. Paciente → signIn 3. Email + contraseña correctos | `AuthAuthenticated`; redirección por rol (paciente sin perfil completo → `/complete-profile`; completo → `/services`) | Crítica | | |
 | AU-H-05 | Login de especialista | `esp.aprobado` | 1. Login con credenciales de especialista | Redirección a `/specialist` | Crítica | | |
-| AU-H-06 | Login de admin | `admin@test` | 1. Login con credenciales de admin | Redirección a `/admin` | Crítica | | |
+| AU-H-06 | Login de admin | `admin@test.com` | 1. Login con credenciales de admin | Redirección a `/admin` | Crítica | | |
 | AU-H-07 | Restaurar sesión al arrancar | Sesión activa previa | 1. Cerrar la app 2. Reabrir | `checkCurrentSession` restaura; no pasa por login | Alta | | |
 | AU-H-08 | Editar perfil | Sesión activa | 1. `/profile` 2. Editar nombre y teléfono 3. Guardar | `updateProfile` éxito; datos actualizados al recargar | Alta | | |
 | AU-H-09 | Cambio de contraseña | Sesión activa | 1. `/change-password` 2. Actual correcta, nueva ≥6, confirmación igual 3. Enviar | Cambio exitoso; perfil recargado | Alta | | |

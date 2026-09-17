@@ -6,7 +6,7 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
-import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/avatar_profile_button.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/validar_requisitos_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
@@ -459,7 +459,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                     icon: const Icon(Icons.monitor_heart_rounded, color: AppTheme.cDeepAccent),
                     tooltip: 'Estado de Salud',
                   ),
-                  const ProfileMenuButton(iconColor: AppTheme.cDeepAccent),
+                  const AvatarProfileButton(diameter: 34, ringColor: AppTheme.cPastelPurple),
                   IconButton(
                     onPressed: () => context.read<AuthCubit>().signOut(),
                     icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),

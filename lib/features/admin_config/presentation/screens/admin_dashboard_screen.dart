@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
-import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/profile_menu_button.dart';
+import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/avatar_profile_button.dart';
 import '../cubits/admin_dashboard_cubit.dart';
 
 /// Panel de administración — dashboard (KPIs + accesos por sección).
@@ -43,7 +43,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          const ProfileMenuButton(iconColor: Colors.white),
+          const AvatarProfileButton(),
           IconButton(
             onPressed: () => context.read<AuthCubit>().signOut(),
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),

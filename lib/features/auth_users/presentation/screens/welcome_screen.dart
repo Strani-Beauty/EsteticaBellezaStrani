@@ -178,6 +178,21 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             );
           },
         ),
+        const SizedBox(height: 14),
+        // Acceso provisional de administrador (hasta definir el subdominio).
+        Center(
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.cDeepAccent,
+              side: const BorderSide(color: AppTheme.cDeepAccent),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () =>
+                context.go('${AppRoutes.login}?login=administrador'),
+            icon: const Icon(Icons.admin_panel_settings_rounded, size: 18),
+            label: const Text('Acceso Administrador'),
+          ),
+        ),
         const SizedBox(height: 32),
         const Wrap(
           spacing: 14,

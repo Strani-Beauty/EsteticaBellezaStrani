@@ -25,11 +25,16 @@ class LoginScreen extends StatefulWidget {
   /// (deep-link `?login=paciente` desde el catálogo de servicios).
   final bool loginPaciente;
 
+  /// Si es true, arranca directamente en el login de administradores
+  /// (deep-link `?login=administrador` desde la bienvenida).
+  final bool loginAdministrador;
+
   const LoginScreen({
     super.key,
     this.registroPaciente = false,
     this.loginEspecialista = false,
     this.loginPaciente = false,
+    this.loginAdministrador = false,
   });
 
   @override
@@ -64,6 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } else if (widget.loginPaciente) {
       // Deep-link desde el catálogo: abre el login de paciente.
       _selectedType = _UserType.client;
+      _mode = _AuthMode.signIn;
+    } else if (widget.loginAdministrador) {
+      // Deep-link desde la bienvenida: abre el login de administrador.
+      _selectedType = _UserType.admin;
       _mode = _AuthMode.signIn;
     }
   }

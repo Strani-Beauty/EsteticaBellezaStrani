@@ -180,6 +180,7 @@ final GoRouter appRouter = GoRouter(
         registroPaciente: state.uri.queryParameters['registro'] == 'paciente',
         loginEspecialista: state.uri.queryParameters['login'] == 'especialista',
         loginPaciente: state.uri.queryParameters['login'] == 'paciente',
+        loginAdministrador: state.uri.queryParameters['login'] == 'administrador',
       ),
     ),
     GoRoute(

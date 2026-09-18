@@ -135,7 +135,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         const SizedBox(height: 20),
         Text(
           'Convierte tu casa en tu spa favorito. Nos trasladamos hasta ti para mimarte con tratamientos de botox, rellenos y estética facial y corporal con la calidad de una clínica y la calidez de estar en casa.',
-          style: GoogleFonts.inter(fontSize: 14, color: AppTheme.cMutedText, height: 1.6),
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: AppTheme.cMutedText,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 28),
         // Botones de acceso
@@ -170,11 +174,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                especialistas,
-                const SizedBox(height: 12),
-                explorar,
-              ],
+              children: [especialistas, const SizedBox(height: 12), explorar],
             );
           },
         ),
@@ -198,9 +198,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           spacing: 14,
           runSpacing: 8,
           children: [
-            _TrustBadge(icon: Icons.verified_user_rounded, text: 'Evaluación Médica Interna'),
-            _TrustBadge(icon: Icons.lock_rounded,          text: 'Pago Seguro'),
-            _TrustBadge(icon: Icons.star_rounded,          text: 'Especialistas Certificados'),
+            _TrustBadge(
+              icon: Icons.verified_user_rounded,
+              text: 'Evaluación Médica Interna',
+            ),
+            _TrustBadge(icon: Icons.lock_rounded, text: 'Pago Seguro'),
+            _TrustBadge(
+              icon: Icons.star_rounded,
+              text: 'Especialistas Certificados',
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -253,10 +259,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.spa_rounded, color: AppTheme.cDeepAccent, size: 14),
+                const Icon(
+                  Icons.spa_rounded,
+                  color: AppTheme.cDeepAccent,
+                  size: 14,
+                ),
                 const SizedBox(width: 6),
                 Text(
-                  'ESTÉTICA & BELLEZA STRANI',
+                  'MERAKI SPA ONSITE',
                   style: GoogleFonts.inter(
                     fontSize: 9.5,
                     fontWeight: FontWeight.bold,
@@ -281,14 +291,14 @@ class _TagLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.8,
-          color: AppTheme.cDeepAccent,
-        ),
-      );
+    label,
+    style: GoogleFonts.inter(
+      fontSize: 10.5,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 1.8,
+      color: AppTheme.cDeepAccent,
+    ),
+  );
 }
 
 class _BrandLogo extends StatelessWidget {
@@ -372,7 +382,7 @@ class _ActionButtonState extends State<_ActionButton> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
-      onExit:  (_) => setState(() => _hovered = false),
+      onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
@@ -383,15 +393,19 @@ class _ActionButtonState extends State<_ActionButton> {
           padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
             gradient: widget.isPrimary ? AppTheme.primaryGradient : null,
-            color:    widget.isPrimary ? null : Colors.white,
+            color: widget.isPrimary ? null : Colors.white,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             border: widget.isPrimary
                 ? null
                 : Border.all(
-                    color: _hovered ? AppTheme.cDeepAccent : Colors.grey.shade200,
+                    color: _hovered
+                        ? AppTheme.cDeepAccent
+                        : Colors.grey.shade200,
                   ),
             boxShadow: _hovered
-                ? (widget.isPrimary ? AppTheme.elevatedShadow : AppTheme.cardShadow)
+                ? (widget.isPrimary
+                      ? AppTheme.elevatedShadow
+                      : AppTheme.cardShadow)
                 : AppTheme.cardShadow,
           ),
           child: Row(
@@ -413,7 +427,9 @@ class _ActionButtonState extends State<_ActionButton> {
                       style: GoogleFonts.inter(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: widget.isPrimary ? Colors.white : AppTheme.cDarkText,
+                        color: widget.isPrimary
+                            ? Colors.white
+                            : AppTheme.cDarkText,
                       ),
                     ),
                     Text(
@@ -486,11 +502,14 @@ class _HeroFallback extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.spa_rounded, size: 90,
-                color: AppTheme.cDeepAccent.withValues(alpha: 0.35)),
+            Icon(
+              Icons.spa_rounded,
+              size: 90,
+              color: AppTheme.cDeepAccent.withValues(alpha: 0.35),
+            ),
             const SizedBox(height: 16),
             Text(
-              'STRANI',
+              'MERAKI',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 36,
                 color: AppTheme.cDeepAccent.withValues(alpha: 0.45),
@@ -499,7 +518,7 @@ class _HeroFallback extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'ESTÉTICA & BELLEZA',
+              'SPA ONSITE',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 letterSpacing: 4,

@@ -709,6 +709,47 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     );
   }
 
+  /// Edita datos administrativos de un especialista desde el panel admin
+  /// (licencia, médico regente, disponibilidad, activo, observación).
+  /// `limpiarObservacion` borra el motivo previo si el admin lo vacía.
+  Future<void> editarEspecialista({
+    required String especialistaId,
+    String? numeroLicencia,
+    String? medicoRegenteId,
+    bool? disponible,
+    bool? activo,
+    String? observacion,
+    bool limpiarObservacion = false,
+  }) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _updateEspecialista(UpdateEspecialistaParams(
+      id: especialistaId,
+      numeroLicencia: numeroLicencia,
+      medicoRegenteId: medicoRegenteId,
+      disponible: disponible,
+      activo: activo,
+      observacion: observacion,
+      limpiarObservacion: limpiarObservacion,
+    ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (actualizado) => emit(current.copyWith(
+        especialistas: [
+          for (final e in current.especialistas)
+            if (e.id == actualizado.id)
+              actualizado.copyWith(
+                nombreUsuario: e.nombreUsuario,
+                emailUsuario: e.emailUsuario,
+              )
+            else
+              e,
+        ],
+      )),
+    );
+  }
+
   /// Marca la solicitud como EN_REVISION (especialista ya tiene datos
   /// profesionales y documentos requeridos completos).
   Future<void> solicitarVerificacion({required String especialistaId}) async {

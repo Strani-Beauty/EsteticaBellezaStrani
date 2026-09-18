@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/config/app_constants.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/core/utils/validators.dart';
 import '../cubits/auth_cubit.dart';
-import '../widgets/role_selector_card.dart';
 import '../widgets/auth_form_section.dart';
 
 /// Pantalla de autenticación — Login + Registro por rol.
@@ -42,10 +40,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 enum _UserType { client, specialist, admin }
-enum _AuthMode { roleSelection, signIn, signUp }
+enum _AuthMode { signIn, signUp }
 
 class _LoginScreenState extends State<LoginScreen> {
-  _AuthMode _mode = _AuthMode.roleSelection;
+  _AuthMode _mode = _AuthMode.signIn;
   _UserType _selectedType = _UserType.client;
 
   final _formKey = GlobalKey<FormState>();
@@ -245,93 +243,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 280),
       child: switch (_mode) {
-        _AuthMode.roleSelection => _buildRoleSelection(),
-        _AuthMode.signIn        => _buildAuthForm(isSignIn: true),
-        _AuthMode.signUp        => _buildAuthForm(isSignIn: false),
+        _AuthMode.signIn => _buildAuthForm(isSignIn: true),
+        _AuthMode.signUp => _buildAuthForm(isSignIn: false),
       },
     );
   }
 
-  // ── Vista 1: Selección de Rol ───────────────────────────────
-  Widget _buildRoleSelection() {
-    return Column(
-      key: const ValueKey('roleSelection'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.cPastelPink, AppTheme.cPastelPurple],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: AppTheme.cardShadow,
-              ),
-              child: const Icon(Icons.spa_rounded, size: 24, color: AppTheme.cDeepAccent),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Bienvenido/a a MERAKI spa onsite',
-                    style: GoogleFonts.gfsDidot(
-                      fontSize: 17,
-                      color: AppTheme.cDarkText,
-                    ),
-                  ),
-                  Text('Selecciona tu perfil de ingreso:',
-                      style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        RoleSelectorCard(
-          icon: Icons.person_rounded,
-          title: 'Cliente / Paciente',
-          description: 'Reserva servicios y sigue tu historial',
-          badgeColor: AppTheme.cPastelPink,
-          iconColor: AppTheme.cDeepAccent,
-          onSignIn: () => _goToAuth(_UserType.client, signIn: true),
-          onSignUp: () => _goToAuth(_UserType.client, signIn: false),
-        ),
-        const SizedBox(height: 12),
-        RoleSelectorCard(
-          icon: Icons.medical_services_rounded,
-          title: 'Especialista',
-          description: 'Gestiona citas y expedientes clínicos',
-          badgeColor: AppTheme.cPastelBlue,
-          iconColor: AppTheme.cBrandGreen,
-          onSignIn: () => _goToAuth(_UserType.specialist, signIn: true),
-          onSignUp: () => _goToAuth(_UserType.specialist, signIn: false),
-        ),
-        const SizedBox(height: 12),
-        RoleSelectorCard(
-          icon: Icons.admin_panel_settings_rounded,
-          title: 'Administrador',
-          description: 'Acceso por invitación — reportes y control general',
-          badgeColor: AppTheme.cPastelGold,
-          iconColor: AppTheme.cGoldAccent,
-          onSignIn: () => _goToAuth(_UserType.admin, signIn: true),
-          onSignUp: null,
-        ),
-        const SizedBox(height: 20),
-        Center(
-          child: Text(
-            '${AppConstants.appName} © 2026',
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Vista 2: Formulario Auth ────────────────────────────────
+  // ── Formulario Auth ────────────────────────────────────────
   Widget _buildAuthForm({required bool isSignIn}) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
@@ -342,13 +260,6 @@ class _LoginScreenState extends State<LoginScreen> {
             key: ValueKey(isSignIn ? 'signIn' : 'signUp'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextButton.icon(
-                onPressed: () => setState(() => _mode = _AuthMode.roleSelection),
-                icon: const Icon(Icons.arrow_back_rounded,
-                    color: AppTheme.cDeepAccent, size: 20),
-                label: const Text('Volver a selección'),
-              ),
-              const SizedBox(height: 12),
               AuthFormSection(
                 isSignIn: isSignIn,
                 rolNombre: _rolNombre,
@@ -461,13 +372,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ── Acciones ────────────────────────────────────────────────
-  void _goToAuth(_UserType type, {required bool signIn}) {
-    setState(() {
-      _selectedType = type;
-      _mode = signIn ? _AuthMode.signIn : _AuthMode.signUp;
-    });
-  }
-
   void _submit(bool isSignIn) {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final cubit = context.read<AuthCubit>();

@@ -73,6 +73,11 @@ RLS (SELECT admin ya cubre todas las tablas), flujos de pago/liquidación.
       `por_especialista` → Dr. Carlos Medina 1 cita 180/36/144; `serie` semana
       2026-09-14 rec 149.83; `resumen` → NO_AUTORIZADO sin JWT, esperado).
 - [ ] Manual: dashboard con datos reales, selector de período, gráficos renderizan.
+- [x] Fix web (reportado por el usuario): el botón 'Personalizado' (`OutlinedButton.icon`)
+      en el Row horizontal del selector lanzaba `BoxConstraints forces an infinite width`
+      (ButtonStyleButton propaga constraints infinitos a su hijo). Se reemplazó por un
+      `ChoiceChip` (`_chipPersonalizado`, mismo estilo que `_chipRango`), que ya no falla.
+      `flutter analyze` limpio + 370 tests ALL PASSED.
 
 ## Notas
 

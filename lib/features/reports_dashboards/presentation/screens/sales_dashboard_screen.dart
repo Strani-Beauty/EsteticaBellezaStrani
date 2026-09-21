@@ -179,17 +179,7 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
                 const SizedBox(width: 8),
                 _chipRango('Todo', _RangoRapido.todo),
                 const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _seleccionarRangoLibre,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.cDeepAccent,
-                    side: const BorderSide(color: AppTheme.cDeepAccent),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                  ),
-                  icon: const Icon(Icons.date_range_rounded, size: 16),
-                  label: const Text('Personalizado'),
-                ),
+                _chipPersonalizado(),
               ],
             ),
           ),
@@ -245,6 +235,33 @@ class _SalesDashboardScreenState extends State<SalesDashboardScreen> {
       case _RangoRapido.todo:
         return d.year == 2024 && d.month == 1 && d.day == 1;
     }
+  }
+
+  Widget _chipPersonalizado() {
+    final seleccionado = !_rangoSeleccionado(_RangoRapido.ultimaSemana) &&
+        !_rangoSeleccionado(_RangoRapido.treintaDias) &&
+        !_rangoSeleccionado(_RangoRapido.esteMes) &&
+        !_rangoSeleccionado(_RangoRapido.todo);
+    return ChoiceChip(
+      avatar: Icon(
+        Icons.date_range_rounded,
+        size: 16,
+        color: seleccionado ? Colors.white : AppTheme.cDeepAccent,
+      ),
+      label: const Text('Personalizado'),
+      selected: seleccionado,
+      onSelected: (_) => _seleccionarRangoLibre(),
+      showCheckmark: false,
+      selectedColor: AppTheme.cDeepAccent,
+      labelStyle: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: seleccionado ? Colors.white : AppTheme.cDarkText,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+    );
   }
 
   // ── KPIs ───────────────────────────────────────────────────────────────────

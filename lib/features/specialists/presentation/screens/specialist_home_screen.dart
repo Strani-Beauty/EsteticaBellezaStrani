@@ -9,6 +9,7 @@ import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/
 import 'package:esteticaybellezastrani/features/notifications/presentation/cubits/notifications_cubit.dart';
 import 'package:esteticaybellezastrani/features/notifications/presentation/widgets/notificaciones_bell.dart';
 import '../cubits/specialists_cubit.dart';
+import '../../data/services/presence_service.dart';
 import '../../domain/entities/contrato_entity.dart';
 import '../../domain/entities/documento_especialista_entity.dart';
 import '../../domain/entities/especialista_entity.dart';
@@ -133,7 +134,10 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
       onRefresh: () async {
         final usuarioId = context.read<AuthCubit>().currentProfile?.id;
         if (usuarioId != null) {
-          await context.read<SpecialistsCubit>().loadDashboard(usuarioId: usuarioId);
+          await Future.wait([
+            context.read<SpecialistsCubit>().loadDashboard(usuarioId: usuarioId),
+            sl<NotificationsCubit>().load(usuarioId),
+          ]);
         }
       },
       child: ListView(
@@ -159,6 +163,14 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
             onTap: () => context.push(AppRoutes.specialistProfile),
           ),
           if (especialista != null) ...[
+            if (especialista.isApproved &&
+                !(state.disponibilidad?.isAvailable ?? false)) ...[
+              _BannerActivarDisponibilidad(
+                especialistaId: especialista.id,
+                usuarioId: context.read<AuthCubit>().currentProfile?.id,
+              ),
+              const SizedBox(height: 16),
+            ],
             DisponibilidadCard(
               especialistaId: especialista.id,
               disponibilidad: state.disponibilidad,
@@ -215,6 +227,80 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
 }
 
 // ── Estados de verificación ─────────────────────────────────────
+
+/// Banner de aviso al especialista aprobado: le invita a activar su
+/// disponibilidad en el marketplace (mismo patrón que el Switch de
+/// [DisponibilidadCard]: toggle + presencia online).
+class _BannerActivarDisponibilidad extends StatelessWidget {
+  final String especialistaId;
+  final String? usuarioId;
+
+  const _BannerActivarDisponibilidad({
+    required this.especialistaId,
+    this.usuarioId,
+  });
+
+  void _activar(BuildContext context) {
+    context
+        .read<SpecialistsCubit>()
+        .toggleDisponibilidad(especialistaId: especialistaId);
+    final uid = usuarioId;
+    if (uid != null && uid.isNotEmpty) {
+      sl<PresenceService>().start(uid);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cBrandGreen.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(
+          color: AppTheme.cBrandGreen.withValues(alpha: 0.45),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.verified_rounded,
+              color: AppTheme.cBrandGreen, size: 34),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Verificado por administración',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Ya puedes activar tu disponibilidad para recibir citas en el marketplace.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.cDarkText.withValues(alpha: 0.85),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  onPressed: () => _activar(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.cBrandGreen,
+                  ),
+                  icon: const Icon(Icons.toggle_on_rounded, size: 20),
+                  label: const Text('Activar disponibilidad'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _VerificationCard extends StatefulWidget {
   final EspecialistaEntity? especialista;

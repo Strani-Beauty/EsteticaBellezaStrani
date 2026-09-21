@@ -12,6 +12,7 @@ String? resolveAuthRedirect({
   required String location,
   required void Function() onDeactivated,
   void Function(String message)? onRoleMismatch,
+  bool adminOnly = false,
 }) {
   final publicRoutes = [
     AppRoutes.welcome,
@@ -25,6 +26,10 @@ String? resolveAuthRedirect({
 
   // Sin autenticación → rutas públicas o login; lo demás a welcome.
   if (authState is AuthUnauthenticated) {
+    // En el sitio admin solo se permite el login (nada de bienvenida/catálogo).
+    if (adminOnly) {
+      return location == AppRoutes.login ? null : AppRoutes.login;
+    }
     if (publicRoutes.contains(location) || location == AppRoutes.login) {
       return null;
     }
@@ -33,6 +38,15 @@ String? resolveAuthRedirect({
 
   if (authState is AuthAuthenticated) {
     final profile = authState.profile;
+
+    // ── Sitio admin: solo administradores ─────────────────────────
+    // Un no-admin (especialista/paciente) no puede usar el subdominio:
+    // se cierra la sesión y se redirige al login (evita el loop que
+    // produciría `_redirectByRole` sobre una ruta no permitida).
+    if (adminOnly && !profile.isAdmin) {
+      onDeactivated();
+      return AppRoutes.login;
+    }
 
     // ── Guard de cuenta desactivada (item 17) ──────────────────
     // `activo=false`:

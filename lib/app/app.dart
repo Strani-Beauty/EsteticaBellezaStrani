@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import 'package:esteticaybellezastrani/app/config/app_env.dart';
 import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
@@ -148,7 +149,7 @@ class _SessionLifecycleGateState extends State<_SessionLifecycleGate>
           sl<PresenceService>().markOffline();
           // GoRouter solo re-evalúa el redirect ante una navegación; sin este
           // `go` explícito el usuario se quedaba en la pantalla tras signOut.
-          appRouter.go(AppRoutes.welcome);
+          appRouter.go(AppEnv.adminOnly ? AppRoutes.login : AppRoutes.welcome);
         }
       },
       child: MaterialApp.router(

@@ -77,7 +77,7 @@ class AuthSupabaseDataSource {
     await _client.auth.resetPasswordForEmail(
       email,
       redirectTo: kIsWeb
-          ? 'https://esteticaybellezastrani.web.app/auth/reset-password'
+          ? '${Uri.base.origin}/auth/reset-password'
           : 'com.example.esteticaybellezastrani://',
     );
   }

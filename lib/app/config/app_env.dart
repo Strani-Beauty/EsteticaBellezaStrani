@@ -1,8 +1,18 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Centraliza el acceso a variables de entorno con validación en tiempo de inicio.
 class AppEnv {
   AppEnv._();
+
+  /// Host del subdominio dedicado a administradores (`admin.<dominio>`).
+  /// Ajustar cuando se compre el dominio de la marca MERAKI SPA ONSITE.
+  static const String adminHost = 'admin.<dominio>';
+
+  /// True cuando la app corre en el sitio del subdominio admin.
+  /// Único punto de lectura del flag: migrar a una build aislada
+  /// (`--dart-define=ADMIN_ONLY`) solo requiere cambiar este getter.
+  static bool get adminOnly => kIsWeb ? Uri.base.host == adminHost : false;
 
   static String get supabaseUrl => _get('SUPABASE_URL', '');
   static String get supabaseAnonKey => _get('SUPABASE_ANON_KEY', '');

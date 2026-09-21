@@ -30,6 +30,7 @@ import 'package:esteticaybellezastrani/features/catalog_services/presentation/sc
 import 'package:esteticaybellezastrani/features/catalog_services/domain/entities/servicio_entity.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/screens/welcome_screen.dart';
 import 'package:esteticaybellezastrani/app/config/route_guard.dart';
+import 'package:esteticaybellezastrani/app/config/app_env.dart';
 
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/estado_salud_screen.dart';
@@ -155,7 +156,7 @@ void showGlobalSnackBar(String message) {
 
 /// GoRouter con guards de navegación basados en estado de AuthCubit
 final GoRouter appRouter = GoRouter(
-  initialLocation: AppRoutes.welcome,
+  initialLocation: AppEnv.adminOnly ? AppRoutes.login : AppRoutes.welcome,
   debugLogDiagnostics: false,
   observers: [routeObserver],
   redirect: (BuildContext context, GoRouterState state) {
@@ -165,6 +166,7 @@ final GoRouter appRouter = GoRouter(
       location: state.matchedLocation,
       onDeactivated: () => authCubit.signOut(),
       onRoleMismatch: showGlobalSnackBar,
+      adminOnly: AppEnv.adminOnly,
     );
   },
   routes: [

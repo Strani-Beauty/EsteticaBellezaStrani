@@ -24,11 +24,13 @@ String? _guard({
   required AuthState state,
   required String location,
   bool Function()? onDeactivated,
+  bool adminOnly = false,
 }) {
   return resolveAuthRedirect(
     authState: state,
     location: location,
     onDeactivated: () => onDeactivated?.call(),
+    adminOnly: adminOnly,
   );
 }
 
@@ -199,6 +201,67 @@ void main() {
           AppRoutes.adminDashboard);
       expect(_guard(state: state, location: AppRoutes.misCitas),
           AppRoutes.adminDashboard);
+    });
+  });
+
+  group('Sitio admin (adminOnly): aislamiento por rol', () {
+    test('anónimo solo puede ver el login', () {
+      const state = AuthUnauthenticated();
+      expect(_guard(state: state, location: AppRoutes.login, adminOnly: true),
+          isNull);
+      expect(_guard(state: state, location: AppRoutes.welcome, adminOnly: true),
+          AppRoutes.login);
+      expect(_guard(state: state, location: AppRoutes.services, adminOnly: true),
+          AppRoutes.login);
+      expect(
+        _guard(
+            state: state,
+            location: AppRoutes.adminDashboard,
+            adminOnly: true),
+        AppRoutes.login,
+      );
+    });
+
+    test('especialista autenticado es desconectado y redirige a login', () {
+      var signedOut = false;
+      final state = AuthAuthenticated(_perfil(rol: 'Especialista'));
+      expect(
+        _guard(
+          state: state,
+          location: AppRoutes.specialistHome,
+          onDeactivated: () => signedOut = true,
+          adminOnly: true,
+        ),
+        AppRoutes.login,
+      );
+      expect(signedOut, isTrue);
+    });
+
+    test('paciente autenticado es desconectado y redirige a login', () {
+      var signedOut = false;
+      final state = AuthAuthenticated(_perfil(rol: 'Paciente'));
+      expect(
+        _guard(
+          state: state,
+          location: AppRoutes.services,
+          onDeactivated: () => signedOut = true,
+          adminOnly: true,
+        ),
+        AppRoutes.login,
+      );
+      expect(signedOut, isTrue);
+    });
+
+    test('administrador mantiene el comportamiento normal en el sitio admin', () {
+      final state = AuthAuthenticated(_perfil(rol: 'Administrador'));
+      expect(_guard(state: state, location: AppRoutes.adminDashboard,
+          adminOnly: true), isNull);
+      expect(_guard(state: state, location: AppRoutes.adminUsuarios,
+          adminOnly: true), isNull);
+      expect(
+        _guard(state: state, location: AppRoutes.login, adminOnly: true),
+        AppRoutes.adminDashboard,
+      );
     });
   });
 }

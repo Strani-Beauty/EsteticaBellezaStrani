@@ -80,6 +80,14 @@ import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/
 import 'package:esteticaybellezastrani/features/payments_stripe/domain/usecases/generar_liquidaciones.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/admin_conciliacion_cubit.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/payments_cubit.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/data/datasources/reports_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/data/repositories/reports_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/domain/repositories/i_reports_repository.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/domain/usecases/get_resumen_ventas.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/domain/usecases/get_serie_ventas.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/domain/usecases/get_ventas_por_especialista.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/domain/usecases/get_ventas_por_servicio.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/presentation/cubits/reports_dashboard_cubit.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/datasources/specialists_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/repositories/specialists_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/specialists/data/services/presence_service.dart';
@@ -774,7 +782,34 @@ void _registerAdminMasterData() {
     ),
   );
 }
-void _registerReportsDashboards() {}
+void _registerReportsDashboards() {
+  sl.registerLazySingleton<ReportsSupabaseDataSource>(
+    () => ReportsSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IReportsRepository>(
+    () => ReportsRepositoryImpl(sl<ReportsSupabaseDataSource>()),
+  );
+  sl.registerLazySingleton<GetResumenVentas>(
+    () => GetResumenVentas(sl<IReportsRepository>()),
+  );
+  sl.registerLazySingleton<GetVentasPorServicio>(
+    () => GetVentasPorServicio(sl<IReportsRepository>()),
+  );
+  sl.registerLazySingleton<GetVentasPorEspecialista>(
+    () => GetVentasPorEspecialista(sl<IReportsRepository>()),
+  );
+  sl.registerLazySingleton<GetSerieVentas>(
+    () => GetSerieVentas(sl<IReportsRepository>()),
+  );
+  sl.registerLazySingleton<ReportsDashboardCubit>(
+    () => ReportsDashboardCubit(
+      getResumen: sl<GetResumenVentas>(),
+      getPorServicio: sl<GetVentasPorServicio>(),
+      getPorEspecialista: sl<GetVentasPorEspecialista>(),
+      getSerie: sl<GetSerieVentas>(),
+    ),
+  );
+}
 
 void _registerSolicitudesReserva() {
   sl.registerLazySingleton<SolicitudesReservaSupabaseDataSource>(

@@ -151,6 +151,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildAdministrativo() {
     return Column(
       children: [
+        if (_tiene('admin.dashboard'))
+          _NavCard(
+            icon: Icons.bar_chart_rounded,
+            color: AppTheme.cBrandGreen.withValues(alpha: 0.15),
+            title: 'Dashboard de Ventas',
+            subtitle: 'KPIs, gráficos por servicio y especialista',
+            onTap: () => context.go(AppRoutes.salesDashboard),
+          ),
         if (_tiene('admin.usuarios'))
           _NavCard(
             icon: Icons.people_outline_rounded,

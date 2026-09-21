@@ -57,6 +57,9 @@ dependencies:
   device_info_plus: ^11.1.0
   flutter_stripe_web: 6.5.1
 
+  # ── Charts ─────────────────────────────────────────────────
+  fl_chart: ^0.69.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

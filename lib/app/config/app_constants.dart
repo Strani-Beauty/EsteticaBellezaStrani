@@ -124,6 +124,12 @@ class AppConstants {
   static const String rpcRegistrarEvaluacion = 'registrar_evaluacion';
   static const String rpcGetPromedioEspecialista =
       'get_promedio_especialista';
+  static const String rpcDashboardVentasResumen = 'dashboard_ventas_resumen';
+  static const String rpcDashboardVentasPorServicio =
+      'dashboard_ventas_por_servicio';
+  static const String rpcDashboardVentasPorEspecialista =
+      'dashboard_ventas_por_especialista';
+  static const String rpcDashboardVentasSerie = 'dashboard_ventas_serie';
 
   // ── Conceptos de pago (metadata de Stripe) ────────────────
   static const String conceptoAdelanto = 'ADELANTO';

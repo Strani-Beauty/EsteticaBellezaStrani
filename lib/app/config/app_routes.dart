@@ -68,6 +68,8 @@ import 'package:esteticaybellezastrani/features/admin_master_data/presentation/s
 import 'package:esteticaybellezastrani/features/admin_master_data/presentation/screens/admin_medicos_regentes_screen.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cubits/admin_conciliacion_cubit.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/screens/admin_conciliacion_screen.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/presentation/cubits/reports_dashboard_cubit.dart';
+import 'package:esteticaybellezastrani/features/reports_dashboards/presentation/screens/sales_dashboard_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -92,6 +94,7 @@ class AppRoutes {
   static const String adminLicencias       = '/admin/licencias';
   static const String adminConfiguracion   = '/admin/configuracion';
   static const String adminConciliacion     = '/admin/conciliacion';
+  static const String salesDashboard        = '/admin/dashboard-ventas';
   static const String adminDatosMaestros   = '/admin/datos-maestros';
   static const String adminRoles           = '/admin/datos-maestros/roles';
   static const String adminComisiones      = '/admin/datos-maestros/comisiones';
@@ -352,6 +355,14 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => BlocProvider<AdminConciliacionCubit>.value(
         value: sl<AdminConciliacionCubit>(),
         child: const AdminConciliacionScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.salesDashboard,
+      name: 'salesDashboard',
+      builder: (context, state) => BlocProvider<ReportsDashboardCubit>.value(
+        value: sl<ReportsDashboardCubit>(),
+        child: const SalesDashboardScreen(),
       ),
     ),
     GoRoute(

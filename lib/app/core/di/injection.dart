@@ -247,7 +247,7 @@ void _registerAuthUsers() {
     () => RegisterFcmToken(sl<IAuthRepository>()),
   );
   sl.registerLazySingleton<FcmTokenService>(
-    () => FcmTokenService(sl<IAuthRepository>()),
+    () => FcmTokenService(sl<RegisterFcmToken>(), sl<IAuthRepository>()),
   );
   sl.registerLazySingleton<GenerarUrlFirmadaAvatar>(
     () => GenerarUrlFirmadaAvatar(sl<IAuthRepository>()),

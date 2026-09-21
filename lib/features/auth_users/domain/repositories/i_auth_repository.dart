@@ -69,6 +69,7 @@ abstract class IAuthRepository {
     required String profileId,
     required String fcmToken,
     String? plataforma,
+    String? modeloDispositivo,
   });
 
   Future<Either<Failure, void>> deactivateFcmToken(String token);

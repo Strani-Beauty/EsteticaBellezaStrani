@@ -221,12 +221,14 @@ class AuthRepositoryImpl implements IAuthRepository {
     required String profileId,
     required String fcmToken,
     String? plataforma,
+    String? modeloDispositivo,
   }) async {
     try {
       await _dataSource.upsertFcmToken(
         profileId: profileId,
         fcmToken: fcmToken,
         plataforma: plataforma,
+        modeloDispositivo: modeloDispositivo,
       );
       return const Right(null);
     } catch (e) {

@@ -12,11 +12,13 @@ class RegisterFcmToken {
     required String profileId,
     required String fcmToken,
     String? plataforma,
+    String? modeloDispositivo,
   }) {
     return _repository.registerFcmToken(
       profileId: profileId,
       fcmToken: fcmToken,
       plataforma: plataforma,
+      modeloDispositivo: modeloDispositivo,
     );
   }
 }

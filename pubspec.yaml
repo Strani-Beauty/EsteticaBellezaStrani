@@ -54,6 +54,7 @@ dependencies:
   web: ^1.1.1
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
+  device_info_plus: ^11.1.0
   flutter_stripe_web: 6.5.1
 
 dev_dependencies:

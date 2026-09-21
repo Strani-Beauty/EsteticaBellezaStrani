@@ -611,7 +611,7 @@ class _FaceMapQuestionnaireScreenState
                               )
                             : const Icon(Icons.cloud_upload_rounded, color: Colors.white),
                         label: Text(
-                          _isSaving ? 'Guardando en Supabase...' : 'Guardar Mapeo en Supabase (face_maps)',
+                          _isSaving ? 'Guardando...' : 'Guardar Mapeo Facial',
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),

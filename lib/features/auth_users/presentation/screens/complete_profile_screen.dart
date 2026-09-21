@@ -261,7 +261,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         backgroundColor: Colors.green,
-        content: Text('✅ Datos guardados en Supabase correctamente.'),
+        content: Text('✅ Datos guardados correctamente.'),
         duration: Duration(seconds: 2),
       ),
     );

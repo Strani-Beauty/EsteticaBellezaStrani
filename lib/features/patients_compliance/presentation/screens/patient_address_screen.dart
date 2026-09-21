@@ -181,7 +181,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.green,
-          content: Text('✅ Dirección y posición exacta guardadas en Supabase exitosamente.'),
+          content: Text('✅ Dirección y posición guardadas exitosamente.'),
         ),
       );
 
@@ -191,7 +191,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.redAccent,
-          content: Text('Error al guardar en Supabase: $e'),
+          content: Text('Error al guardar la dirección. Intenta de nuevo.'),
         ),
       );
     } finally {
@@ -386,7 +386,7 @@ class _PatientAddressScreenState extends State<PatientAddressScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.check_circle_rounded),
-                  label: Text(_isSaving ? 'Guardando en Supabase...' : 'Confirmar y Guardar Ubicación'),
+                  label: Text(_isSaving ? 'Guardando...' : 'Confirmar y Guardar Ubicación'),
                 ),
               ),
             ],

@@ -298,19 +298,9 @@ class _VerificacionDeLicencias extends StatelessWidget {
           )
         else
           for (final especialista in lista)
-            _EspecialistaCard(
+            _EspecialistaFila(
               especialista: especialista,
-              medicosRegentes: medicosRegentes,
-              documentos:
-                  documentosPorEspecialista[especialista.id] ?? const [],
-              contrato: contratosPorEspecialista[especialista.id],
-              numeroEspecialidades:
-                  especialidadesCountPorEspecialista[especialista.id] ?? 0,
-              onAprobar: () => onAprobar(especialista),
-              onRechazar: () => onRechazar(especialista),
-              onBloquear: () => onBloquear(especialista),
-              onEditar: () => onEditar(especialista),
-              onRevisarDocumento: onRevisarDocumento,
+              onTap: () => _abrirDetalle(context, especialista),
             ),
       ],
     );
@@ -341,19 +331,9 @@ class _VerificacionDeLicencias extends StatelessWidget {
           )
         else
           for (final especialista in lista)
-            _EspecialistaCard(
+            _EspecialistaFila(
               especialista: especialista,
-              medicosRegentes: medicosRegentes,
-              documentos:
-                  documentosPorEspecialista[especialista.id] ?? const [],
-              contrato: contratosPorEspecialista[especialista.id],
-              numeroEspecialidades:
-                  especialidadesCountPorEspecialista[especialista.id] ?? 0,
-              onAprobar: () => onAprobar(especialista),
-              onRechazar: () => onRechazar(especialista),
-              onBloquear: () => onBloquear(especialista),
-              onEditar: () => onEditar(especialista),
-              onRevisarDocumento: onRevisarDocumento,
+              onTap: () => _abrirDetalle(context, especialista),
             ),
         const SizedBox(height: 24),
         const Text(
@@ -382,6 +362,115 @@ class _VerificacionDeLicencias extends StatelessWidget {
               onAprobar: () => onAprobarMedicoRegente(medico.id),
             ),
       ],
+    );
+  }
+
+  Future<void> _abrirDetalle(
+    BuildContext context,
+    EspecialistaEntity especialista,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 560,
+            maxHeight: MediaQuery.of(dialogCtx).size.height * 0.85,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: _EspecialistaCard(
+              especialista: especialista,
+              medicosRegentes: medicosRegentes,
+              documentos:
+                  documentosPorEspecialista[especialista.id] ?? const [],
+              contrato: contratosPorEspecialista[especialista.id],
+              numeroEspecialidades:
+                  especialidadesCountPorEspecialista[especialista.id] ?? 0,
+              onAprobar: () {
+                Navigator.of(dialogCtx).pop();
+                onAprobar(especialista);
+              },
+              onRechazar: () {
+                Navigator.of(dialogCtx).pop();
+                onRechazar(especialista);
+              },
+              onBloquear: () {
+                Navigator.of(dialogCtx).pop();
+                onBloquear(especialista);
+              },
+              onEditar: () {
+                Navigator.of(dialogCtx).pop();
+                onEditar(especialista);
+              },
+              onRevisarDocumento: onRevisarDocumento,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EspecialistaFila extends StatelessWidget {
+  final EspecialistaEntity especialista;
+  final VoidCallback onTap;
+
+  const _EspecialistaFila({
+    required this.especialista,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        side: BorderSide(
+          color: AppTheme.cDeepAccent.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+      ),
+      elevation: 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  especialista.nombreUsuario ??
+                      especialista.emailUsuario ??
+                      'Especialista ${especialista.usuarioId}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                onPressed: onTap,
+                tooltip: 'Editar especialista',
+                icon: const Icon(
+                  Icons.edit_rounded,
+                  size: 18,
+                  color: AppTheme.cDeepAccent,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 36,
+                  minHeight: 36,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

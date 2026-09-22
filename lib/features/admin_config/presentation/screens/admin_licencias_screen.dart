@@ -377,7 +377,9 @@ class _VerificacionDeLicencias extends StatelessWidget {
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         clipBehavior: Clip.antiAlias,
-        child: ConstrainedBox(
+        child: BlocProvider.value(
+          value: context.read<SpecialistsCubit>(),
+          child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: 560,
             maxHeight: MediaQuery.of(dialogCtx).size.height * 0.85,
@@ -411,6 +413,7 @@ class _VerificacionDeLicencias extends StatelessWidget {
               onRevisarDocumento: onRevisarDocumento,
             ),
           ),
+        ),
         ),
       ),
     );

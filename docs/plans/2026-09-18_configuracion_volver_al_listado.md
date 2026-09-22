@@ -43,11 +43,13 @@ pantalla en blanco).
 
 ## Verificación
 
-- [ ] `flutter analyze` limpio.
-- [ ] `flutter test` (370 tests; no hay tests del cubit de configuración).
+- [x] `flutter analyze` limpio.
+- [x] `flutter test` (370 tests; no hay tests del cubit de configuración).
 - [ ] Manual: editar cualquier clave → Guardar → snackbar y listado visible con
       el nuevo valor.
 
 ## Notas
 
 - Commit/push y despliegue en Firebase aprobados (m1698).
+- Commit `496d028` pusheado (`c8781a0..496d028`) y deploy liberado en
+  https://esteticaybellezastrani.web.app.

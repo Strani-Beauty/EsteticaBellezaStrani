@@ -40,14 +40,6 @@ class AdminConfiguracionError extends AdminConfiguracionState {
   List<Object?> get props => [message];
 }
 
-/// Feedback de guardado (consumido por la UI como snackbar).
-class AdminConfiguracionSaved extends AdminConfiguracionState {
-  final String message;
-  const AdminConfiguracionSaved(this.message);
-  @override
-  List<Object?> get props => [message];
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // CUBIT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,6 +47,8 @@ class AdminConfiguracionSaved extends AdminConfiguracionState {
 class AdminConfiguracionCubit extends Cubit<AdminConfiguracionState> {
   final GetConfigSistema _getConfiguracion;
   final UpdateConfigSistema _updateConfiguracion;
+
+  List<ConfigSistemaEntity> _items = const [];
 
   AdminConfiguracionCubit({
     required GetConfigSistema getConfiguracion,
@@ -68,7 +62,10 @@ class AdminConfiguracionCubit extends Cubit<AdminConfiguracionState> {
     final result = await _getConfiguracion();
     result.fold(
       (f) => emit(AdminConfiguracionError(f.message)),
-      (items) => emit(AdminConfiguracionLoaded(items)),
+      (items) {
+        _items = items;
+        emit(AdminConfiguracionLoaded(items));
+      },
     );
   }
 
@@ -80,15 +77,23 @@ class AdminConfiguracionCubit extends Cubit<AdminConfiguracionState> {
       (f) => emit(AdminConfiguracionError(f.message)),
       (_) {
         ok = true;
-        emit(AdminConfiguracionSaved('Clave "$clave" actualizada.'));
+        _items = [
+          for (final item in _items)
+            if (item.clave == clave)
+              ConfigSistemaEntity(
+                id: item.id,
+                clave: item.clave,
+                valor: valor,
+                tipoDato: item.tipoDato,
+                descripcion: item.descripcion,
+                activo: item.activo,
+              )
+            else
+              item,
+        ];
+        emit(AdminConfiguracionLoaded(_items));
       },
     );
     return ok;
-  }
-
-  void clearSaved() {
-    if (state is AdminConfiguracionSaved) {
-      emit(const AdminConfiguracionInitial());
-    }
   }
 }

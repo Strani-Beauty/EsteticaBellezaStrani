@@ -38,12 +38,7 @@ class _AdminConfiguracionScreenState extends State<AdminConfiguracionScreen> {
       ),
       body: BlocConsumer<AdminConfiguracionCubit, AdminConfiguracionState>(
         listener: (context, state) {
-          if (state is AdminConfiguracionSaved) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-            context.read<AdminConfiguracionCubit>().clearSaved();
-          } else if (state is AdminConfiguracionError) {
+          if (state is AdminConfiguracionError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
@@ -102,9 +97,14 @@ class _AdminConfiguracionScreenState extends State<AdminConfiguracionScreen> {
     }
 
     if (nuevo == null || !mounted) return;
-    await context
+    final ok = await context
         .read<AdminConfiguracionCubit>()
         .update(item.clave, nuevo.trim());
+    if (ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Clave "${item.clave}" actualizada.')),
+      );
+    }
   }
 
   Future<String?> _editarEntero(

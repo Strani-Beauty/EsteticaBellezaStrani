@@ -203,6 +203,30 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
     }
   }
 
+  @override
+  Future<Either<Failure, int>> crearPregunta({
+    required String texto,
+    required String tipoRespuesta,
+    bool obligatoria = false,
+    List<String>? opciones,
+    Map<String, dynamic>? riesgo,
+    bool activo = true,
+  }) async {
+    try {
+      final id = await _datasource.crearPregunta(
+        texto: texto,
+        tipoRespuesta: tipoRespuesta,
+        obligatoria: obligatoria,
+        opciones: opciones,
+        riesgo: riesgo,
+        activo: activo,
+      );
+      return Right(id);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo crear la pregunta: $e'));
+    }
+  }
+
   // ── Evaluación de salud ────────────────────────────────────────────────────
 
   @override

@@ -89,6 +89,16 @@ abstract class IPatientsComplianceRepository {
     bool? activo,
   });
 
+  /// Crea una pregunta nueva en el catálogo (`preguntas`) y devuelve su `id`.
+  Future<Either<Failure, int>> crearPregunta({
+    required String texto,
+    required String tipoRespuesta,
+    bool obligatoria = false,
+    List<String>? opciones,
+    Map<String, dynamic>? riesgo,
+    bool activo = true,
+  });
+
   // ── Evaluación de salud ────────────────────────────────────────────────────
 
   /// Persiste respuestas vía RPC segura (`guardar_respuestas_evaluacion`):

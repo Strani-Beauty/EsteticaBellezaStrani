@@ -160,7 +160,6 @@ class PatientsComplianceSupabaseDataSource {
       'orden': orden,
       'activo': true,
       'created_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
     }, onConflict: 'cuestionario_id,pregunta_id');
   }
 
@@ -172,7 +171,7 @@ class PatientsComplianceSupabaseDataSource {
   }) async {
     await _client
         .from('cuestionario_preguntas')
-        .update({'activo': activo, 'updated_at': DateTime.now().toIso8601String()})
+        .update({'activo': activo})
         .eq('cuestionario_id', cuestionarioId)
         .eq('pregunta_id', preguntaId);
   }
@@ -185,7 +184,7 @@ class PatientsComplianceSupabaseDataSource {
   }) async {
     await _client
         .from('cuestionario_preguntas')
-        .update({'orden': orden, 'updated_at': DateTime.now().toIso8601String()})
+        .update({'orden': orden})
         .eq('cuestionario_id', cuestionarioId)
         .eq('pregunta_id', preguntaId);
   }
@@ -280,6 +279,31 @@ class PatientsComplianceSupabaseDataSource {
     };
     if (payload.isEmpty) return;
     await _client.from('preguntas').update(payload).eq('id', preguntaId);
+  }
+
+  /// Crea una pregunta nueva en el catálogo (`preguntas`) y devuelve su `id`.
+  Future<int> crearPregunta({
+    required String texto,
+    required String tipoRespuesta,
+    bool obligatoria = false,
+    List<String>? opciones,
+    Map<String, dynamic>? riesgo,
+    bool activo = true,
+  }) async {
+    final nueva = await _client.from('preguntas').insert({
+      'pregunta': texto,
+      'tipo_respuesta': tipoRespuesta,
+      'obligatoria': obligatoria,
+      'opciones': opciones,
+      'riesgo': riesgo,
+      'activo': activo,
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }).select('id').maybeSingle();
+    if (nueva == null) {
+      throw Exception('No se pudo crear la pregunta.');
+    }
+    return (nueva['id'] as num?)?.toInt() ?? 0;
   }
 
   // ── Evaluación de salud (autoridad: RPC en BD) ─────────────────────────────

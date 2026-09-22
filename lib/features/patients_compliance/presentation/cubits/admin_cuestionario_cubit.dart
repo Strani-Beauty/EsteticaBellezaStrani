@@ -9,6 +9,7 @@ import '../../domain/usecases/actualizar_orden_pregunta.dart';
 import '../../domain/usecases/activar_version_cuestionario.dart';
 import '../../domain/usecases/asociar_pregunta.dart';
 import '../../domain/usecases/crear_nueva_version_cuestionario.dart';
+import '../../domain/usecases/crear_pregunta.dart';
 import '../../domain/usecases/desactivar_pregunta.dart';
 import '../../domain/usecases/get_cuestionario_preguntas.dart';
 import '../../domain/usecases/get_cuestionarios.dart';
@@ -95,6 +96,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
   final CrearNuevaVersionCuestionario _crearNuevaVersion;
   final ActivarVersionCuestionario _activarVersion;
   final UpdatePregunta _updatePregunta;
+  final CrearPregunta _crearPregunta;
 
   AdminCuestionarioCubit({
     required GetCuestionarios getCuestionarios,
@@ -106,6 +108,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     required CrearNuevaVersionCuestionario crearNuevaVersion,
     required ActivarVersionCuestionario activarVersion,
     required UpdatePregunta updatePregunta,
+    required CrearPregunta crearPregunta,
   })  : _getCuestionarios = getCuestionarios,
         _getCuestionarioPreguntas = getCuestionarioPreguntas,
         _getPreguntasCatalogo = getPreguntasCatalogo,
@@ -115,6 +118,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         _crearNuevaVersion = crearNuevaVersion,
         _activarVersion = activarVersion,
         _updatePregunta = updatePregunta,
+        _crearPregunta = crearPregunta,
         super(const AdminCuestionarioInitial());
 
   Future<void> load() async {
@@ -240,6 +244,34 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         if (seleccionada != null) {
           await loadPreguntas(seleccionada);
         }
+      },
+    );
+  }
+
+  Future<void> crearPregunta({
+    required String texto,
+    required TipoRespuestaPregunta tipo,
+    bool obligatoria = false,
+    List<String>? opciones,
+    Map<String, dynamic>? riesgo,
+    bool activo = true,
+  }) async {
+    final result = await _crearPregunta(CrearPreguntaParams(
+      texto: texto,
+      tipo: tipo,
+      obligatoria: obligatoria,
+      opciones: opciones,
+      riesgo: riesgo,
+      activo: activo,
+    ));
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (_) async {
+        if (state is AdminCuestionarioLoaded) {
+          emit((state as AdminCuestionarioLoaded)
+              .copyWith(feedback: 'Pregunta creada en el catálogo.'));
+        }
+        await _cargarCatalogo();
       },
     );
   }

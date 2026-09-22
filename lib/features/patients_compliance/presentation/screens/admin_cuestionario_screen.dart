@@ -139,6 +139,12 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
               icon: const Icon(Icons.playlist_add_rounded),
               label: const Text('Asociar pregunta existente'),
             ),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+              onPressed: () => _nuevaPregunta(context, cubit),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Nueva pregunta'),
+            ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
               onPressed: (seleccionada == null || seleccionada.activo)
@@ -326,6 +332,23 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
           cubit.asociarPregunta(
             cuestionarioId: version.id,
             preguntaId: preguntaId,
+          );
+        },
+      ),
+    );
+  }
+
+  void _nuevaPregunta(BuildContext context, AdminCuestionarioCubit cubit) {
+    showDialog(
+      context: context,
+      builder: (_) => _NuevaPreguntaDialog(
+        onGuardar: (texto, tipo, obligatoria, opciones, activo) {
+          cubit.crearPregunta(
+            texto: texto,
+            tipo: tipo,
+            obligatoria: obligatoria,
+            opciones: opciones,
+            activo: activo,
           );
         },
       ),
@@ -562,6 +585,231 @@ class _PreguntaCard extends StatelessWidget {
         texto,
         style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color ?? AppTheme.cDeepAccent),
       ),
+    );
+  }
+}
+
+class _NuevaPreguntaDialog extends StatefulWidget {
+  final void Function(
+      String, TipoRespuestaPregunta, bool, List<String>?, bool) onGuardar;
+
+  const _NuevaPreguntaDialog({required this.onGuardar});
+
+  @override
+  State<_NuevaPreguntaDialog> createState() => _NuevaPreguntaDialogState();
+}
+
+class _NuevaPreguntaDialogState extends State<_NuevaPreguntaDialog> {
+  late final TextEditingController _textoCtrl;
+  late final TextEditingController _nuevaOpcionCtrl;
+  late TipoRespuestaPregunta _tipo;
+  late List<String> _opciones;
+  late bool _obligatoria;
+  late bool _activo;
+
+  @override
+  void initState() {
+    super.initState();
+    _textoCtrl = TextEditingController();
+    _nuevaOpcionCtrl = TextEditingController();
+    _tipo = TipoRespuestaPregunta.siNo;
+    _opciones = [];
+    _obligatoria = false;
+    _activo = true;
+  }
+
+  @override
+  void dispose() {
+    _textoCtrl.dispose();
+    _nuevaOpcionCtrl.dispose();
+    super.dispose();
+  }
+
+  void _agregarOpcion() {
+    final nueva = _nuevaOpcionCtrl.text.trim();
+    if (nueva.isEmpty) return;
+    setState(() {
+      if (!_opciones.contains(nueva)) _opciones.add(nueva);
+      _nuevaOpcionCtrl.clear();
+    });
+  }
+
+  void _quitarOpcion(String opcion) {
+    setState(() => _opciones.remove(opcion));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final esOpciones =
+        _tipo == TipoRespuestaPregunta.lista ||
+        _tipo == TipoRespuestaPregunta.multiple;
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+      constraints: const BoxConstraints(maxWidth: 480),
+      title: Row(
+        children: [
+          const Icon(Icons.add_rounded, color: AppTheme.cDeepAccent, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Nueva pregunta · ${_tipo.label}',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<TipoRespuestaPregunta>(
+              initialValue: _tipo,
+              decoration: const InputDecoration(
+                labelText: 'Tipo de respuesta',
+              ),
+              items: [
+                for (final t in TipoRespuestaPregunta.values)
+                  DropdownMenuItem(value: t, child: Text(t.label)),
+              ],
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() {
+                    _tipo = v;
+                    if (!(v == TipoRespuestaPregunta.lista ||
+                        v == TipoRespuestaPregunta.multiple)) {
+                      _opciones = [];
+                    }
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _textoCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Texto de la pregunta',
+                hintText: 'El enunciado que verá el paciente (no es una opción)',
+              ),
+            ),
+            if (esOpciones) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(color: AppTheme.cDeepAccent, width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Opciones de respuesta',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.cDeepAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      esOpciones
+                          ? 'Toca la X para quitar una opción. El paciente podrá seleccionarlas como chips.'
+                          : 'Se guardan como opciones de la pregunta.',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_opciones.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          'Sin opciones todavía.',
+                          style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                        ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final op in _opciones)
+                            InputChip(
+                              label: Text(op, style: const TextStyle(fontSize: 12)),
+                              onDeleted: () => _quitarOpcion(op),
+                              deleteIconColor: AppTheme.cError,
+                              backgroundColor: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                              ),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _nuevaOpcionCtrl,
+                      onSubmitted: (_) => _agregarOpcion(),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        labelText: esOpciones ? 'Nuevo síntoma / opción' : 'Nueva opción',
+                        hintText: esOpciones
+                            ? 'Escribe el síntoma y presiona Enter'
+                            : 'Escribe la opción y presiona Enter',
+                        prefixIcon: const Icon(Icons.add_rounded, size: 18),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                          borderSide: const BorderSide(color: AppTheme.cDeepAccent),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Obligatoria'),
+              value: _obligatoria,
+              onChanged: (v) => setState(() => _obligatoria = v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Activa'),
+              value: _activo,
+              onChanged: (v) => setState(() => _activo = v),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+          onPressed: () {
+            final texto = _textoCtrl.text.trim();
+            if (texto.isEmpty) return;
+            widget.onGuardar(
+              texto,
+              _tipo,
+              _obligatoria,
+              (_tipo == TipoRespuestaPregunta.lista ||
+                      _tipo == TipoRespuestaPregunta.multiple) &&
+                      _opciones.isNotEmpty
+                  ? _opciones
+                  : null,
+              _activo,
+            );
+            Navigator.pop(context);
+          },
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }

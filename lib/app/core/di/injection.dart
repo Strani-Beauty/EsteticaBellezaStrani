@@ -55,6 +55,7 @@ import 'package:esteticaybellezastrani/features/patients_compliance/domain/useca
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/asociar_pregunta.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/consultar_estado_salud.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/crear_nueva_version_cuestionario.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/crear_pregunta.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/desactivar_pregunta.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionario_activo.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionario_preguntas.dart';
@@ -377,6 +378,9 @@ void _registerPatientsCompliance() {
   sl.registerLazySingleton<UpdatePregunta>(
     () => UpdatePregunta(sl<IPatientsComplianceRepository>()),
   );
+  sl.registerLazySingleton<CrearPregunta>(
+    () => CrearPregunta(sl<IPatientsComplianceRepository>()),
+  );
   sl.registerLazySingleton<GuardarRespuestasEvaluacion>(
     () => GuardarRespuestasEvaluacion(sl<IPatientsComplianceRepository>()),
   );
@@ -410,6 +414,7 @@ void _registerPatientsCompliance() {
       crearNuevaVersion: sl<CrearNuevaVersionCuestionario>(),
       activarVersion: sl<ActivarVersionCuestionario>(),
       updatePregunta: sl<UpdatePregunta>(),
+      crearPregunta: sl<CrearPregunta>(),
     ),
   );
 }

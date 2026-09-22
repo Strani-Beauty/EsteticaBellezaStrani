@@ -104,12 +104,17 @@ class PatientsComplianceSupabaseDataSource {
     return CuestionarioModel.fromJson(res);
   }
 
-  Future<List<PreguntaModel>> fetchCuestionarioPreguntas(int cuestionarioId) async {
-    final res = await _client
+  Future<List<PreguntaModel>> fetchCuestionarioPreguntas(
+    int cuestionarioId, {
+    bool soloActivas = true,
+  }) async {
+    var query = _client
         .from('cuestionario_preguntas')
-        .select('orden, preguntas(id, pregunta, tipo_respuesta, obligatoria, ayuda, opciones, riesgo, activo, created_at)')
-        .eq('cuestionario_id', cuestionarioId)
-        .order('orden', ascending: true);
+        .select('orden, activo, preguntas(id, pregunta, tipo_respuesta, obligatoria, ayuda, opciones, riesgo, activo, created_at)')
+        .eq('cuestionario_id', cuestionarioId);
+    if (soloActivas) query = query.eq('activo', true);
+
+    final res = await query.order('orden', ascending: true);
 
     final List<PreguntaModel> preguntas = [];
     for (final row in res) {
@@ -117,10 +122,72 @@ class PatientsComplianceSupabaseDataSource {
       if (p is Map<String, dynamic>) {
         final json = Map<String, dynamic>.from(p);
         json['orden'] = row['orden'];
+        // El `activo` de la fila pertenece a `cuestionario_preguntas` (soft por
+        // versión); se mapea con clave distinta para no pisar `preguntas.activo`.
+        json['activa_en_version'] = row['activo'];
         preguntas.add(PreguntaModel.fromJson(json));
       }
     }
     return preguntas;
+  }
+
+  /// Catálogo completo de preguntas (`preguntas`), para asociar existentes.
+  Future<List<PreguntaModel>> fetchPreguntasCatalogo() async {
+    final res = await _client
+        .from('preguntas')
+        .select('id, pregunta, tipo_respuesta, obligatoria, activo, created_at')
+        .order('pregunta', ascending: true);
+    return [for (final r in res) PreguntaModel.fromJson(r)];
+  }
+
+  /// Asocia una pregunta del catálogo a un cuestionario. Si ya estaba asociada
+  /// (desactivada), la reactiva (upsert por `(cuestionario_id, pregunta_id)`).
+  Future<void> asociarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+  }) async {
+    final maxOrden = await _client
+        .from('cuestionario_preguntas')
+        .select('orden')
+        .eq('cuestionario_id', cuestionarioId)
+        .order('orden', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    final orden = ((maxOrden?['orden'] as num?)?.toInt() ?? 0) + 1;
+    await _client.from('cuestionario_preguntas').upsert({
+      'cuestionario_id': cuestionarioId,
+      'pregunta_id': preguntaId,
+      'orden': orden,
+      'activo': true,
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'cuestionario_id,pregunta_id');
+  }
+
+  /// Activa/desactiva la presencia de una pregunta en una versión (soft).
+  Future<void> desactivarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required bool activo,
+  }) async {
+    await _client
+        .from('cuestionario_preguntas')
+        .update({'activo': activo, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('cuestionario_id', cuestionarioId)
+        .eq('pregunta_id', preguntaId);
+  }
+
+  /// Actualiza el orden de una pregunta dentro de su cuestionario.
+  Future<void> actualizarOrdenPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required int orden,
+  }) async {
+    await _client
+        .from('cuestionario_preguntas')
+        .update({'orden': orden, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('cuestionario_id', cuestionarioId)
+        .eq('pregunta_id', preguntaId);
   }
 
   Future<CuestionarioModel> crearNuevaVersion(int versionActualId) async {

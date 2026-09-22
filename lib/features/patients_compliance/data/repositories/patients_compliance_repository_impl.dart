@@ -79,13 +79,79 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
 
   @override
   Future<Either<Failure, List<PreguntaEntity>>> getCuestionarioPreguntas(
-    int cuestionarioId,
-  ) async {
+    int cuestionarioId, {
+    bool soloActivas = true,
+  }) async {
     try {
-      final models = await _datasource.fetchCuestionarioPreguntas(cuestionarioId);
+      final models = await _datasource.fetchCuestionarioPreguntas(
+        cuestionarioId,
+        soloActivas: soloActivas,
+      );
       return Right([for (final m in models) m.toEntity()]);
     } catch (e) {
       return Left(ServerFailure('No se pudieron consultar las preguntas: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<PreguntaEntity>>> getPreguntasCatalogo() async {
+    try {
+      final models = await _datasource.fetchPreguntasCatalogo();
+      return Right([for (final m in models) m.toEntity()]);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo consultar el catálogo de preguntas: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> asociarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+  }) async {
+    try {
+      await _datasource.asociarPregunta(
+        cuestionarioId: cuestionarioId,
+        preguntaId: preguntaId,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo asociar la pregunta: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> desactivarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required bool activo,
+  }) async {
+    try {
+      await _datasource.desactivarPregunta(
+        cuestionarioId: cuestionarioId,
+        preguntaId: preguntaId,
+        activo: activo,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo actualizar la pregunta en la versión: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> actualizarOrdenPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required int orden,
+  }) async {
+    try {
+      await _datasource.actualizarOrdenPregunta(
+        cuestionarioId: cuestionarioId,
+        preguntaId: preguntaId,
+        orden: orden,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo reordenar la pregunta: $e'));
     }
   }
 

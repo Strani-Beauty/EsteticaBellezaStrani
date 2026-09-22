@@ -3,11 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // Los usecases se inyectan por nombre; esta regla no aplica aquí.
 // ignore_for_file: prefer_initializing_formals
 
+import '../../../../app/core/usecases/use_case.dart';
 import '../../domain/entities/cuestionario_entity.dart';
+import '../../domain/usecases/actualizar_orden_pregunta.dart';
 import '../../domain/usecases/activar_version_cuestionario.dart';
+import '../../domain/usecases/asociar_pregunta.dart';
 import '../../domain/usecases/crear_nueva_version_cuestionario.dart';
+import '../../domain/usecases/desactivar_pregunta.dart';
 import '../../domain/usecases/get_cuestionario_preguntas.dart';
 import '../../domain/usecases/get_cuestionarios.dart';
+import '../../domain/usecases/get_preguntas_catalogo.dart';
 import '../../domain/usecases/update_pregunta.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,12 +37,14 @@ class AdminCuestionarioLoaded extends AdminCuestionarioState {
   final List<CuestionarioEntity> cuestionarios;
   final int? versionSeleccionada;
   final List<PreguntaEntity> preguntas;
+  final List<PreguntaEntity> catalogo;
   final String? feedback;
 
   const AdminCuestionarioLoaded({
     this.cuestionarios = const [],
     this.versionSeleccionada,
     this.preguntas = const [],
+    this.catalogo = const [],
     this.feedback,
   });
 
@@ -45,12 +52,14 @@ class AdminCuestionarioLoaded extends AdminCuestionarioState {
     List<CuestionarioEntity>? cuestionarios,
     int? versionSeleccionada,
     List<PreguntaEntity>? preguntas,
+    List<PreguntaEntity>? catalogo,
     String? feedback,
   }) {
     return AdminCuestionarioLoaded(
       cuestionarios: cuestionarios ?? this.cuestionarios,
       versionSeleccionada: versionSeleccionada ?? this.versionSeleccionada,
       preguntas: preguntas ?? this.preguntas,
+      catalogo: catalogo ?? this.catalogo,
       feedback: feedback ?? this.feedback,
     );
   }
@@ -60,6 +69,7 @@ class AdminCuestionarioLoaded extends AdminCuestionarioState {
         cuestionarios,
         versionSeleccionada,
         preguntas,
+        catalogo,
         feedback,
       ];
 }
@@ -78,6 +88,10 @@ class AdminCuestionarioError extends AdminCuestionarioState {
 class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
   final GetCuestionarios _getCuestionarios;
   final GetCuestionarioPreguntas _getCuestionarioPreguntas;
+  final GetPreguntasCatalogo _getPreguntasCatalogo;
+  final AsociarPregunta _asociarPregunta;
+  final DesactivarPregunta _desactivarPregunta;
+  final ActualizarOrdenPregunta _actualizarOrdenPregunta;
   final CrearNuevaVersionCuestionario _crearNuevaVersion;
   final ActivarVersionCuestionario _activarVersion;
   final UpdatePregunta _updatePregunta;
@@ -85,11 +99,19 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
   AdminCuestionarioCubit({
     required GetCuestionarios getCuestionarios,
     required GetCuestionarioPreguntas getCuestionarioPreguntas,
+    required GetPreguntasCatalogo getPreguntasCatalogo,
+    required AsociarPregunta asociarPregunta,
+    required DesactivarPregunta desactivarPregunta,
+    required ActualizarOrdenPregunta actualizarOrdenPregunta,
     required CrearNuevaVersionCuestionario crearNuevaVersion,
     required ActivarVersionCuestionario activarVersion,
     required UpdatePregunta updatePregunta,
   })  : _getCuestionarios = getCuestionarios,
         _getCuestionarioPreguntas = getCuestionarioPreguntas,
+        _getPreguntasCatalogo = getPreguntasCatalogo,
+        _asociarPregunta = asociarPregunta,
+        _desactivarPregunta = desactivarPregunta,
+        _actualizarOrdenPregunta = actualizarOrdenPregunta,
         _crearNuevaVersion = crearNuevaVersion,
         _activarVersion = activarVersion,
         _updatePregunta = updatePregunta,
@@ -98,16 +120,29 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
   Future<void> load() async {
     emit(const AdminCuestionarioLoading());
     final result = await _getCuestionarios(const GetCuestionariosParams());
-    result.fold(
-      (f) => emit(AdminCuestionarioError(f.message)),
-      (cuestionarios) {
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (cuestionarios) async {
         final activa = _buscarActiva(cuestionarios);
         emit(AdminCuestionarioLoaded(
           cuestionarios: cuestionarios,
           versionSeleccionada: activa?.id,
         ));
+        await _cargarCatalogo();
         if (activa != null) {
-          loadPreguntas(activa.id);
+          await loadPreguntas(activa.id);
+        }
+      },
+    );
+  }
+
+  Future<void> _cargarCatalogo() async {
+    final result = await _getPreguntasCatalogo(const NoParams());
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (catalogo) async {
+        if (state is AdminCuestionarioLoaded) {
+          emit((state as AdminCuestionarioLoaded).copyWith(catalogo: catalogo));
         }
       },
     );
@@ -122,7 +157,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
 
   Future<void> loadPreguntas(int cuestionarioId) async {
     final result = await _getCuestionarioPreguntas(
-      GetCuestionarioPreguntasParams(cuestionarioId),
+      GetCuestionarioPreguntasParams(cuestionarioId, soloActivas: false),
     );
     result.fold(
       (f) => emit(AdminCuestionarioError(f.message)),
@@ -207,5 +242,89 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         }
       },
     );
+  }
+
+  Future<void> asociarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+  }) async {
+    final result = await _asociarPregunta(AsociarPreguntaParams(
+      cuestionarioId: cuestionarioId,
+      preguntaId: preguntaId,
+    ));
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (_) async {
+        if (state is AdminCuestionarioLoaded) {
+          emit((state as AdminCuestionarioLoaded)
+              .copyWith(feedback: 'Pregunta asociada a la versión.'));
+        }
+        await _cargarCatalogo();
+        await loadPreguntas(cuestionarioId);
+      },
+    );
+  }
+
+  Future<void> desactivarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required bool activo,
+  }) async {
+    final result = await _desactivarPregunta(DesactivarPreguntaParams(
+      cuestionarioId: cuestionarioId,
+      preguntaId: preguntaId,
+      activo: activo,
+    ));
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (_) async {
+        if (state is AdminCuestionarioLoaded) {
+          emit((state as AdminCuestionarioLoaded).copyWith(
+            feedback: activo
+                ? 'Pregunta reactivada en la versión.'
+                : 'Pregunta desactivada en la versión.',
+          ));
+        }
+        await loadPreguntas(cuestionarioId);
+      },
+    );
+  }
+
+  Future<void> moverPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required int delta,
+  }) async {
+    if (state is! AdminCuestionarioLoaded) return;
+    final current = state as AdminCuestionarioLoaded;
+    final lista = List.of(current.preguntas);
+    final index = lista.indexWhere((p) => p.id == preguntaId);
+    if (index < 0) return;
+    final target = index + delta;
+    if (target < 0 || target >= lista.length) return;
+
+    final a = lista[index];
+    final b = lista[target];
+    final res1 = await _actualizarOrdenPregunta(ActualizarOrdenPreguntaParams(
+      cuestionarioId: cuestionarioId,
+      preguntaId: a.id,
+      orden: b.orden,
+    ));
+    if (res1.isLeft()) {
+      emit(AdminCuestionarioError(
+          res1.getLeft().toNullable()?.message ?? 'No se pudo reordenar la pregunta.'));
+      return;
+    }
+    final res2 = await _actualizarOrdenPregunta(ActualizarOrdenPreguntaParams(
+      cuestionarioId: cuestionarioId,
+      preguntaId: b.id,
+      orden: a.orden,
+    ));
+    if (res2.isLeft()) {
+      emit(AdminCuestionarioError(
+          res2.getLeft().toNullable()?.message ?? 'No se pudo reordenar la pregunta.'));
+      return;
+    }
+    await loadPreguntas(cuestionarioId);
   }
 }

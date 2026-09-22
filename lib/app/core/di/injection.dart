@@ -51,12 +51,16 @@ import 'package:esteticaybellezastrani/features/patients_compliance/data/datasou
 import 'package:esteticaybellezastrani/features/patients_compliance/data/repositories/patients_compliance_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/repositories/i_patients_compliance_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/activar_version_cuestionario.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/actualizar_orden_pregunta.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/asociar_pregunta.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/consultar_estado_salud.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/crear_nueva_version_cuestionario.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/desactivar_pregunta.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionario_activo.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionario_preguntas.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionarios.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_preguntas_catalogo.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/guardar_respuestas_evaluacion.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/registrar_validacion_telemedicina.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
@@ -352,6 +356,18 @@ void _registerPatientsCompliance() {
   sl.registerLazySingleton<GetCuestionarioPreguntas>(
     () => GetCuestionarioPreguntas(sl<IPatientsComplianceRepository>()),
   );
+  sl.registerLazySingleton<GetPreguntasCatalogo>(
+    () => GetPreguntasCatalogo(sl<IPatientsComplianceRepository>()),
+  );
+  sl.registerLazySingleton<AsociarPregunta>(
+    () => AsociarPregunta(sl<IPatientsComplianceRepository>()),
+  );
+  sl.registerLazySingleton<DesactivarPregunta>(
+    () => DesactivarPregunta(sl<IPatientsComplianceRepository>()),
+  );
+  sl.registerLazySingleton<ActualizarOrdenPregunta>(
+    () => ActualizarOrdenPregunta(sl<IPatientsComplianceRepository>()),
+  );
   sl.registerLazySingleton<CrearNuevaVersionCuestionario>(
     () => CrearNuevaVersionCuestionario(sl<IPatientsComplianceRepository>()),
   );
@@ -387,6 +403,10 @@ void _registerPatientsCompliance() {
     () => AdminCuestionarioCubit(
       getCuestionarios: sl<GetCuestionarios>(),
       getCuestionarioPreguntas: sl<GetCuestionarioPreguntas>(),
+      getPreguntasCatalogo: sl<GetPreguntasCatalogo>(),
+      asociarPregunta: sl<AsociarPregunta>(),
+      desactivarPregunta: sl<DesactivarPregunta>(),
+      actualizarOrdenPregunta: sl<ActualizarOrdenPregunta>(),
       crearNuevaVersion: sl<CrearNuevaVersionCuestionario>(),
       activarVersion: sl<ActivarVersionCuestionario>(),
       updatePregunta: sl<UpdatePregunta>(),

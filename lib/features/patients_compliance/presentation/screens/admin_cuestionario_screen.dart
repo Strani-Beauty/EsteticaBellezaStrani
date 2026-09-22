@@ -132,6 +132,13 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
               icon: const Icon(Icons.add_rounded),
               label: const Text('Crear nueva versión'),
             ),
+            OutlinedButton.icon(
+              onPressed: seleccionada == null
+                  ? null
+                  : () => _asociarPregunta(context, cubit, state, seleccionada),
+              icon: const Icon(Icons.playlist_add_rounded),
+              label: const Text('Asociar pregunta existente'),
+            ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
               onPressed: (seleccionada == null || seleccionada.activo)
@@ -160,10 +167,31 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
                 style: TextStyle(color: AppTheme.cMutedText)),
           )
         else
-          for (final p in state.preguntas)
+          for (var i = 0; i < state.preguntas.length; i++)
             _PreguntaCard(
-              pregunta: p,
-              onEditar: () => _editarPregunta(context, cubit, p),
+              pregunta: state.preguntas[i],
+              onEditar: () => _editarPregunta(context, cubit, state.preguntas[i]),
+              onMoverArriba: i == 0
+                  ? null
+                  : () => cubit.moverPregunta(
+                        cuestionarioId: seleccionada!.id,
+                        preguntaId: state.preguntas[i].id,
+                        delta: -1,
+                      ),
+              onMoverAbajo: i == state.preguntas.length - 1
+                  ? null
+                  : () => cubit.moverPregunta(
+                        cuestionarioId: seleccionada!.id,
+                        preguntaId: state.preguntas[i].id,
+                        delta: 1,
+                      ),
+              onDesactivar: () => _confirmarDesactivarPregunta(
+                  context, cubit, seleccionada!.id, state.preguntas[i]),
+              onReactivar: () => cubit.desactivarPregunta(
+                    cuestionarioId: seleccionada!.id,
+                    preguntaId: state.preguntas[i].id,
+                    activo: true,
+                  ),
             ),
       ],
     );
@@ -280,6 +308,69 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
     );
   }
 
+  void _asociarPregunta(
+    BuildContext context,
+    AdminCuestionarioCubit cubit,
+    AdminCuestionarioLoaded state,
+    CuestionarioEntity version,
+  ) {
+    final asociadas = state.preguntas.map((p) => p.id).toSet();
+    final disponibles =
+        state.catalogo.where((p) => !asociadas.contains(p.id)).toList();
+    showDialog(
+      context: context,
+      builder: (_) => _AsociarPreguntaDialog(
+        version: version,
+        disponibles: disponibles,
+        onAsociar: (preguntaId) {
+          cubit.asociarPregunta(
+            cuestionarioId: version.id,
+            preguntaId: preguntaId,
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmarDesactivarPregunta(
+    BuildContext context,
+    AdminCuestionarioCubit cubit,
+    int cuestionarioId,
+    PreguntaEntity pregunta,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        ),
+        title: const Text('Desactivar pregunta'),
+        content: Text(
+          '"${pregunta.texto}" dejará de mostrarse en esta versión. '
+          'Puedes reactivarla en cualquier momento.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              cubit.desactivarPregunta(
+                cuestionarioId: cuestionarioId,
+                preguntaId: pregunta.id,
+                activo: false,
+              );
+            },
+            child: const Text('Desactivar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   CuestionarioEntity? _buscarActiva(List<CuestionarioEntity> lista) {
     for (final c in lista) {
       if (c.activo) return c;
@@ -357,8 +448,19 @@ class _VersionCard extends StatelessWidget {
 class _PreguntaCard extends StatelessWidget {
   final PreguntaEntity pregunta;
   final VoidCallback onEditar;
+  final VoidCallback? onMoverArriba;
+  final VoidCallback? onMoverAbajo;
+  final VoidCallback onDesactivar;
+  final VoidCallback onReactivar;
 
-  const _PreguntaCard({required this.pregunta, required this.onEditar});
+  const _PreguntaCard({
+    required this.pregunta,
+    required this.onEditar,
+    this.onMoverArriba,
+    this.onMoverAbajo,
+    required this.onDesactivar,
+    required this.onReactivar,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -366,7 +468,11 @@ class _PreguntaCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(
+          color: pregunta.activaEnVersion
+              ? Colors.grey.shade200
+              : Colors.orange.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -379,9 +485,43 @@ class _PreguntaCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     pregunta.texto,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.cDarkText),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: pregunta.activaEnVersion
+                          ? AppTheme.cDarkText
+                          : AppTheme.cMutedText,
+                    ),
                   ),
                 ),
+                if (pregunta.activaEnVersion) ...[
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Subir',
+                    icon: const Icon(Icons.arrow_upward_rounded, size: 18),
+                    onPressed: onMoverArriba,
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Bajar',
+                    icon: const Icon(Icons.arrow_downward_rounded, size: 18),
+                    onPressed: onMoverAbajo,
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Desactivar en esta versión',
+                    icon: const Icon(Icons.visibility_off_outlined,
+                        size: 18, color: AppTheme.cError),
+                    onPressed: onDesactivar,
+                  ),
+                ] else
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Reactivar en esta versión',
+                    icon: const Icon(Icons.visibility_outlined,
+                        size: 18, color: AppTheme.cBrandGreen),
+                    onPressed: onReactivar,
+                  ),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   tooltip: 'Editar pregunta',
@@ -394,6 +534,8 @@ class _PreguntaCard extends StatelessWidget {
               spacing: 6,
               runSpacing: 4,
               children: [
+                if (!pregunta.activaEnVersion)
+                  _chip('Desactivada en esta versión', color: Colors.orange),
                 _chip(pregunta.tipo.label),
                 _chip(pregunta.obligatoria ? 'Obligatoria' : 'Opcional'),
                 if (pregunta.riesgo != null && (pregunta.riesgo!.etiqueta.isNotEmpty))
@@ -611,6 +753,167 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
             Navigator.pop(context);
           },
           child: const Text('Guardar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AsociarPreguntaDialog extends StatefulWidget {
+  final CuestionarioEntity version;
+  final List<PreguntaEntity> disponibles;
+  final void Function(int preguntaId) onAsociar;
+
+  const _AsociarPreguntaDialog({
+    required this.version,
+    required this.disponibles,
+    required this.onAsociar,
+  });
+
+  @override
+  State<_AsociarPreguntaDialog> createState() => _AsociarPreguntaDialogState();
+}
+
+class _AsociarPreguntaDialogState extends State<_AsociarPreguntaDialog> {
+  late final TextEditingController _busquedaCtrl;
+  int? _seleccionada;
+
+  @override
+  void initState() {
+    super.initState();
+    _busquedaCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _busquedaCtrl.dispose();
+    super.dispose();
+  }
+
+  List<PreguntaEntity> get _filtradas {
+    final q = _busquedaCtrl.text.trim().toLowerCase();
+    if (q.isEmpty) return widget.disponibles;
+    return widget.disponibles
+        .where((p) => p.texto.toLowerCase().contains(q))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtradas = _filtradas;
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+      constraints: const BoxConstraints(maxWidth: 520),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      title: Row(
+        children: [
+          const Icon(Icons.playlist_add_rounded, color: AppTheme.cDeepAccent, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Asociar pregunta · v${widget.version.version}',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Selecciona una pregunta del catálogo para agregarla a esta versión.',
+              style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _busquedaCtrl,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                hintText: 'Buscar pregunta…',
+                prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  borderSide: const BorderSide(color: AppTheme.cDeepAccent),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (widget.disponibles.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Todas las preguntas del catálogo ya están asociadas a esta versión.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                ),
+              )
+            else if (filtradas.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Sin resultados para la búsqueda.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
+                ),
+              )
+            else
+              SizedBox(
+                height: 260,
+                child: ListView.builder(
+                  itemCount: filtradas.length,
+                  itemBuilder: (context, i) {
+                    final p = filtradas[i];
+                    final selected = _seleccionada == p.id;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                        side: BorderSide(
+                          color: selected ? AppTheme.cDeepAccent : Colors.grey.shade200,
+                          width: selected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: ListTile(
+                        dense: true,
+                        onTap: () => setState(() => _seleccionada = p.id),
+                        leading: Icon(
+                          selected
+                              ? Icons.radio_button_checked_rounded
+                              : Icons.radio_button_unchecked_rounded,
+                          color: selected ? AppTheme.cDeepAccent : AppTheme.cMutedText,
+                        ),
+                        title: Text(p.texto,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13)),
+                        subtitle: Text(p.tipo.label,
+                            style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
+          onPressed: _seleccionada == null
+              ? null
+              : () {
+                  widget.onAsociar(_seleccionada!);
+                  Navigator.pop(context);
+                },
+          child: const Text('Asociar'),
         ),
       ],
     );

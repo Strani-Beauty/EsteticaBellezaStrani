@@ -7,7 +7,11 @@ import '../repositories/i_patients_compliance_repository.dart';
 
 class GetCuestionarioPreguntasParams {
   final int cuestionarioId;
-  const GetCuestionarioPreguntasParams(this.cuestionarioId);
+  final bool soloActivas;
+  const GetCuestionarioPreguntasParams(
+    this.cuestionarioId, {
+    this.soloActivas = true,
+  });
 }
 
 /// Preguntas de un cuestionario (join `cuestionario_preguntas` -> `preguntas`).
@@ -19,6 +23,9 @@ class GetCuestionarioPreguntas
   @override
   Future<Either<Failure, List<PreguntaEntity>>> call(
       GetCuestionarioPreguntasParams params) {
-    return _repository.getCuestionarioPreguntas(params.cuestionarioId);
+    return _repository.getCuestionarioPreguntas(
+      params.cuestionarioId,
+      soloActivas: params.soloActivas,
+    );
   }
 }

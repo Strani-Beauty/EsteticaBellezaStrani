@@ -145,8 +145,9 @@ class PreguntaEntity extends Equatable {
   final List<String> opciones;
   final RiesgoSentinel? riesgo;
   final bool obligatoria;
-  final bool activo;
+  final bool activo; // del catálogo global `preguntas.activo`
   final int orden; // desde cuestionario_preguntas
+  final bool activaEnVersion; // de `cuestionario_preguntas.activo` (soft por versión)
   final DateTime createdAt;
 
   const PreguntaEntity({
@@ -158,11 +159,13 @@ class PreguntaEntity extends Equatable {
     required this.obligatoria,
     this.activo = true,
     this.orden = 0,
+    this.activaEnVersion = true,
     required this.createdAt,
   });
 
   @override
-  List<Object?> get props => [id, texto, tipo, opciones, riesgo, obligatoria, activo, orden];
+  List<Object?> get props =>
+      [id, texto, tipo, opciones, riesgo, obligatoria, activo, orden, activaEnVersion];
 }
 
 /// Relación M:N cuestionario-pregunta con orden.

@@ -53,7 +53,8 @@ class CuestionarioModel {
       );
 }
 
-/// Modelo de la tabla `preguntas` (con `orden` desde `cuestionario_preguntas`).
+/// Modelo de la tabla `preguntas` (con `orden` y `activa_en_version` desde
+/// `cuestionario_preguntas`).
 class PreguntaModel {
   final int id;
   final String pregunta;
@@ -64,6 +65,7 @@ class PreguntaModel {
   final RiesgoSentinel? riesgo;
   final bool activo;
   final int orden;
+  final bool activaEnVersion;
   final DateTime createdAt;
 
   const PreguntaModel({
@@ -76,6 +78,7 @@ class PreguntaModel {
     this.riesgo,
     this.activo = true,
     this.orden = 0,
+    this.activaEnVersion = true,
     required this.createdAt,
   });
 
@@ -92,6 +95,7 @@ class PreguntaModel {
         riesgo: RiesgoSentinel.fromJson(json['riesgo'] as Map<String, dynamic>?),
         activo: json['activo'] != false,
         orden: (json['orden'] as num?)?.toInt() ?? 0,
+        activaEnVersion: json['activa_en_version'] != false,
         createdAt:
             DateTime.tryParse((json['created_at'] as String?) ?? '') ?? DateTime.now(),
       );
@@ -116,6 +120,7 @@ class PreguntaModel {
         obligatoria: obligatoria,
         activo: activo,
         orden: orden,
+        activaEnVersion: activaEnVersion,
         createdAt: createdAt,
       );
 }

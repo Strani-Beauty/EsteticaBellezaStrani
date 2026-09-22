@@ -38,10 +38,35 @@ abstract class IPatientsComplianceRepository {
   Future<Either<Failure, CuestionarioEntity?>> getCuestionarioActivo();
 
   /// Preguntas de un cuestionario (join `cuestionario_preguntas` -> `preguntas`),
-  /// ordenadas y con sus opciones/riesgo.
+  /// ordenadas y con sus opciones/riesgo. `soloActivas=false` incluye las
+  /// desactivadas en la versión (uso admin).
   Future<Either<Failure, List<PreguntaEntity>>> getCuestionarioPreguntas(
-    int cuestionarioId,
-  );
+    int cuestionarioId, {
+    bool soloActivas = true,
+  });
+
+  /// Catálogo completo de preguntas (para asociar existentes a una versión).
+  Future<Either<Failure, List<PreguntaEntity>>> getPreguntasCatalogo();
+
+  /// Asocia una pregunta del catálogo a un cuestionario (reactiva si ya estaba).
+  Future<Either<Failure, void>> asociarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+  });
+
+  /// Activa/desactiva (soft) la presencia de una pregunta en una versión.
+  Future<Either<Failure, void>> desactivarPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required bool activo,
+  });
+
+  /// Actualiza el orden de una pregunta dentro de su cuestionario.
+  Future<Either<Failure, void>> actualizarOrdenPregunta({
+    required int cuestionarioId,
+    required int preguntaId,
+    required int orden,
+  });
 
   /// Crea una nueva versión (fila) de un cuestionario a partir de la actual
   /// (copiando la relación de preguntas). La nueva nace inactiva.

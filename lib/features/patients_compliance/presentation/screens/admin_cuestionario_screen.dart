@@ -346,12 +346,13 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
     showDialog(
       context: context,
       builder: (_) => _NuevaPreguntaDialog(
-        onGuardar: (texto, tipo, obligatoria, opciones, activo) {
+        onGuardar: (texto, tipo, obligatoria, opciones, riesgo, activo) {
           cubit.crearPregunta(
             texto: texto,
             tipo: tipo,
             obligatoria: obligatoria,
             opciones: opciones,
+            riesgo: riesgo,
             activo: activo,
             cuestionarioId: seleccionada?.id,
           );
@@ -595,8 +596,8 @@ class _PreguntaCard extends StatelessWidget {
 }
 
 class _NuevaPreguntaDialog extends StatefulWidget {
-  final void Function(
-      String, TipoRespuestaPregunta, bool, List<String>?, bool) onGuardar;
+  final void Function(String, TipoRespuestaPregunta, bool, List<String>?,
+      Map<String, dynamic>?, bool) onGuardar;
 
   const _NuevaPreguntaDialog({required this.onGuardar});
 
@@ -607,27 +608,54 @@ class _NuevaPreguntaDialog extends StatefulWidget {
 class _NuevaPreguntaDialogState extends State<_NuevaPreguntaDialog> {
   late final TextEditingController _textoCtrl;
   late final TextEditingController _nuevaOpcionCtrl;
+  late final TextEditingController _riesgoEtiquetaCtrl;
+  late final TextEditingController _riesgoDetonanteCtrl;
   late TipoRespuestaPregunta _tipo;
   late List<String> _opciones;
   late bool _obligatoria;
   late bool _activo;
+  late bool _generaRiesgo;
+  late bool _riesgoCritico;
 
   @override
   void initState() {
     super.initState();
     _textoCtrl = TextEditingController();
     _nuevaOpcionCtrl = TextEditingController();
+    _riesgoEtiquetaCtrl = TextEditingController();
+    _riesgoDetonanteCtrl = TextEditingController();
     _tipo = TipoRespuestaPregunta.siNo;
     _opciones = [];
     _obligatoria = false;
     _activo = true;
+    _generaRiesgo = false;
+    _riesgoCritico = false;
   }
 
   @override
   void dispose() {
     _textoCtrl.dispose();
     _nuevaOpcionCtrl.dispose();
+    _riesgoEtiquetaCtrl.dispose();
+    _riesgoDetonanteCtrl.dispose();
     super.dispose();
+  }
+
+  Map<String, dynamic>? _buildRiesgo() {
+    if (!_generaRiesgo) return null;
+    final etiqueta = _riesgoEtiquetaCtrl.text.trim();
+    if (etiqueta.isEmpty) return null;
+    if (_tipo == TipoRespuestaPregunta.texto) {
+      final patron = _riesgoDetonanteCtrl.text.trim();
+      if (patron.isEmpty) return null;
+      return {'patron': patron, 'etiqueta': etiqueta, 'critico': _riesgoCritico};
+    }
+    if (_tipo == TipoRespuestaPregunta.siNo) {
+      return {'detonante': 'SI', 'etiqueta': etiqueta, 'critico': _riesgoCritico};
+    }
+    final detonante = _riesgoDetonanteCtrl.text.trim();
+    if (detonante.isEmpty) return null;
+    return {'detonante': detonante, 'etiqueta': etiqueta, 'critico': _riesgoCritico};
   }
 
   void _agregarOpcion() {
@@ -776,6 +804,98 @@ class _NuevaPreguntaDialogState extends State<_NuevaPreguntaDialog> {
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              title: const Text('Genera riesgo al responder'),
+              subtitle: const Text(
+                'Si el paciente activa el detonante se registra el riesgo en la evaluación.',
+              ),
+              value: _generaRiesgo,
+              onChanged: (v) => setState(() => _generaRiesgo = v),
+            ),
+            if (_generaRiesgo) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(
+                    color: AppTheme.cError.withValues(alpha: 0.5),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Riesgo de la pregunta',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.cError,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _tipo == TipoRespuestaPregunta.siNo
+                          ? 'Detonante fijo: SI (respuesta afirmativa).'
+                          : _tipo == TipoRespuestaPregunta.texto
+                              ? 'Define el patrón (regex) que dispara el riesgo.'
+                              : 'Define el valor de respuesta que dispara el riesgo.',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_tipo != TipoRespuestaPregunta.siNo)
+                      TextField(
+                        controller: _riesgoDetonanteCtrl,
+                        decoration: InputDecoration(
+                          isDense: true,
+                          filled: true,
+                          fillColor: Colors.white,
+                          labelText: _tipo == TipoRespuestaPregunta.texto
+                              ? 'Patrón (regex)'
+                              : 'Valor que dispara',
+                          hintText: _tipo == TipoRespuestaPregunta.texto
+                              ? 'Ej: coagul|aspirina|warfarina'
+                              : 'Ej: Bótox / Toxina Botulínica',
+                          prefixIcon: const Icon(Icons.warning_amber_rounded, size: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                            borderSide: const BorderSide(color: AppTheme.cError),
+                          ),
+                        ),
+                      ),
+                    if (_tipo != TipoRespuestaPregunta.siNo) const SizedBox(height: 8),
+                    TextField(
+                      controller: _riesgoEtiquetaCtrl,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        labelText: 'Etiqueta del riesgo',
+                        hintText: 'Ej: Corticoides o inmunosupresores',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                          borderSide: const BorderSide(color: AppTheme.cError),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Es crítico'),
+                      subtitle: const Text(
+                        'Crítico → resultado NO APTO en la evaluación.',
+                      ),
+                      value: _riesgoCritico,
+                      onChanged: (v) => setState(() => _riesgoCritico = v),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               title: const Text('Obligatoria'),
               value: _obligatoria,
               onChanged: (v) => setState(() => _obligatoria = v),
@@ -808,6 +928,7 @@ class _NuevaPreguntaDialogState extends State<_NuevaPreguntaDialog> {
                       _opciones.isNotEmpty
                   ? _opciones
                   : null,
+              _buildRiesgo(),
               _activo,
             );
             Navigator.pop(context);
@@ -832,25 +953,56 @@ class _EditarPreguntaDialog extends StatefulWidget {
 class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
   late final TextEditingController _textoCtrl;
   late final TextEditingController _nuevaOpcionCtrl;
+  late final TextEditingController _riesgoEtiquetaCtrl;
+  late final TextEditingController _riesgoDetonanteCtrl;
   late List<String> _opciones;
   late bool _obligatoria;
   late bool _activo;
+  late bool _generaRiesgo;
+  late bool _riesgoCritico;
 
   @override
   void initState() {
     super.initState();
     _textoCtrl = TextEditingController(text: widget.pregunta.texto);
     _nuevaOpcionCtrl = TextEditingController();
+    final riesgo = widget.pregunta.riesgo;
+    _riesgoEtiquetaCtrl =
+        TextEditingController(text: riesgo?.etiqueta ?? '');
+    _riesgoDetonanteCtrl = TextEditingController(
+      text: riesgo?.patron ?? riesgo?.detonante ?? '',
+    );
     _opciones = List.of(widget.pregunta.opciones);
     _obligatoria = widget.pregunta.obligatoria;
     _activo = widget.pregunta.activo;
+    _generaRiesgo = riesgo != null && riesgo.etiqueta.isNotEmpty;
+    _riesgoCritico = riesgo?.critico ?? false;
   }
 
   @override
   void dispose() {
     _textoCtrl.dispose();
     _nuevaOpcionCtrl.dispose();
+    _riesgoEtiquetaCtrl.dispose();
+    _riesgoDetonanteCtrl.dispose();
     super.dispose();
+  }
+
+  Map<String, dynamic>? _buildRiesgo() {
+    if (!_generaRiesgo) return null;
+    final etiqueta = _riesgoEtiquetaCtrl.text.trim();
+    if (etiqueta.isEmpty) return null;
+    if (widget.pregunta.tipo == TipoRespuestaPregunta.texto) {
+      final patron = _riesgoDetonanteCtrl.text.trim();
+      if (patron.isEmpty) return null;
+      return {'patron': patron, 'etiqueta': etiqueta, 'critico': _riesgoCritico};
+    }
+    if (widget.pregunta.tipo == TipoRespuestaPregunta.siNo) {
+      return {'detonante': 'SI', 'etiqueta': etiqueta, 'critico': _riesgoCritico};
+    }
+    final detonante = _riesgoDetonanteCtrl.text.trim();
+    if (detonante.isEmpty) return null;
+    return {'detonante': detonante, 'etiqueta': etiqueta, 'critico': _riesgoCritico};
   }
 
   void _agregarOpcion() {
@@ -975,6 +1127,101 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              title: const Text('Genera riesgo al responder'),
+              subtitle: const Text(
+                'Si el paciente activa el detonante se registra el riesgo en la evaluación.',
+              ),
+              value: _generaRiesgo,
+              onChanged: (v) => setState(() => _generaRiesgo = v),
+            ),
+            if (_generaRiesgo) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(
+                    color: AppTheme.cError.withValues(alpha: 0.5),
+                    width: 1.2,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Riesgo de la pregunta',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.cError,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.pregunta.tipo == TipoRespuestaPregunta.siNo
+                          ? 'Detonante fijo: SI (respuesta afirmativa).'
+                          : widget.pregunta.tipo == TipoRespuestaPregunta.texto
+                              ? 'Define el patrón (regex) que dispara el riesgo.'
+                              : 'Define el valor de respuesta que dispara el riesgo.',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
+                    ),
+                    const SizedBox(height: 8),
+                    if (widget.pregunta.tipo != TipoRespuestaPregunta.siNo)
+                      TextField(
+                        controller: _riesgoDetonanteCtrl,
+                        decoration: InputDecoration(
+                          isDense: true,
+                          filled: true,
+                          fillColor: Colors.white,
+                          labelText: widget.pregunta.tipo ==
+                                  TipoRespuestaPregunta.texto
+                              ? 'Patrón (regex)'
+                              : 'Valor que dispara',
+                          hintText: widget.pregunta.tipo ==
+                                  TipoRespuestaPregunta.texto
+                              ? 'Ej: coagul|aspirina|warfarina'
+                              : 'Ej: Bótox / Toxina Botulínica',
+                          prefixIcon: const Icon(Icons.warning_amber_rounded, size: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                            borderSide: const BorderSide(color: AppTheme.cError),
+                          ),
+                        ),
+                      ),
+                    if (widget.pregunta.tipo != TipoRespuestaPregunta.siNo)
+                      const SizedBox(height: 8),
+                    TextField(
+                      controller: _riesgoEtiquetaCtrl,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        labelText: 'Etiqueta del riesgo',
+                        hintText: 'Ej: Corticoides o inmunosupresores',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                          borderSide: const BorderSide(color: AppTheme.cError),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Es crítico'),
+                      subtitle: const Text(
+                        'Crítico → resultado NO APTO en la evaluación.',
+                      ),
+                      value: _riesgoCritico,
+                      onChanged: (v) => setState(() => _riesgoCritico = v),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               title: const Text('Obligatoria'),
               value: _obligatoria,
               onChanged: (v) => setState(() => _obligatoria = v),
@@ -1000,7 +1247,7 @@ class _EditarPreguntaDialogState extends State<_EditarPreguntaDialog> {
               _textoCtrl.text.trim(),
               _obligatoria,
               _opciones.isEmpty ? null : _opciones,
-              null,
+              _buildRiesgo(),
               _activo,
             );
             Navigator.pop(context);

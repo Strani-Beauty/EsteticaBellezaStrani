@@ -141,7 +141,7 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
             ),
             FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-              onPressed: () => _nuevaPregunta(context, cubit),
+              onPressed: () => _nuevaPregunta(context, cubit, seleccionada),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Nueva pregunta'),
             ),
@@ -338,7 +338,11 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
     );
   }
 
-  void _nuevaPregunta(BuildContext context, AdminCuestionarioCubit cubit) {
+  void _nuevaPregunta(
+    BuildContext context,
+    AdminCuestionarioCubit cubit,
+    CuestionarioEntity? seleccionada,
+  ) {
     showDialog(
       context: context,
       builder: (_) => _NuevaPreguntaDialog(
@@ -349,6 +353,7 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
             obligatoria: obligatoria,
             opciones: opciones,
             activo: activo,
+            cuestionarioId: seleccionada?.id,
           );
         },
       ),

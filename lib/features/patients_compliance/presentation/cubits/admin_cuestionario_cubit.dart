@@ -255,6 +255,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     List<String>? opciones,
     Map<String, dynamic>? riesgo,
     bool activo = true,
+    int? cuestionarioId,
   }) async {
     final result = await _crearPregunta(CrearPreguntaParams(
       texto: texto,
@@ -266,12 +267,32 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     ));
     await result.fold(
       (f) async => emit(AdminCuestionarioError(f.message)),
-      (_) async {
+      (nuevoId) async {
+        if (cuestionarioId != null) {
+          final asociar = await _asociarPregunta(AsociarPreguntaParams(
+            cuestionarioId: cuestionarioId,
+            preguntaId: nuevoId,
+          ));
+          final ok = asociar.fold(
+            (f) {
+              emit(AdminCuestionarioError(f.message));
+              return false;
+            },
+            (_) => true,
+          );
+          if (!ok) return;
+        }
         if (state is AdminCuestionarioLoaded) {
-          emit((state as AdminCuestionarioLoaded)
-              .copyWith(feedback: 'Pregunta creada en el catálogo.'));
+          emit((state as AdminCuestionarioLoaded).copyWith(
+            feedback: cuestionarioId != null
+                ? 'Pregunta creada y asociada a la versión.'
+                : 'Pregunta creada en el catálogo.',
+          ));
         }
         await _cargarCatalogo();
+        if (cuestionarioId != null) {
+          await loadPreguntas(cuestionarioId);
+        }
       },
     );
   }

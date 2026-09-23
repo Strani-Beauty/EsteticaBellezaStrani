@@ -61,13 +61,16 @@ import 'package:esteticaybellezastrani/features/patients_compliance/domain/useca
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionario_preguntas.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_cuestionarios.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_mi_paciente.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_expediente_salud.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/get_preguntas_catalogo.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/guardar_respuestas_evaluacion.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/registrar_auditoria_expediente.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/registrar_validacion_telemedicina.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_mi_paciente.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/update_pregunta.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/usecases/validar_acceso_rn020.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/admin_cuestionario_cubit.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/expediente_salud_cubit.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/patient_health_cubit.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/data/datasources/payments_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/payments_stripe/data/repositories/payments_repository_impl.dart';
@@ -393,6 +396,12 @@ void _registerPatientsCompliance() {
   sl.registerLazySingleton<ValidarAccesoRN020>(
     () => ValidarAccesoRN020(sl<IPatientsComplianceRepository>()),
   );
+  sl.registerLazySingleton<GetExpedienteSalud>(
+    () => GetExpedienteSalud(sl<IPatientsComplianceRepository>()),
+  );
+  sl.registerLazySingleton<RegistrarAuditoriaExpediente>(
+    () => RegistrarAuditoriaExpediente(sl<IPatientsComplianceRepository>()),
+  );
 
   sl.registerLazySingleton<PatientHealthCubit>(
     () => PatientHealthCubit(
@@ -415,6 +424,12 @@ void _registerPatientsCompliance() {
       activarVersion: sl<ActivarVersionCuestionario>(),
       updatePregunta: sl<UpdatePregunta>(),
       crearPregunta: sl<CrearPregunta>(),
+    ),
+  );
+  sl.registerLazySingleton<ExpedienteSaludCubit>(
+    () => ExpedienteSaludCubit(
+      getExpedienteSalud: sl<GetExpedienteSalud>(),
+      registrarAuditoriaExpediente: sl<RegistrarAuditoriaExpediente>(),
     ),
   );
 }

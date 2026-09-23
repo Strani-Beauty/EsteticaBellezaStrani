@@ -12,6 +12,7 @@ import 'package:esteticaybellezastrani/features/admin_users/presentation/screens
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_users_cubit.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/screens/admin_pacientes_screen.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_pacientes_cubit.dart';
+import 'package:esteticaybellezastrani/features/admin_users/domain/entities/paciente_admin_entity.dart';
 import 'package:esteticaybellezastrani/features/auditoria/presentation/cubits/admin_auditoria_cubit.dart';
 import 'package:esteticaybellezastrani/features/auditoria/presentation/screens/admin_auditoria_screen.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
@@ -35,6 +36,9 @@ import 'package:esteticaybellezastrani/app/config/app_env.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/face_map_questionnaire_screen.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/estado_salud_screen.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/admin_cuestionario_screen.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/expediente_salud_cubit.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/admin_expediente_salud_screen.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/admin_expediente_salud_detalle_screen.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/cubits/treatment_photos_cubit.dart';
 import 'package:esteticaybellezastrani/features/treatment_photos/presentation/screens/fotografias_screen.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/presentation/cubits/marketplace_cubit.dart';
@@ -87,6 +91,8 @@ class AppRoutes {
   static const String adminDashboard       = '/admin';
   static const String adminUsuarios        = '/admin/usuarios';
   static const String adminPacientes       = '/admin/pacientes';
+  static const String adminExpedienteSalud = '/admin/expediente-salud';
+  static const String adminExpedienteSaludPaciente = '/admin/expediente-salud/paciente';
   static const String adminAuditoria       = '/admin/auditoria';
   static const String adminCuestionario    = '/admin/cuestionario';
   static const String adminCatalog         = '/admin/catalog';
@@ -302,6 +308,28 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => BlocProvider<AdminPacientesCubit>.value(
         value: sl<AdminPacientesCubit>(),
         child: const AdminPacientesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminExpedienteSalud,
+      name: 'adminExpedienteSalud',
+      builder: (context, state) => BlocProvider<AdminPacientesCubit>.value(
+        value: sl<AdminPacientesCubit>(),
+        child: const AdminExpedienteSaludScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminExpedienteSaludPaciente,
+      name: 'adminExpedienteSaludPaciente',
+      builder: (context, state) =>
+          BlocProvider<ExpedienteSaludCubit>.value(
+        value: sl<ExpedienteSaludCubit>(),
+        child: ExpedienteSaludDetalleScreen(
+          paciente: state.extra is PacienteAdminEntity
+              ? state.extra as PacienteAdminEntity
+              : const PacienteAdminEntity(
+                  id: '', usuarioId: '', activo: false, profileActivo: false),
+        ),
       ),
     ),
     GoRoute(

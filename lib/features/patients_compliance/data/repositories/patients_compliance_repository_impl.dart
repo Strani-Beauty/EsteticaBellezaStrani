@@ -6,6 +6,7 @@ import '../../../../app/core/network/supabase_service.dart';
 import '../../domain/entities/cuestionario_entity.dart';
 import '../../domain/entities/estado_salud_entity.dart';
 import '../../domain/entities/evaluacion_salud_entity.dart';
+import '../../domain/entities/expediente_salud_entity.dart';
 import '../../domain/entities/paciente_entity.dart';
 import '../../domain/repositories/i_patients_compliance_repository.dart';
 import '../datasources/patients_compliance_supabase_datasource.dart';
@@ -310,6 +311,36 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
       return Right(model?.toEntity());
     } catch (e) {
       return Left(ServerFailure('No se pudo consultar la validación médica: $e'));
+    }
+  }
+
+  // ── Expediente de salud (ePHI, solo admin) ────────────────────────────
+
+  @override
+  Future<Either<Failure, ExpedienteSaludEntity?>> getExpedienteSalud({
+    required String usuarioId,
+  }) async {
+    try {
+      final expediente = await _datasource.fetchExpedienteSalud(usuarioId);
+      return Right(expediente);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo consultar el expediente de salud: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> registrarAuditoriaExpediente({
+    required String pacienteId,
+    required String accion,
+  }) async {
+    try {
+      await _datasource.registrarAuditoriaExpediente(
+        pPacienteId: pacienteId,
+        pAccion: accion,
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo registrar la auditoría del expediente: $e'));
     }
   }
 

@@ -4,6 +4,8 @@ import '../models/cuestionario_model.dart';
 import '../models/evaluacion_salud_model.dart';
 import '../models/paciente_model.dart';
 import '../models/validacion_telemedicina_model.dart';
+import '../../domain/entities/expediente_salud_entity.dart';
+import '../../domain/entities/evaluacion_salud_entity.dart';
 
 /// Datasource de Supabase para el módulo de salud/compliance del paciente.
 /// Solo habla con Supabase y devuelve Models (patrón Clean Architecture).
@@ -383,5 +385,82 @@ class PatientsComplianceSupabaseDataSource {
         .maybeSingle();
     if (res == null) return null;
     return ValidacionTelemedicinaModel.fromJson(res);
+  }
+
+  // ── Expediente de salud (ePHI, solo admin) ────────────────────────────
+
+  /// Expediente de salud completo de un paciente por `usuario_id`
+  /// (perfil + clínicos + histórico de evaluaciones con respuestas + validación).
+  Future<ExpedienteSaludEntity?> fetchExpedienteSalud(String usuarioId) async {
+    final pacienteRes = await _client
+        .from('pacientes')
+        .select('*, profiles(full_name, email, phone)')
+        .eq('usuario_id', usuarioId)
+        .maybeSingle();
+    if (pacienteRes == null) return null;
+    final paciente = PacienteModel.fromJson(pacienteRes).toEntity();
+
+    final profilesMap = pacienteRes['profiles'];
+    final profile = profilesMap is Map<String, dynamic> ? profilesMap : null;
+
+    final evaluacionesRes = await _client
+        .from('evaluaciones_salud')
+        .select('*, respuestas_salud(*), cuestionarios(nombre, version)')
+        .eq('paciente_id', paciente.id)
+        .order('created_at', ascending: false);
+
+    final evaluaciones = <EvaluacionExpedienteEntity>[];
+    for (final ev in (evaluacionesRes as List? ?? [])) {
+      final evMap = ev as Map<String, dynamic>;
+      final modelo = EvaluacionSaludModel.fromJson(evMap);
+      final cuestionarioMap = evMap['cuestionarios'];
+      final respuestas = <RespuestaSaludEntity>[
+        for (final r in (evMap['respuestas_salud'] as List? ?? []))
+          if (r is Map<String, dynamic>) RespuestaSaludModel.fromJson(r).toEntity(),
+      ];
+      evaluaciones.add(EvaluacionExpedienteEntity(
+        evaluacion: modelo.toEntity(),
+        cuestionarioNombre: cuestionarioMap is Map<String, dynamic>
+            ? cuestionarioMap['nombre'] as String?
+            : null,
+        version: cuestionarioMap is Map<String, dynamic>
+            ? (cuestionarioMap['version'] as num?)?.toInt()
+            : null,
+        respuestas: respuestas,
+      ));
+    }
+
+    ValidacionTelemedicinaEntity? validacion;
+    final validacionRes = await _client
+        .from('validaciones_telemedicina')
+        .select()
+        .eq('paciente_id', paciente.id)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (validacionRes != null) {
+      validacion = ValidacionTelemedicinaModel.fromJson(validacionRes).toEntity();
+    }
+
+    return ExpedienteSaludEntity(
+      paciente: paciente,
+      fullName: profile?['full_name'] as String?,
+      email: profile?['email'] as String?,
+      phone: profile?['phone'] as String?,
+      evaluaciones: evaluaciones,
+      validacion: validacion,
+    );
+  }
+
+  /// Registra en `auditoria` el acceso/exportación del expediente (solo admin,
+  /// vía RPC `registrar_auditoria_expediente` SECURITY DEFINER).
+  Future<void> registrarAuditoriaExpediente({
+    required String pPacienteId,
+    required String pAccion,
+  }) async {
+    await _client.rpc(
+      'registrar_auditoria_expediente',
+      params: {'p_paciente_id': pPacienteId, 'p_accion': pAccion},
+    );
   }
 }

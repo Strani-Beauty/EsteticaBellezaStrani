@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/entities/paciente_admin_entity.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_pacientes_cubit.dart';
@@ -125,14 +127,27 @@ class _PacienteTile extends StatelessWidget {
                 fontSize: 12, color: AppTheme.cMutedText),
           ),
         ),
-        trailing: canToggle
-            ? Switch(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () => context.push(
+                AppRoutes.adminExpedienteSaludPaciente,
+                extra: paciente,
+              ),
+              tooltip: 'Expediente de salud',
+              icon: const Icon(Icons.folder_shared_rounded,
+                  color: AppTheme.cDeepAccent, size: 20),
+            ),
+            if (canToggle)
+              Switch(
                 value: paciente.profileActivo,
                 onChanged: (value) => context
                     .read<AdminPacientesCubit>()
                     .setActivo(paciente.usuarioId, value),
-              )
-            : null,
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../../../../app/core/error/failures.dart';
 import '../entities/cuestionario_entity.dart';
 import '../entities/estado_salud_entity.dart';
 import '../entities/evaluacion_salud_entity.dart';
+import '../entities/expediente_salud_entity.dart';
 import '../entities/paciente_entity.dart';
 
 /// Contrato del módulo de salud/compliance del paciente.
@@ -131,6 +132,21 @@ abstract class IPatientsComplianceRepository {
 
   /// Validación médica actual del paciente.
   Future<Either<Failure, ValidacionTelemedicinaEntity?>> getMiValidacion();
+
+  // ── Expediente de salud (ePHI, solo admin) ────────────────────────────
+
+  /// Expediente de salud completo de un paciente (perfil + clínicos +
+  /// histórico de evaluaciones con respuestas + validación médica).
+  Future<Either<Failure, ExpedienteSaludEntity?>> getExpedienteSalud({
+    required String usuarioId,
+  });
+
+  /// Registra en `auditoria` el acceso o la exportación del expediente
+  /// (acciones `EXPEDIENTE_SALUD_VISTO` / `EXPEDIENTE_SALUD_PDF`).
+  Future<Either<Failure, void>> registrarAuditoriaExpediente({
+    required String pacienteId,
+    required String accion,
+  });
 
   // ── Estado del flujo y acceso ──────────────────────────────────────────────
 

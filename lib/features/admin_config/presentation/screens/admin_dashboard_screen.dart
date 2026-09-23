@@ -175,6 +175,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             subtitle: 'Consultar pacientes y activar/desactivar cuentas',
             onTap: () => context.go(AppRoutes.adminPacientes),
           ),
+        if (_tiene('admin.pacientes'))
+          _NavCard(
+            icon: Icons.description_outlined,
+            color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
+            title: 'Expedientes de Salud',
+            subtitle: 'ePHI: evaluaciones por paciente y exportación a PDF',
+            onTap: () => context.go(AppRoutes.adminExpedienteSalud),
+          ),
         if (_tiene('admin.cuestionario'))
           _NavCard(
             icon: Icons.assignment_rounded,

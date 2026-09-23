@@ -260,6 +260,31 @@ class PatientsComplianceSupabaseDataSource {
         .eq('id', cuestionarioId);
   }
 
+  /// Elimina un cuestionario y sus relaciones (admin). Bloqueado si el
+  /// cuestionario tiene evaluaciones de salud (retención ePHI/HIPAA).
+  Future<void> eliminarCuestionario(int id) async {
+    final tieneEvaluaciones = await _client
+        .from('evaluaciones_salud')
+        .select('id')
+        .eq('cuestionario_id', id)
+        .limit(1)
+        .maybeSingle();
+    if (tieneEvaluaciones != null) {
+      throw Exception(
+        'El cuestionario tiene evaluaciones de salud (ePHI) registradas; no se puede borrar.',
+      );
+    }
+    await _client
+        .from('cuestionario_preguntas')
+        .delete()
+        .eq('cuestionario_id', id);
+    await _client
+        .from('servicio_cuestionarios')
+        .delete()
+        .eq('cuestionario_id', id);
+    await _client.from('cuestionarios').delete().eq('id', id);
+  }
+
   /// Edita una pregunta del catálogo (admin). Solo campos provistos.
   Future<void> updatePregunta({
     required int preguntaId,

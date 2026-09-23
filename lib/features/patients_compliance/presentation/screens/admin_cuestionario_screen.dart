@@ -119,6 +119,7 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
             cuestionario: c,
             seleccionado: c.id == state.versionSeleccionada,
             onSeleccionar: () => cubit.loadPreguntas(c.id),
+            onEliminar: () => _confirmarEliminarCuestionario(context, cubit, c),
           ),
         const SizedBox(height: 16),
         Wrap(
@@ -295,6 +296,56 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
     );
   }
 
+  void _confirmarEliminarCuestionario(
+      BuildContext context, AdminCuestionarioCubit cubit, CuestionarioEntity objetivo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: const Text('Eliminar cuestionario'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Se eliminará "${objetivo.nombre}" v${objetivo.version} y sus '
+              'preguntas asociadas. Esta acción no se puede deshacer.',
+            ),
+            if (objetivo.activo) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.cGoldAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                ),
+                child: const Text(
+                  'Es la versión ACTIVA: el onboarding quedará sin cuestionario '
+                  'activo hasta que actives otra versión.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.cDarkText),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cError),
+            onPressed: () {
+              Navigator.pop(ctx);
+              cubit.eliminarCuestionario(objetivo.id);
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _editarPregunta(BuildContext context, AdminCuestionarioCubit cubit, PreguntaEntity pregunta) {
     showDialog(
       context: context,
@@ -420,11 +471,13 @@ class _VersionCard extends StatelessWidget {
   final CuestionarioEntity cuestionario;
   final bool seleccionado;
   final VoidCallback onSeleccionar;
+  final VoidCallback onEliminar;
 
   const _VersionCard({
     required this.cuestionario,
     required this.seleccionado,
     required this.onSeleccionar,
+    required this.onEliminar,
   });
 
   @override
@@ -451,20 +504,33 @@ class _VersionCard extends StatelessWidget {
           'Creado: ${_fmt(cuestionario.createdAt)}',
           style: const TextStyle(fontSize: 11, color: AppTheme.cMutedText),
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: (cuestionario.activo ? AppTheme.cBrandGreen : Colors.grey).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          ),
-          child: Text(
-            cuestionario.activo ? 'ACTIVA' : 'INACTIVA',
-            style: TextStyle(
-              color: cuestionario.activo ? AppTheme.cBrandGreen : AppTheme.cMutedText,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: (cuestionario.activo ? AppTheme.cBrandGreen : Colors.grey).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              ),
+              child: Text(
+                cuestionario.activo ? 'ACTIVA' : 'INACTIVA',
+                style: TextStyle(
+                  color: cuestionario.activo ? AppTheme.cBrandGreen : AppTheme.cMutedText,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
+            IconButton(
+              onPressed: onEliminar,
+              tooltip: 'Eliminar cuestionario',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              icon: const Icon(Icons.delete_outline_rounded,
+                  size: 18, color: AppTheme.cError),
+            ),
+          ],
         ),
       ),
     );

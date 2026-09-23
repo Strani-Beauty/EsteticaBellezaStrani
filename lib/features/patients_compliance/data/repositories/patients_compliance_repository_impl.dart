@@ -179,6 +179,16 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
   }
 
   @override
+  Future<Either<Failure, void>> eliminarCuestionario(int cuestionarioId) async {
+    try {
+      await _datasource.eliminarCuestionario(cuestionarioId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo eliminar el cuestionario: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updatePregunta({
     required int preguntaId,
     String? texto,

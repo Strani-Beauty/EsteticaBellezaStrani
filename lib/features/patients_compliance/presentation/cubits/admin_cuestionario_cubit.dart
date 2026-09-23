@@ -11,6 +11,7 @@ import '../../domain/usecases/asociar_pregunta.dart';
 import '../../domain/usecases/crear_nueva_version_cuestionario.dart';
 import '../../domain/usecases/crear_pregunta.dart';
 import '../../domain/usecases/desactivar_pregunta.dart';
+import '../../domain/usecases/eliminar_cuestionario.dart';
 import '../../domain/usecases/get_cuestionario_preguntas.dart';
 import '../../domain/usecases/get_cuestionarios.dart';
 import '../../domain/usecases/get_preguntas_catalogo.dart';
@@ -97,6 +98,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
   final ActivarVersionCuestionario _activarVersion;
   final UpdatePregunta _updatePregunta;
   final CrearPregunta _crearPregunta;
+  final EliminarCuestionario _eliminarCuestionario;
 
   AdminCuestionarioCubit({
     required GetCuestionarios getCuestionarios,
@@ -109,6 +111,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     required ActivarVersionCuestionario activarVersion,
     required UpdatePregunta updatePregunta,
     required CrearPregunta crearPregunta,
+    required EliminarCuestionario eliminarCuestionario,
   })  : _getCuestionarios = getCuestionarios,
         _getCuestionarioPreguntas = getCuestionarioPreguntas,
         _getPreguntasCatalogo = getPreguntasCatalogo,
@@ -119,6 +122,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         _activarVersion = activarVersion,
         _updatePregunta = updatePregunta,
         _crearPregunta = crearPregunta,
+        _eliminarCuestionario = eliminarCuestionario,
         super(const AdminCuestionarioInitial());
 
   Future<void> load() async {
@@ -207,6 +211,22 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         if (state is AdminCuestionarioLoaded) {
           final current = state as AdminCuestionarioLoaded;
           emit(current.copyWith(feedback: 'Versión activada correctamente.'));
+        }
+        await load();
+      },
+    );
+  }
+
+  Future<void> eliminarCuestionario(int cuestionarioId) async {
+    final result = await _eliminarCuestionario(
+      EliminarCuestionarioParams(cuestionarioId),
+    );
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (_) async {
+        if (state is AdminCuestionarioLoaded) {
+          emit((state as AdminCuestionarioLoaded)
+              .copyWith(feedback: 'Cuestionario eliminado.'));
         }
         await load();
       },

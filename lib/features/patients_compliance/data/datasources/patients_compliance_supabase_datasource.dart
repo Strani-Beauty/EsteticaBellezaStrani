@@ -405,7 +405,7 @@ class PatientsComplianceSupabaseDataSource {
 
     final evaluacionesRes = await _client
         .from('evaluaciones_salud')
-        .select('*, respuestas_salud(*), cuestionarios(nombre, version)')
+        .select('*, respuestas_salud(*, preguntas(pregunta)), cuestionarios(nombre, version)')
         .eq('paciente_id', paciente.id)
         .order('created_at', ascending: false);
 

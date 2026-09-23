@@ -24,21 +24,26 @@ class RespuestaSaludModel {
     required this.createdAt,
   });
 
-  factory RespuestaSaludModel.fromJson(Map<String, dynamic> json) =>
-      RespuestaSaludModel(
-        id: (json['id'] as String?) ?? '',
-        evaluacionId: (json['evaluacion_id'] as String?) ?? '',
-        preguntaId: (json['pregunta_id'] as num?)?.toInt() ?? 0,
-        preguntaTexto: json['pregunta_texto'] as String?,
-        respuestaTexto: json['respuesta_texto'] as String?,
-        respuestaBoolean: json['respuesta_boolean'] as bool?,
-        respuestaNumero: json['respuesta_numero'] as num?,
-        respuestaFecha: json['respuesta_fecha'] != null
-            ? DateTime.tryParse(json['respuesta_fecha'].toString())
-            : null,
-        createdAt:
-            DateTime.tryParse((json['created_at'] as String?) ?? '') ?? DateTime.now(),
-      );
+  factory RespuestaSaludModel.fromJson(Map<String, dynamic> json) {
+    final preguntaTexto = json['pregunta_texto'] as String?;
+    final preguntaEmbebida = (json['preguntas'] as Map<String, dynamic>?)?['pregunta'] as String?;
+    return RespuestaSaludModel(
+      id: (json['id'] as String?) ?? '',
+      evaluacionId: (json['evaluacion_id'] as String?) ?? '',
+      preguntaId: (json['pregunta_id'] as num?)?.toInt() ?? 0,
+      preguntaTexto: (preguntaTexto != null && preguntaTexto.trim().isNotEmpty)
+          ? preguntaTexto
+          : preguntaEmbebida,
+      respuestaTexto: json['respuesta_texto'] as String?,
+      respuestaBoolean: json['respuesta_boolean'] as bool?,
+      respuestaNumero: json['respuesta_numero'] as num?,
+      respuestaFecha: json['respuesta_fecha'] != null
+          ? DateTime.tryParse(json['respuesta_fecha'].toString())
+          : null,
+      createdAt:
+          DateTime.tryParse((json['created_at'] as String?) ?? '') ?? DateTime.now(),
+    );
+  }
 
   RespuestaSaludEntity toEntity() => RespuestaSaludEntity(
         id: id,

@@ -90,6 +90,7 @@ pacientes, profiles), flujos paciente, `preguntas`. El PDF no se persiste en sto
 
 - [x] `flutter analyze` limpio; `flutter test` (370, ALL PASSED).
 - [x] Pooler: migración aplicada + RPC `registrar_auditoria_expediente` verificada.
+- [x] Backfill `pregunta_texto` (0 vacíos de 148) + `updated_at` en `respuestas_salud` (migración 20260923000200).
 - [ ] Manual: tile → buscador → detalle → imprimir/descargar PDF con datos reales; auditoría registra eventos.
 
 ## Notas

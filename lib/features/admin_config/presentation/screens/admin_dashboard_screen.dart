@@ -6,6 +6,7 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/widgets/avatar_profile_button.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/advertencia_expediente_dialog.dart';
 import '../cubits/admin_dashboard_cubit.dart';
 
 /// Panel de administración — dashboard (KPIs + accesos por sección).
@@ -181,7 +182,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             color: AppTheme.cPastelBlue.withValues(alpha: 0.4),
             title: 'Expedientes de Salud',
             subtitle: 'ePHI: evaluaciones por paciente y exportación a PDF',
-            onTap: () => context.go(AppRoutes.adminExpedienteSalud),
+            onTap: () async {
+              if (await confirmarAccesoExpediente(context)) {
+                if (mounted) {
+                  context.go(AppRoutes.adminExpedienteSalud);
+                }
+              }
+            },
           ),
         if (_tiene('admin.cuestionario'))
           _NavCard(

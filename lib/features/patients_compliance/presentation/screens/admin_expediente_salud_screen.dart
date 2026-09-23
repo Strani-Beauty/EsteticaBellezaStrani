@@ -6,6 +6,7 @@ import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/entities/paciente_admin_entity.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_pacientes_cubit.dart';
+import '../widgets/advertencia_expediente_dialog.dart';
 
 /// Panel admin: expediente de salud (ePHI/HIPAA). Lista los pacientes con un
 /// buscador; al tocar uno se abre el detalle con las evaluaciones y el PDF.
@@ -132,10 +133,16 @@ class _AdminExpedienteSaludScreenState extends State<AdminExpedienteSaludScreen>
                           side: const BorderSide(color: Colors.black12),
                         ),
                         child: ListTile(
-                          onTap: () => context.push(
-                            AppRoutes.adminExpedienteSaludPaciente,
-                            extra: p,
-                          ),
+                          onTap: () async {
+                            if (await confirmarAccesoExpediente(context)) {
+                              if (context.mounted) {
+                                context.push(
+                                  AppRoutes.adminExpedienteSaludPaciente,
+                                  extra: p,
+                                );
+                              }
+                            }
+                          },
                           leading: CircleAvatar(
                             backgroundColor: AppTheme.cPastelBlue,
                             child: const Icon(Icons.folder_shared_rounded,

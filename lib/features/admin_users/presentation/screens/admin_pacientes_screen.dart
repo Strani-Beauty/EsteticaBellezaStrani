@@ -6,6 +6,7 @@ import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/admin_users/domain/entities/paciente_admin_entity.dart';
 import 'package:esteticaybellezastrani/features/admin_users/presentation/cubits/admin_pacientes_cubit.dart';
 import 'package:esteticaybellezastrani/features/auth_users/presentation/cubits/auth_cubit.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/widgets/advertencia_expediente_dialog.dart';
 
 /// Panel admin: consulta y gestión (activar/desactivar) de pacientes.
 class AdminPacientesScreen extends StatefulWidget {
@@ -131,10 +132,16 @@ class _PacienteTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              onPressed: () => context.push(
-                AppRoutes.adminExpedienteSaludPaciente,
-                extra: paciente,
-              ),
+              onPressed: () async {
+                if (await confirmarAccesoExpediente(context)) {
+                  if (context.mounted) {
+                    context.push(
+                      AppRoutes.adminExpedienteSaludPaciente,
+                      extra: paciente,
+                    );
+                  }
+                }
+              },
               tooltip: 'Expediente de salud',
               icon: const Icon(Icons.folder_shared_rounded,
                   color: AppTheme.cDeepAccent, size: 20),

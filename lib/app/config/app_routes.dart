@@ -74,6 +74,13 @@ import 'package:esteticaybellezastrani/features/payments_stripe/presentation/cub
 import 'package:esteticaybellezastrani/features/payments_stripe/presentation/screens/admin_conciliacion_screen.dart';
 import 'package:esteticaybellezastrani/features/reports_dashboards/presentation/cubits/reports_dashboard_cubit.dart';
 import 'package:esteticaybellezastrani/features/reports_dashboards/presentation/screens/sales_dashboard_screen.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/entities/entrevista_medica_entity.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/cubits/entrevistas_cubit.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/cubits/mi_entrevista_cubit.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/screens/admin_entrevistas_screen.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/screens/agendar_entrevista_screen.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/screens/admin_entrevista_detalle_screen.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/screens/mi_entrevista_screen.dart';
 
 /// Rutas nombradas de la aplicación
 class AppRoutes {
@@ -106,6 +113,9 @@ class AppRoutes {
   static const String adminComisiones      = '/admin/datos-maestros/comisiones';
   static const String adminEspecialidades  = '/admin/datos-maestros/especialidades';
   static const String adminMedicosRegentes = '/admin/datos-maestros/medicos-regentes';
+  static const String adminEntrevistas       = '/admin/entrevistas';
+  static const String adminAgendarEntrevista = '/admin/entrevistas/agendar';
+  static const String adminEntrevistaDetalle = '/admin/entrevistas/detalle';
   static const String specialistHome       = '/specialist';
   static const String specialistProfile    = '/specialist/profile';
   static const String specialistDocuments  = '/specialist/documents';
@@ -116,6 +126,7 @@ class AppRoutes {
   static const String changePassword       = '/change-password';
   static const String faceMapQuestionnaire = '/face-map-questionnaire';
   static const String estadoSalud = '/estado-salud';
+  static const String miEntrevista = '/mi-entrevista';
   static const String fotografiasTratamiento = '/tratamiento/:id/fotos';
   static const String faceMapEspecialista = '/tratamiento/:id/face-map';
   static const String revisionFinal = '/tratamiento/:tratamientoId/revision/:citaId';
@@ -433,6 +444,45 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: AppRoutes.adminEntrevistas,
+      name: 'adminEntrevistas',
+      builder: (context, state) => BlocProvider<EntrevistasCubit>.value(
+        value: sl<EntrevistasCubit>(),
+        child: const AdminEntrevistasScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminAgendarEntrevista,
+      name: 'adminAgendarEntrevista',
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider<EntrevistasCubit>.value(value: sl<EntrevistasCubit>()),
+          BlocProvider<AdminPacientesCubit>.value(
+              value: sl<AdminPacientesCubit>()),
+        ],
+        child: const AgendarEntrevistaScreen(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.adminEntrevistaDetalle,
+      name: 'adminEntrevistaDetalle',
+      builder: (context, state) => BlocProvider<EntrevistasCubit>.value(
+        value: sl<EntrevistasCubit>(),
+        child: AdminEntrevistaDetalleScreen(
+          entrevista: state.extra is EntrevistaMedicaEntity
+              ? state.extra as EntrevistaMedicaEntity
+              : EntrevistaMedicaEntity(
+                  id: '',
+                  pacienteId: '',
+                  fechaProgramada: DateTime.now(),
+                  estado: EstadoEntrevista.programada,
+                  salaId: '',
+                  createdAt: DateTime.now(),
+                ),
+        ),
+      ),
+    ),
+    GoRoute(
       path: AppRoutes.faceMapQuestionnaire,
       name: 'faceMapQuestionnaire',
       builder: (context, state) {
@@ -490,6 +540,14 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.estadoSalud,
       name: 'estadoSalud',
       builder: (context, state) => const EstadoSaludScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.miEntrevista,
+      name: 'miEntrevista',
+      builder: (context, state) => BlocProvider<MiEntrevistaCubit>.value(
+        value: sl<MiEntrevistaCubit>(),
+        child: const MiEntrevistaScreen(),
+      ),
     ),
     GoRoute(
       path: AppRoutes.specialistPatientMap,

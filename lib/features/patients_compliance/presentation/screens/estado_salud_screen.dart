@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/estado_salud_entity.dart';
@@ -153,6 +155,16 @@ class _EstadoSaludViewState extends State<_EstadoSaludView> {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push(AppRoutes.miEntrevista),
+              icon: const Icon(Icons.video_call_rounded, size: 18),
+              label: const Text('Ver mi entrevista médica (F2F)'),
             ),
           ),
         ],

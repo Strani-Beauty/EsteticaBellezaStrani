@@ -799,7 +799,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Evaluación aplicada · dictamen médico pendiente (entrevista presencial).',
+              'Evaluación aplicada · dictamen médico pendiente (entrevista F2F por videollamada).',
               style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, fontWeight: FontWeight.w500),
             ),
           ),

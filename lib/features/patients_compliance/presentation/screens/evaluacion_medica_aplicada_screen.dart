@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:esteticaybellezastrani/app/config/app_routes.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/evaluacion_salud_entity.dart';
 
@@ -99,7 +101,7 @@ class _EvaluacionMedicaAplicadaScreenState
                         ),
                       ),
                       Text(
-                        'Tu cuestionario fue registrado. El dictamen médico se realiza en entrevista presencial.',
+                        'Tu cuestionario fue registrado. El dictamen médico se realiza en entrevista F2F por videollamada.',
                         style: TextStyle(fontSize: 12, color: AppTheme.cMutedText),
                       ),
                     ],
@@ -190,7 +192,7 @@ class _EvaluacionMedicaAplicadaScreenState
                   SizedBox(height: 6),
                   Text(
                     '1. Un médico revisará tu cuestionario.\n'
-                    '2. Te contactaremos para la entrevista presencial (F2F).\n'
+                    '2. Te agendaremos una entrevista F2F por videollamada.\n'
                     '3. El dictamen (apto / no apto) lo emite el médico desde administración.',
                     style: TextStyle(fontSize: 12, height: 1.5, color: AppTheme.cDarkText),
                   ),
@@ -251,6 +253,15 @@ class _EvaluacionMedicaAplicadaScreenState
                 onPressed: _consentimiento ? _continuar : null,
                 icon: const Icon(Icons.storefront_rounded),
                 label: const Text('Continuar al catálogo'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push(AppRoutes.miEntrevista),
+                icon: const Icon(Icons.video_call_rounded, size: 18),
+                label: const Text('Ver mi entrevista médica'),
               ),
             ),
           ],

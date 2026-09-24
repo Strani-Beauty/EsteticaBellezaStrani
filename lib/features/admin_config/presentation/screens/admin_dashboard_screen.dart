@@ -190,6 +190,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               }
             },
           ),
+        if (_tiene('admin.entrevistas'))
+          _NavCard(
+            icon: Icons.video_call_rounded,
+            color: AppTheme.cPastelPink,
+            title: 'Entrevistas Médicas (F2F)',
+            subtitle: 'Agendar videollamada, dictamen del examen médico total',
+            onTap: () => context.go(AppRoutes.adminEntrevistas),
+          ),
         if (_tiene('admin.cuestionario'))
           _NavCard(
             icon: Icons.assignment_rounded,

@@ -33,6 +33,20 @@ import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases
 import 'package:esteticaybellezastrani/features/catalog_services/domain/usecases/validar_requisitos_servicio.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/admin_catalog_cubit.dart';
 import 'package:esteticaybellezastrani/features/catalog_services/presentation/cubits/catalog_cubit.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/data/datasources/medical_interviews_supabase_datasource.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/data/repositories/medical_interviews_repository_impl.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/repositories/i_medical_interviews_repository.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/agendar_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/emitir_dictamen_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/firmar_url_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/get_entrevistas.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/get_mi_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/guardar_grabacion_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/guardar_notas_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/iniciar_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/domain/usecases/registrar_consentimiento_entrevista.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/cubits/entrevistas_cubit.dart';
+import 'package:esteticaybellezastrani/features/medical_interviews/presentation/cubits/mi_entrevista_cubit.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/data/datasources/marketplace_supabase_datasource.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/data/repositories/marketplace_repository_impl.dart';
 import 'package:esteticaybellezastrani/features/marketplace_citas/domain/repositories/i_marketplace_repository.dart';
@@ -215,6 +229,9 @@ void setupDependencies() {
 
   // ── Features: Catalog Services ────────────────────────────
   _registerCatalogServices();
+
+  // ── Features: Medical Interviews (F2F) ────────────────────
+  _registerMedicalInterviews();
 
   // ── Features: Marketplace Citas ───────────────────────────
   _registerMarketplaceCitas();
@@ -435,6 +452,65 @@ void _registerPatientsCompliance() {
     () => ExpedienteSaludCubit(
       getExpedienteSalud: sl<GetExpedienteSalud>(),
       registrarAuditoriaExpediente: sl<RegistrarAuditoriaExpediente>(),
+    ),
+  );
+}
+
+void _registerMedicalInterviews() {
+  sl.registerLazySingleton<MedicalInterviewsSupabaseDataSource>(
+    () => MedicalInterviewsSupabaseDataSource(sl<SupabaseClient>()),
+  );
+  sl.registerLazySingleton<IMedicalInterviewsRepository>(
+    () => MedicalInterviewsRepositoryImpl(
+      sl<MedicalInterviewsSupabaseDataSource>(),
+    ),
+  );
+
+  sl.registerLazySingleton<GetEntrevistas>(
+    () => GetEntrevistas(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<GetMiEntrevista>(
+    () => GetMiEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<AgendarEntrevista>(
+    () => AgendarEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<IniciarEntrevista>(
+    () => IniciarEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<EmitirDictamenEntrevista>(
+    () => EmitirDictamenEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<RegistrarConsentimientoEntrevista>(
+    () => RegistrarConsentimientoEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<GuardarGrabacionEntrevista>(
+    () => GuardarGrabacionEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<GuardarNotasEntrevista>(
+    () => GuardarNotasEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+  sl.registerLazySingleton<FirmarUrlEntrevista>(
+    () => FirmarUrlEntrevista(sl<IMedicalInterviewsRepository>()),
+  );
+
+  // ── Cubits ────────────────────────────────────────────────
+  sl.registerLazySingleton<EntrevistasCubit>(
+    () => EntrevistasCubit(
+      getEntrevistas: sl<GetEntrevistas>(),
+      agendarEntrevista: sl<AgendarEntrevista>(),
+      iniciarEntrevista: sl<IniciarEntrevista>(),
+      emitirDictamenEntrevista: sl<EmitirDictamenEntrevista>(),
+      guardarNotasEntrevista: sl<GuardarNotasEntrevista>(),
+      guardarGrabacionEntrevista: sl<GuardarGrabacionEntrevista>(),
+      firmarUrlEntrevista: sl<FirmarUrlEntrevista>(),
+    ),
+  );
+  sl.registerLazySingleton<MiEntrevistaCubit>(
+    () => MiEntrevistaCubit(
+      getMiEntrevista: sl<GetMiEntrevista>(),
+      registrarConsentimientoEntrevista: sl<RegistrarConsentimientoEntrevista>(),
+      firmarUrlEntrevista: sl<FirmarUrlEntrevista>(),
     ),
   );
 }

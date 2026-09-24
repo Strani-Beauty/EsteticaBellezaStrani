@@ -553,8 +553,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           serviceName: 'Estética y Belleza General',
           stripePaymentRef: stripeRef,
           onCompleted: () async {
-            // El cuestionario ya ejecutó la Evaluación Médica Interna.
-            // Refrescamos el perfil y volvemos a llevar al paciente al catálogo.
+            // Fase 1 (solo UI): el cuestionario solo aplica la evaluación.
+            // El dictamen lo emite un médico en entrevista F2F desde
+            // administración. Refrescamos el perfil y vamos al catálogo.
             Navigator.pop(ctx);
             await context.read<AuthCubit>().refreshProfile();
             if (!mounted) return;

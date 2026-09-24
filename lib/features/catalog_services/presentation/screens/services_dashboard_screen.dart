@@ -799,7 +799,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Evaluación Médica requerida para la cancelación y reserva de servicios.',
+              'Evaluación aplicada · dictamen médico pendiente (entrevista presencial).',
               style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, fontWeight: FontWeight.w500),
             ),
           ),

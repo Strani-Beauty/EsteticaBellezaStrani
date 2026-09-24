@@ -278,7 +278,7 @@ class _EstadoSaludViewState extends State<_EstadoSaludView> {
       case 'VENCIDA':
         return 'Vencida';
       default:
-        return 'Pendiente';
+        return 'Pendiente de dictamen médico (F2F)';
     }
   }
 }

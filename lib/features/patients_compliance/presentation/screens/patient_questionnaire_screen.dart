@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:esteticaybellezastrani/app/config/app_theme.dart';
 import 'package:esteticaybellezastrani/app/core/di/injection.dart';
-import 'package:esteticaybellezastrani/app/core/network/supabase_service.dart';
-import 'package:esteticaybellezastrani/features/payments_stripe/domain/repositories/i_payments_repository.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/cuestionario_entity.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/domain/entities/evaluacion_salud_entity.dart';
 import 'package:esteticaybellezastrani/features/patients_compliance/presentation/cubits/patient_health_cubit.dart';
+import 'package:esteticaybellezastrani/features/patients_compliance/presentation/screens/evaluacion_medica_aplicada_screen.dart';
 
 /// Screen de Cuestionario Clínico Pre-Tratamiento.
 /// Carga las preguntas reales del cuestionario activo (BD) y las renderiza
@@ -102,10 +101,6 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     return count;
   }
 
-  String _fmtFecha(DateTime? d) => d == null
-      ? '—'
-      : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-
   Future<void> _submitQuestionnaire() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,224 +137,25 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
 
     if (resultado == null) return;
 
+    // Fase 1 (solo UI): la evaluación solo se APLICA. El dictamen lo emite
+    // un médico en entrevista F2F desde administración. No se llama a
+    // registrarValidacion ni se crea solicitud/pago aquí.
     if (resultado.resultado == ResultadoEvaluacion.apto) {
-      _showEvaluationModalitySelector();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EvaluacionMedicaAplicadaScreen(
+            resultado: resultado,
+            serviceName: widget.serviceName,
+            onCompleted: widget.onCompleted ??
+                () => Navigator.of(context).maybePop(true),
+          ),
+        ),
+      );
     } else {
       _showDictamenConRiesgos(resultado);
     }
-  }
-
-  // ── Evaluación Médica Interna ─────────────────────────────────────────────
-
-  void _showEvaluationModalitySelector() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        constraints: const BoxConstraints(maxWidth: 440),
-        title: const Row(
-          children: [
-            Icon(Icons.medical_services_rounded, color: AppTheme.cDeepAccent, size: 26),
-            SizedBox(width: 10),
-            Expanded(child: Text('Evaluación Médica Interna')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Tu aptitud clínica será dictaminada por nuestro departamento médico interno.',
-              style: TextStyle(fontSize: 13, color: AppTheme.cMutedText),
-            ),
-            SizedBox(height: 12),
-            Text(
-              '📌 Nota: La aprobación clínica otorga una validez oficial de 1 año (365 días) para acceder a todos nuestros servicios.',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppTheme.cDeepAccent),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-            onPressed: () {
-              Navigator.pop(ctx);
-              _triggerInternalEvaluation();
-            },
-            icon: const Icon(Icons.local_hospital_rounded, size: 18),
-            label: const Text('Continuar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _triggerInternalEvaluation() {
-    const proveedor = 'Medicina Interna';
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogCtx, setDialogState) {
-            Future.delayed(const Duration(seconds: 3), () async {
-              if (!mounted) return;
-
-              final cubit = sl<PatientHealthCubit>();
-              final validacion = await cubit.registrarValidacion(
-                aprobado: true,
-                proveedor: proveedor,
-              );
-
-              final user = SupabaseService.currentUser;
-              if (user != null && validacion != null) {
-                try {
-                  await sl<IPaymentsRepository>().createSolicitudAndPayment(
-                    profileId: user.id,
-                    stripePaymentRef: widget.stripePaymentRef ??
-                        'STRIPE_SIM_${DateTime.now().millisecondsSinceEpoch}',
-                  );
-                } catch (_) {}
-              }
-
-              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-              if (!mounted) return;
-
-              if (validacion != null) {
-                _showEvaluationSuccessModal(validacion: validacion);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: Colors.redAccent,
-                    content: Text('No se pudo registrar la validación. Intenta de nuevo.'),
-                  ),
-                );
-              }
-            });
-
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              ),
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              constraints: const BoxConstraints(maxWidth: 440),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 14),
-                  const CircularProgressIndicator(color: AppTheme.cDeepAccent),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Evaluación Médica Interna',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Procesando cuestionario y expediente clínico con el departamento de Medicina Interna...',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, color: AppTheme.cMutedText),
-                  ),
-                  const SizedBox(height: 10),
-                  const Chip(
-                    backgroundColor: AppTheme.cPastelGold,
-                    label: Text('VALIDEZ 1 AÑO (365 DÍAS)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showEvaluationSuccessModal({
-    required ValidacionTelemedicinaEntity validacion,
-  }) {
-    final fecha = validacion.fechaValidacion;
-    final venc = validacion.fechaVencimiento;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        ),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        constraints: const BoxConstraints(maxWidth: 440),
-        title: const Row(
-          children: [
-            Icon(Icons.verified_user_rounded, color: AppTheme.cSuccess, size: 28),
-            SizedBox(width: 10),
-            Expanded(child: Text('Dictamen Aprobado')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '¡Evaluación Médica Interna Exitosa!',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tu expediente médico ha sido revisado y calificado como APTO. Ahora tienes acceso a reservar cualquier servicio del catálogo.',
-              style: const TextStyle(fontSize: 13, color: AppTheme.cDarkText),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: AppTheme.cPastelPurple,
-                borderRadius: BorderRadius.all(Radius.circular(8)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.shield_outlined, size: 18, color: AppTheme.cDeepAccent),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Aprobación médica oficial válida por 1 año (365 días).',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade800),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Aprobada: ${_fmtFecha(fecha)}  ·  Vence: ${_fmtFecha(venc)}',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (widget.onCompleted != null) {
-                widget.onCompleted!();
-              } else {
-                Navigator.of(context).maybePop(true);
-              }
-            },
-            child: const Text('Continuar al Catálogo'),
-          ),
-        ],
-      ),
-    );
   }
 
   // ── Dictamen con riesgos (REQUIERE_REVISION / NO_APTO) ────────────────────

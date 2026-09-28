@@ -78,6 +78,10 @@ abstract class IPatientsComplianceRepository {
   /// Activa una versión de cuestionario (desactiva las demás del mismo nombre).
   Future<Either<Failure, void>> activarVersionCuestionario(int cuestionarioId);
 
+  /// Desactiva una versión de cuestionario sin borrarla (conserva histórico y
+  /// evaluaciones ePHI).
+  Future<Either<Failure, void>> desactivarVersionCuestionario(int cuestionarioId);
+
   /// Elimina un cuestionario y sus relaciones (solo admin). Bloqueado si el
   /// cuestionario tiene evaluaciones de salud (retención ePHI/HIPAA).
   Future<Either<Failure, void>> eliminarCuestionario(int cuestionarioId);

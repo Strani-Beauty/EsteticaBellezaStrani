@@ -179,6 +179,16 @@ class PatientsComplianceRepositoryImpl implements IPatientsComplianceRepository 
   }
 
   @override
+  Future<Either<Failure, void>> desactivarVersionCuestionario(int cuestionarioId) async {
+    try {
+      await _datasource.desactivarVersion(cuestionarioId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('No se pudo desactivar la versión: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> eliminarCuestionario(int cuestionarioId) async {
     try {
       await _datasource.eliminarCuestionario(cuestionarioId);

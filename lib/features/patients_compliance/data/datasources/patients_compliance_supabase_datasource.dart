@@ -260,6 +260,15 @@ class PatientsComplianceSupabaseDataSource {
         .eq('id', cuestionarioId);
   }
 
+  /// Desactiva una versión de cuestionario (no la borra). Conserva el
+  /// histórico y las evaluaciones ePHI asociadas.
+  Future<void> desactivarVersion(int cuestionarioId) async {
+    await _client
+        .from('cuestionarios')
+        .update({'activo': false, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', cuestionarioId);
+  }
+
   /// Elimina un cuestionario y sus relaciones (admin). Bloqueado si el
   /// cuestionario tiene evaluaciones de salud (retención ePHI/HIPAA).
   Future<void> eliminarCuestionario(int id) async {

@@ -11,6 +11,7 @@ import '../../domain/usecases/asociar_pregunta.dart';
 import '../../domain/usecases/crear_nueva_version_cuestionario.dart';
 import '../../domain/usecases/crear_pregunta.dart';
 import '../../domain/usecases/desactivar_pregunta.dart';
+import '../../domain/usecases/desactivar_version_cuestionario.dart';
 import '../../domain/usecases/eliminar_cuestionario.dart';
 import '../../domain/usecases/get_cuestionario_preguntas.dart';
 import '../../domain/usecases/get_cuestionarios.dart';
@@ -96,6 +97,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
   final ActualizarOrdenPregunta _actualizarOrdenPregunta;
   final CrearNuevaVersionCuestionario _crearNuevaVersion;
   final ActivarVersionCuestionario _activarVersion;
+  final DesactivarVersionCuestionario _desactivarVersion;
   final UpdatePregunta _updatePregunta;
   final CrearPregunta _crearPregunta;
   final EliminarCuestionario _eliminarCuestionario;
@@ -109,6 +111,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
     required ActualizarOrdenPregunta actualizarOrdenPregunta,
     required CrearNuevaVersionCuestionario crearNuevaVersion,
     required ActivarVersionCuestionario activarVersion,
+    required DesactivarVersionCuestionario desactivarVersion,
     required UpdatePregunta updatePregunta,
     required CrearPregunta crearPregunta,
     required EliminarCuestionario eliminarCuestionario,
@@ -120,6 +123,7 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         _actualizarOrdenPregunta = actualizarOrdenPregunta,
         _crearNuevaVersion = crearNuevaVersion,
         _activarVersion = activarVersion,
+        _desactivarVersion = desactivarVersion,
         _updatePregunta = updatePregunta,
         _crearPregunta = crearPregunta,
         _eliminarCuestionario = eliminarCuestionario,
@@ -211,6 +215,22 @@ class AdminCuestionarioCubit extends Cubit<AdminCuestionarioState> {
         if (state is AdminCuestionarioLoaded) {
           final current = state as AdminCuestionarioLoaded;
           emit(current.copyWith(feedback: 'Versión activada correctamente.'));
+        }
+        await load();
+      },
+    );
+  }
+
+  Future<void> desactivarVersion(int cuestionarioId) async {
+    final result = await _desactivarVersion(
+      DesactivarVersionCuestionarioParams(cuestionarioId),
+    );
+    await result.fold(
+      (f) async => emit(AdminCuestionarioError(f.message)),
+      (_) async {
+        if (state is AdminCuestionarioLoaded) {
+          emit((state as AdminCuestionarioLoaded)
+              .copyWith(feedback: 'Versión desactivada.'));
         }
         await load();
       },

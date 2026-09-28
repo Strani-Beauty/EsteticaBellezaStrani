@@ -154,6 +154,13 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Activar esta versión'),
             ),
+            OutlinedButton.icon(
+              onPressed: (seleccionada == null || !seleccionada.activo)
+                  ? null
+                  : () => _confirmarDesactivarVersion(context, seleccionada),
+              icon: const Icon(Icons.pause_rounded),
+              label: const Text('Desactivar esta versión'),
+            ),
           ],
         ),
         const SizedBox(height: 24),
@@ -290,6 +297,35 @@ class _AdminCuestionarioViewState extends State<_AdminCuestionarioView> {
               context.read<AdminCuestionarioCubit>().activarVersion(objetivo.id);
             },
             child: const Text('Activar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmarDesactivarVersion(BuildContext context, CuestionarioEntity objetivo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+        title: const Text('Desactivar versión'),
+        content: Text(
+          'La versión v${objetivo.version} quedará inactiva y no se ofrecerá a '
+          'los pacientes. No se elimina: puedes reactivarla cuando quieras. Las '
+          'evaluaciones anteriores conservan su versión.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cGoldAccent),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AdminCuestionarioCubit>().desactivarVersion(objetivo.id);
+            },
+            child: const Text('Desactivar'),
           ),
         ],
       ),

@@ -126,6 +126,7 @@ import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_especialidades.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_medicos_regentes.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/get_my_specialist.dart';
+import 'package:esteticaybellezastrani/features/specialists/domain/usecases/marcar_documento_visto.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/revisar_documento.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/save_ubicacion.dart';
 import 'package:esteticaybellezastrani/features/specialists/domain/usecases/set_disponibilidad.dart';
@@ -324,6 +325,7 @@ void _registerSpecialists() {
           GetEspecialistaEspecialidades(sl<ISpecialistsRepository>()),
       solicitarVerificacion: SolicitarVerificacion(sl<ISpecialistsRepository>()),
       revisarDocumento: RevisarDocumento(sl<ISpecialistsRepository>()),
+      marcarDocumentoVisto: MarcarDocumentoVisto(sl<ISpecialistsRepository>()),
       generarUrlFirmadaDocumento:
           GenerarUrlFirmadaDocumento(sl<ISpecialistsRepository>()),
     ),

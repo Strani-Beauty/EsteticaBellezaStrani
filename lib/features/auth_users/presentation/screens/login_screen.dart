@@ -124,8 +124,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   elevation: 3,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.cDeepAccent),
-                    tooltip: 'Volver a inicio',
-                    onPressed: () => context.go(AppRoutes.welcome),
+                    tooltip: 'Volver',
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.welcome);
+                      }
+                    },
                   ),
                 ),
               ),

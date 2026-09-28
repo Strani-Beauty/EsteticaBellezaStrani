@@ -43,7 +43,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   /// Acceso profesional: va directo al login de especialistas.
   /// Si ya hay sesión, el route guard redirige por rol.
   void _openSpecialist(BuildContext context) {
-    context.go('${AppRoutes.login}?login=especialista');
+    context.push('${AppRoutes.login}?login=especialista');
   }
 
   @override
@@ -188,7 +188,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             onPressed: () =>
-                context.go('${AppRoutes.login}?login=administrador'),
+                context.push('${AppRoutes.login}?login=administrador'),
             icon: const Icon(Icons.admin_panel_settings_rounded, size: 18),
             label: const Text('Acceso Administrador'),
           ),

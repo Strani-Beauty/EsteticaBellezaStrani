@@ -10,6 +10,8 @@ class DocumentoEspecialistaModel {
   final String? observacionRevision;
   final String? revisadoPor;
   final DateTime? fechaRevision;
+  final String? vistoPor;
+  final DateTime? vistoEn;
   final int versionDocumento;
   final bool activo;
   final DateTime createdAt;
@@ -25,6 +27,8 @@ class DocumentoEspecialistaModel {
     this.observacionRevision,
     this.revisadoPor,
     this.fechaRevision,
+    this.vistoPor,
+    this.vistoEn,
     required this.versionDocumento,
     required this.activo,
     required this.createdAt,
@@ -44,6 +48,8 @@ class DocumentoEspecialistaModel {
       observacionRevision: json['observacion_revision'] as String?,
       revisadoPor: json['revisado_por'] as String?,
       fechaRevision: _parseDate(json['fecha_revision']),
+      vistoPor: json['visto_por'] as String?,
+      vistoEn: _parseDate(json['visto_en']),
       versionDocumento: (json['version_documento'] as num?)?.toInt() ?? 1,
       activo: json['activo'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -62,6 +68,8 @@ class DocumentoEspecialistaModel {
       'observacion_revision': observacionRevision,
       'revisado_por': revisadoPor,
       'fecha_revision': fechaRevision?.toIso8601String(),
+      'visto_por': vistoPor,
+      'visto_en': vistoEn?.toIso8601String(),
       'version_documento': versionDocumento,
       'activo': activo,
       'created_at': createdAt.toIso8601String(),
@@ -80,6 +88,8 @@ class DocumentoEspecialistaModel {
       observacionRevision: observacionRevision,
       revisadoPor: revisadoPor,
       fechaRevision: fechaRevision,
+      vistoPor: vistoPor,
+      vistoEn: vistoEn,
       versionDocumento: versionDocumento,
       activo: activo,
       createdAt: createdAt,

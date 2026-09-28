@@ -57,12 +57,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   bool _depsReady = false;
 
+  /// Nombre del servicio que el paciente intentaba reservar (viene por query
+  /// `?servicio=` desde el catálogo). Null en onboarding general.
+  String? _servicioReserva;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_depsReady) {
       _depsReady = true;
-      _soloPago = GoRouterState.of(context).uri.queryParameters['pago'] == '1';
+      final params = GoRouterState.of(context).uri.queryParameters;
+      _soloPago = params['pago'] == '1';
+      _servicioReserva = params['servicio'];
     }
   }
 
@@ -566,6 +572,45 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
   }
 
+  Widget _buildAvisoReserva() {
+    final servicio = _servicioReserva?.trim();
+    final tieneServicio = servicio != null && servicio.isNotEmpty;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.cPastelGold,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.cGoldAccent.withValues(alpha: 0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: AppTheme.cGoldAccent, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Para continuar con la reserva, completa los siguientes datos.',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.cDarkText),
+                ),
+              ),
+            ],
+          ),
+          if (tieneServicio) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Vas a pagar \$${AppConstants.depositoInicial.toStringAsFixed(0)} USD '
+              '(cuota inicial de la evaluación médica) para reservar: $servicio',
+              style: const TextStyle(fontSize: 12.5, color: AppTheme.cDarkText, height: 1.35),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.watch<AuthCubit>();
@@ -603,7 +648,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 8),
+              _buildAvisoReserva(),
+              const SizedBox(height: 18),
 
               // Avatar
               AvatarSelector(

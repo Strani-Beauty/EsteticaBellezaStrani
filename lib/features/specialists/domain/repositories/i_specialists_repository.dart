@@ -100,6 +100,11 @@ abstract class ISpecialistsRepository {
   /// Genera una URL firmada de expiración corta para leer un documento privado.
   Future<Either<Failure, String>> generarUrlFirmadaDocumento(String path);
 
+  /// Marca un documento como visto por el administrador (trazabilidad ePHI).
+  Future<Either<Failure, DocumentoEspecialistaEntity>> marcarDocumentoVisto(
+    String documentoId,
+  );
+
   // ── Presencia (online/offline) ───────────────────────────────
   /// Marca el estado de presencia (heartbeat) del especialista.
   Future<Either<Failure, void>> marcarPresencia(

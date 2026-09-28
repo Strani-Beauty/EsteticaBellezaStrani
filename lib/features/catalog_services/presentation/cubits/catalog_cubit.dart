@@ -41,12 +41,17 @@ class CatalogLoaded extends CatalogState {
     List<CategoriaServicioEntity>? categorias,
     List<ServicioEntity>? servicios,
     int? selectedCategoriaId,
+    bool clearCategoria = false,
     bool? loadingServicios,
   }) {
     return CatalogLoaded(
       categorias: categorias ?? this.categorias,
       servicios: servicios ?? this.servicios,
-      selectedCategoriaId: selectedCategoriaId,
+      // null es un valor válido ("Todos"): se conserva el previo salvo que se
+      // pida explícitamente limpiar la categoría.
+      selectedCategoriaId: clearCategoria
+          ? null
+          : (selectedCategoriaId ?? this.selectedCategoriaId),
       loadingServicios: loadingServicios ?? this.loadingServicios,
     );
   }
@@ -107,6 +112,7 @@ class CatalogCubit extends Cubit<CatalogState> {
 
     emit(current.copyWith(
       selectedCategoriaId: categoriaId,
+      clearCategoria: categoriaId == null,
       loadingServicios: true,
     ));
 

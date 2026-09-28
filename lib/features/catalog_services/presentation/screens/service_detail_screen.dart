@@ -206,24 +206,25 @@ class ServiceDetailScreen extends StatelessWidget {
 
   Widget _buildBadgeEvaluacion() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cPastelPurple,
+        color: AppTheme.cPastelGold,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.cGoldAccent.withValues(alpha: 0.6)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.health_and_safety_rounded, size: 20, color: AppTheme.cDeepAccent),
+          Icon(Icons.health_and_safety_rounded, size: 22, color: AppTheme.cGoldAccent),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               'Requiere Evaluación Médica Interna antes de la reserva.',
               style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
                 color: AppTheme.cDarkText,
-                height: 1.4,
+                height: 1.35,
               ),
             ),
           ),
@@ -355,21 +356,21 @@ class ServiceDetailScreen extends StatelessWidget {
               if (service.requiereTelemedicina) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cPastelGold,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    border: Border.all(color: AppTheme.cGoldAccent.withValues(alpha: 0.4)),
+                    border: Border.all(color: AppTheme.cGoldAccent.withValues(alpha: 0.6)),
                   ),
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.payment_rounded, size: 18, color: AppTheme.cGoldAccent),
+                      Icon(Icons.payment_rounded, size: 20, color: AppTheme.cGoldAccent),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Este servicio requiere Evaluación Médica Interna: deberás completar la cuota inicial de \$30 USD y la evaluación médica antes de reservar.',
-                          style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, height: 1.4),
+                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTheme.cDarkText, height: 1.35),
                         ),
                       ),
                     ],

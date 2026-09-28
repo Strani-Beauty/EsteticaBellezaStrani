@@ -90,7 +90,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     final profile = context.read<AuthCubit>().currentProfile;
 
     if (profile == null) {
-      context.go('${AppRoutes.login}?login=paciente');
+      context.push('${AppRoutes.login}?login=paciente');
       return;
     }
 
@@ -122,10 +122,10 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
         );
         return;
       } else if (reason == 'VENCIDA') {
-        _showExpirationReminderModal();
+        _showExpirationReminderModal(service);
         return;
       } else {
-        _showPendingEvaluationModal();
+        _showPendingEvaluationModal(service);
         return;
       }
     }
@@ -325,7 +325,23 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     );
   }
 
-  void _showExpirationReminderModal() {
+  /// Construye la URL de "Perfil del Paciente" propagando el servicio
+  /// seleccionado (para mostrar por qué se paga la cuota inicial) y, si
+  /// aplica, el flag de pago/renovación.
+  String _completeProfileUrl({String? serviceName, bool pago = false}) {
+    final params = <String, String>{
+      if (pago) 'pago': '1',
+      if (serviceName != null && serviceName.trim().isNotEmpty)
+        'servicio': serviceName.trim(),
+    };
+    if (params.isEmpty) return AppRoutes.completeProfile;
+    final query = params.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    return '${AppRoutes.completeProfile}?$query';
+  }
+
+  void _showExpirationReminderModal(ServicioEntity service) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -367,7 +383,9 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
             onPressed: () {
               Navigator.pop(ctx);
-              context.push('${AppRoutes.completeProfile}?pago=1');
+              context.push(
+                _completeProfileUrl(serviceName: service.nombre, pago: true),
+              );
             },
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: const Text('Pagar \$30 USD y Renovar'),
@@ -377,7 +395,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     );
   }
 
-  void _showPendingEvaluationModal() {
+  void _showPendingEvaluationModal(ServicioEntity service) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -404,7 +422,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cDeepAccent),
             onPressed: () {
               Navigator.pop(ctx);
-              context.push(AppRoutes.completeProfile);
+              context.push(_completeProfileUrl(serviceName: service.nombre));
             },
             child: const Text('Completar Evaluación'),
           ),
@@ -474,7 +492,7 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                         backgroundColor: AppTheme.cDeepAccent,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
-                      onPressed: () => context.go('${AppRoutes.login}?login=paciente'),
+                      onPressed: () => context.push('${AppRoutes.login}?login=paciente'),
                       child: const Text('Iniciar sesión'),
                     ),
                   ),
@@ -756,15 +774,15 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
 
     if (_evaluationStatus == 'VENCIDA' || _isExpired) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.1),
+          color: AppTheme.cPastelGold,
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+          border: Border.all(color: AppTheme.cGoldAccent.withValues(alpha: 0.6)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.history_toggle_off_rounded, color: Colors.orange, size: 20),
+            const Icon(Icons.history_toggle_off_rounded, color: AppTheme.cGoldAccent, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -772,11 +790,11 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
                 children: const [
                   Text(
                     '⚠️ Evaluación Médica Expirada (Pasó 1 Año)',
-                    style: TextStyle(fontSize: 13, color: Colors.orange, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 14, color: AppTheme.cGoldAccent, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     'Se requiere renovar la evaluación clínica y el abono inicial de \$30 USD para reservar servicios.',
-                    style: TextStyle(fontSize: 11, color: AppTheme.cDarkText),
+                    style: TextStyle(fontSize: 12.5, color: AppTheme.cDarkText, fontWeight: FontWeight.w600, height: 1.35),
                   ),
                 ],
               ),
@@ -787,20 +805,20 @@ class _ServicesDashboardScreenState extends State<ServicesDashboardScreen> with 
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cPastelPurple.withValues(alpha: 0.5),
+        color: AppTheme.cPastelGold,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-        border: Border.all(color: AppTheme.cDeepAccent.withValues(alpha: 0.2)),
+        border: Border.all(color: AppTheme.cGoldAccent.withValues(alpha: 0.6)),
       ),
       child: const Row(
         children: [
-          Icon(Icons.info_outline_rounded, color: AppTheme.cDeepAccent, size: 20),
+          Icon(Icons.health_and_safety_rounded, color: AppTheme.cGoldAccent, size: 22),
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Evaluación aplicada · dictamen médico pendiente (entrevista F2F por videollamada).',
-              style: TextStyle(fontSize: 12, color: AppTheme.cDarkText, fontWeight: FontWeight.w500),
+              'Evaluación médica requerida para cancelar o reservar servicios. Dictamen médico pendiente (entrevista F2F por videollamada).',
+              style: TextStyle(fontSize: 12.5, color: AppTheme.cDarkText, fontWeight: FontWeight.w600, height: 1.35),
             ),
           ),
         ],

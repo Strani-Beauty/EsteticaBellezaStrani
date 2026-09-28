@@ -282,8 +282,19 @@ class SpecialistsRepositoryImpl implements ISpecialistsRepository {
   }
 
   @override
-  Future<Either<Failure, String>> generarUrlFirmadaDocumento(String path) async {
+  Future<Either<Failure, DocumentoEspecialistaEntity>> marcarDocumentoVisto(
+    String documentoId,
+  ) async {
     try {
+      final model = await _dataSource.marcarDocumentoVisto(documentoId);
+      return Right(model.toEntity());
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> generarUrlFirmadaDocumento(String path) async {    try {
       final url = await _dataSource.crearUrlFirmada(path);
       return Right(url);
     } catch (e) {

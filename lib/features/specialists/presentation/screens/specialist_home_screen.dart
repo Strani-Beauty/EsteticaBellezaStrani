@@ -47,6 +47,17 @@ class _SpecialistHomeScreenState extends State<SpecialistHomeScreen> {
     final profile = context.read<AuthCubit>().currentProfile;
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Volver',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.welcome);
+            }
+          },
+        ),
         title: Text(
           'Panel de Especialista — ${profile?.fullName ?? 'Bienvenido'}',
           maxLines: 1,

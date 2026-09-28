@@ -59,6 +59,8 @@ class DocumentoEspecialistaEntity extends Equatable {
   final String? observacionRevision;
   final String? revisadoPor;
   final DateTime? fechaRevision;
+  final String? vistoPor;
+  final DateTime? vistoEn;
   final int versionDocumento;
   final bool activo;
   final DateTime createdAt;
@@ -74,6 +76,8 @@ class DocumentoEspecialistaEntity extends Equatable {
     this.observacionRevision,
     this.revisadoPor,
     this.fechaRevision,
+    this.vistoPor,
+    this.vistoEn,
     required this.versionDocumento,
     required this.activo,
     required this.createdAt,
@@ -82,6 +86,16 @@ class DocumentoEspecialistaEntity extends Equatable {
 
   bool get isAprobado => estadoRevision == EstadoRevisionDocumento.aprobado;
 
+  /// El administrador abrió/revisó el archivo adjunto.
+  bool get visto => vistoEn != null;
+
   @override
-  List<Object?> get props => [id, especialistaId, tipoDocumento, versionDocumento, estadoRevision];
+  List<Object?> get props => [
+        id,
+        especialistaId,
+        tipoDocumento,
+        versionDocumento,
+        estadoRevision,
+        vistoEn,
+      ];
 }

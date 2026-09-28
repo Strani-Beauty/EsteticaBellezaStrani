@@ -430,6 +430,25 @@ class SpecialistsSupabaseDataSource {
     return DocumentoEspecialistaModel.fromJson(res);
   }
 
+  /// Marca un documento como visto por el administrador (RPC SECURITY DEFINER
+  /// que fija `visto_por`/`visto_en` con la hora del servidor). Devuelve el
+  /// documento actualizado.
+  Future<DocumentoEspecialistaModel> marcarDocumentoVisto(
+    String documentoId,
+  ) async {
+    await _client.rpc(
+      'marcar_documento_visto',
+      params: {'p_documento_id': documentoId},
+    );
+    final res = await _client
+        .from('documentos_especialista')
+        .select()
+        .eq('id', documentoId)
+        .maybeSingle();
+    if (res == null) throw Exception('Documento $documentoId no encontrado');
+    return DocumentoEspecialistaModel.fromJson(res);
+  }
+
   // ── Presencia (online/offline) ───────────────────────────────
 
   /// Marca el estado de presencia del especialista. Update ligero sin tocar

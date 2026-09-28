@@ -23,6 +23,7 @@ import '../../domain/usecases/get_documentos.dart';
 import '../../domain/usecases/get_especialidades.dart';
 import '../../domain/usecases/get_medicos_regentes.dart';
 import '../../domain/usecases/get_my_specialist.dart';
+import '../../domain/usecases/marcar_documento_visto.dart';
 import '../../domain/usecases/revisar_documento.dart';
 import '../../domain/usecases/save_ubicacion.dart';
 import '../../domain/usecases/set_disponibilidad.dart';
@@ -161,6 +162,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
   final GetEspecialistaEspecialidades _getEspecialidadesDelEspecialista;
   final SolicitarVerificacion _solicitarVerificacion;
   final RevisarDocumento _revisarDocumento;
+  final MarcarDocumentoVisto _marcarDocumentoVisto;
   final GenerarUrlFirmadaDocumento _generarUrlFirmadaDocumento;
 
   SpecialistsCubit({
@@ -186,6 +188,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
     required GetEspecialistaEspecialidades getEspecialidadesDelEspecialista,
     required SolicitarVerificacion solicitarVerificacion,
     required RevisarDocumento revisarDocumento,
+    required MarcarDocumentoVisto marcarDocumentoVisto,
     required GenerarUrlFirmadaDocumento generarUrlFirmadaDocumento,
   })  : _getMySpecialist = getMySpecialist,
         _createEspecialista = createEspecialista,
@@ -209,6 +212,7 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
         _getEspecialidadesDelEspecialista = getEspecialidadesDelEspecialista,
         _solicitarVerificacion = solicitarVerificacion,
         _revisarDocumento = revisarDocumento,
+        _marcarDocumentoVisto = marcarDocumentoVisto,
         _generarUrlFirmadaDocumento = generarUrlFirmadaDocumento,
         super(const SpecialistsInitial());
 
@@ -781,6 +785,38 @@ class SpecialistsCubit extends Cubit<SpecialistsState> {
       observacion: observacion,
       revisadoPor: revisadoPor,
     ));
+    result.fold(
+      (f) => emit(SpecialistsError(f.message)),
+      (doc) {
+        final docs = [
+          for (final d in current.documentos) if (d.id == doc.id) doc else d,
+        ];
+        final docsPorEsp = Map<String, List<DocumentoEspecialistaEntity>>.from(
+          current.documentosPorEspecialista,
+        );
+        final listaEsp = docsPorEsp[doc.especialistaId];
+        if (listaEsp != null) {
+          docsPorEsp[doc.especialistaId] = [
+            for (final d in listaEsp) if (d.id == doc.id) doc else d,
+          ];
+        }
+        emit(current.copyWith(
+          documentos: docs,
+          documentosPorEspecialista: docsPorEsp,
+        ));
+      },
+    );
+  }
+
+  /// Marca un documento como visto por el administrador (ePHI/auditoría):
+  /// habilita los botones de revisión solo tras abrirlo.
+  Future<void> marcarDocumentoVisto({required String documentoId}) async {
+    final current = state;
+    if (current is! SpecialistsLoaded) return;
+
+    final result = await _marcarDocumentoVisto(
+      MarcarDocumentoVistoParams(documentoId: documentoId),
+    );
     result.fold(
       (f) => emit(SpecialistsError(f.message)),
       (doc) {

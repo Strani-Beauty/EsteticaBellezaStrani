@@ -88,6 +88,14 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
     }
   }
 
+  /// Total de preguntas "respondibles" (mismo criterio que `_answeredCount`):
+  /// se excluyen archivo/imagen para que la barra pueda llegar al 100 %.
+  int get _totalRespondibles => _preguntas
+      .where((p) =>
+          p.tipo != TipoRespuestaPregunta.archivo &&
+          p.tipo != TipoRespuestaPregunta.imagen)
+      .length;
+
   int get _answeredCount {
     int count = 0;
     for (final p in _preguntas) {
@@ -283,7 +291,8 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
       );
     }
 
-    final progress = _preguntas.isEmpty ? 0.0 : _answeredCount / _preguntas.length;
+    final progress =
+        _totalRespondibles == 0 ? 0.0 : _answeredCount / _totalRespondibles;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -348,7 +357,7 @@ class _PatientQuestionnaireScreenState extends State<PatientQuestionnaireScreen>
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
                     ),
                     Text(
-                      '$_answeredCount / ${_preguntas.length}',
+                      '$_answeredCount / $_totalRespondibles',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.cDeepAccent),
                     ),
                   ],

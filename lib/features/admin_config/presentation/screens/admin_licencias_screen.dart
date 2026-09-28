@@ -379,41 +379,49 @@ class _VerificacionDeLicencias extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: BlocProvider.value(
           value: context.read<SpecialistsCubit>(),
-          child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 560,
-            maxHeight: MediaQuery.of(dialogCtx).size.height * 0.85,
+          child: BlocBuilder<SpecialistsCubit, SpecialistsState>(
+            builder: (context, state) {
+              final documentos = state is SpecialistsLoaded
+                  ? (state.documentosPorEspecialista[especialista.id] ??
+                        const <DocumentoEspecialistaEntity>[])
+                  : (documentosPorEspecialista[especialista.id] ??
+                        const <DocumentoEspecialistaEntity>[]);
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 560,
+                  maxHeight: MediaQuery.of(dialogCtx).size.height * 0.85,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: _EspecialistaCard(
+                    especialista: especialista,
+                    medicosRegentes: medicosRegentes,
+                    documentos: documentos,
+                    contrato: contratosPorEspecialista[especialista.id],
+                    numeroEspecialidades:
+                        especialidadesCountPorEspecialista[especialista.id] ?? 0,
+                    onAprobar: () {
+                      Navigator.of(dialogCtx).pop();
+                      onAprobar(especialista);
+                    },
+                    onRechazar: () {
+                      Navigator.of(dialogCtx).pop();
+                      onRechazar(especialista);
+                    },
+                    onBloquear: () {
+                      Navigator.of(dialogCtx).pop();
+                      onBloquear(especialista);
+                    },
+                    onEditar: () {
+                      Navigator.of(dialogCtx).pop();
+                      onEditar(especialista);
+                    },
+                    onRevisarDocumento: onRevisarDocumento,
+                  ),
+                ),
+              );
+            },
           ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: _EspecialistaCard(
-              especialista: especialista,
-              medicosRegentes: medicosRegentes,
-              documentos:
-                  documentosPorEspecialista[especialista.id] ?? const [],
-              contrato: contratosPorEspecialista[especialista.id],
-              numeroEspecialidades:
-                  especialidadesCountPorEspecialista[especialista.id] ?? 0,
-              onAprobar: () {
-                Navigator.of(dialogCtx).pop();
-                onAprobar(especialista);
-              },
-              onRechazar: () {
-                Navigator.of(dialogCtx).pop();
-                onRechazar(especialista);
-              },
-              onBloquear: () {
-                Navigator.of(dialogCtx).pop();
-                onBloquear(especialista);
-              },
-              onEditar: () {
-                Navigator.of(dialogCtx).pop();
-                onEditar(especialista);
-              },
-              onRevisarDocumento: onRevisarDocumento,
-            ),
-          ),
-        ),
         ),
       ),
     );
@@ -911,12 +919,24 @@ class _DocumentoFila extends StatelessWidget {
             ),
           if (!aprobado && !rechazado) ...[
             const SizedBox(height: 6),
+            if (!documento.visto)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 4),
+                child: Text(
+                  'Sin revisar: abre el documento (ícono del ojo) para habilitar Aprobar/Rechazar.',
+                  style: TextStyle(
+                    color: AppTheme.cGoldAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             Wrap(
               spacing: 8,
               children: [
                 TextButton.icon(
                   onPressed: () =>
-                      onRevisar(documento, EstadoRevisionDocumento.aprobado),
+                      _solicitarRevision(context, EstadoRevisionDocumento.aprobado),
                   icon: const Icon(Icons.check_rounded, size: 16),
                   label: const Text('Aprobar'),
                   style: TextButton.styleFrom(
@@ -925,8 +945,10 @@ class _DocumentoFila extends StatelessWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () =>
-                      onRevisar(documento, EstadoRevisionDocumento.rechazado),
+                  onPressed: () => _solicitarRevision(
+                    context,
+                    EstadoRevisionDocumento.rechazado,
+                  ),
                   icon: const Icon(Icons.close_rounded, size: 16),
                   label: const Text('Rechazar'),
                   style: TextButton.styleFrom(
@@ -942,6 +964,24 @@ class _DocumentoFila extends StatelessWidget {
     );
   }
 
+  /// Bloquea la revisión hasta que el administrador abra el documento.
+  void _solicitarRevision(
+    BuildContext context,
+    EstadoRevisionDocumento estado,
+  ) {
+    if (!documento.visto) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Abre el documento (ícono del ojo) antes de aprobarlo o rechazarlo.',
+          ),
+        ),
+      );
+      return;
+    }
+    onRevisar(documento, estado);
+  }
+
   Future<void> _abrirDocumento(
     BuildContext context,
     DocumentoEspecialistaEntity documento,
@@ -955,14 +995,16 @@ class _DocumentoFila extends StatelessWidget {
       );
       return;
     }
-    final url = await context
-        .read<SpecialistsCubit>()
-        .generarUrlFirmadaDocumento(path);
+    final cubit = context.read<SpecialistsCubit>();
+    final url = await cubit.generarUrlFirmadaDocumento(path);
     if (url == null || !context.mounted) return;
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!documento.visto) {
+        await cubit.marcarDocumentoVisto(documentoId: documento.id);
+      }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
